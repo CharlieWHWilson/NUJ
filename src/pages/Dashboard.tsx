@@ -7,15 +7,18 @@ import { mates, groups, nujsReceived, meetUps, saveGroupsToStorage } from "@/dat
 import { AddMateSheet } from "@/components/AddMateSheet";
 import { NujActionSheet } from "@/components/NujActionSheet";
 import { useCheckin } from "@/hooks/useCheckin";
+import { useJoinedMeetups } from "@/hooks/useJoinedMeetups";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 
 type SectionKey = "nuj" | "mates" | "groups" | "meetups";
+type MatesFilter = "all" | "today" | "yesterday" | "few-days";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { checkedIn } = useCheckin();
+  const { hasJoinedMeetup } = useJoinedMeetups();
   const [addMateOpen, setAddMateOpen] = useState(false);
   const [selectedNuj, setSelectedNuj] = useState<string | null>(null);
   const [nujCards, setNujCards] = useState(nujsReceived);
@@ -24,6 +27,7 @@ const Dashboard = () => {
   const [newGroupName, setNewGroupName] = useState("");
   const [groupMateSearch, setGroupMateSearch] = useState("");
   const [newGroupMateIds, setNewGroupMateIds] = useState<string[]>([]);
+  const [matesFilter, setMatesFilter] = useState<MatesFilter>("all");
   const [openSections, setOpenSections] = useState<Record<SectionKey, boolean>>({
     nuj: false,
     mates: false,
@@ -35,6 +39,13 @@ const Dashboard = () => {
     const order = { today: 0, yesterday: 1, "few-days": 2 };
     return order[a.lastCheckin] - order[b.lastCheckin];
   });
+
+  const filteredMates = sortedMates.filter((mate) => {
+    if (matesFilter === "all") return true;
+    return mate.lastCheckin === matesFilter;
+  });
+
+  const joinedMeetups = meetUps.filter((meetup) => hasJoinedMeetup(meetup.id));
 
   const setSectionOpen = (section: SectionKey, open: boolean) => {
     setOpenSections((current) => ({ ...current, [section]: open }));
@@ -88,19 +99,23 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-md mx-auto">
-      <TopNav onAddMate={() => setAddMateOpen(true)} />
-
-      <div className="px-5 pb-24 space-y-4">
-        {/* Checked-In Card */}
-        <div className="nuj-card p-5">
-          <div className={`flex items-center gap-3 ${checkedIn ? "justify-center" : ""}`}>
-            <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: "hsl(var(--nuj-amber-light))" }}>
-              <span className="text-lg">👋</span>
+      <div className="px-5 pt-5">
+        <div className="nuj-card p-4">
+          <div className={`flex items-center gap-2.5 ${checkedIn ? "justify-center" : ""}`}>
+            <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "hsl(var(--nuj-amber-light))" }}>
+              <span className="text-base">👋</span>
             </div>
             <div className={checkedIn ? "text-center" : ""}>
-              <p className="font-semibold text-foreground">
-                {checkedIn ? "You are here today" : "Not checked in yet"}
-              </p>
+              {checkedIn ? (
+                <button
+                  onClick={() => navigate("/")}
+                  className="font-medium text-sm text-foreground hover:text-muted-foreground transition-colors"
+                >
+                  You are here today
+                </button>
+              ) : (
+                <p className="font-medium text-sm text-foreground">Not checked in yet</p>
+              )}
               {!checkedIn && (
                 <p className="text-xs text-muted-foreground mt-0.5">
                   Tap to check in and see who's around
@@ -110,14 +125,18 @@ const Dashboard = () => {
             {!checkedIn && (
               <button
                 onClick={() => navigate("/")}
-                className="ml-auto nuj-btn-primary px-4 py-2 text-sm"
+                className="ml-auto nuj-btn-primary px-3 py-1.5 text-xs"
               >
                 Check in
               </button>
             )}
           </div>
         </div>
+      </div>
 
+      <TopNav onAddMate={() => setAddMateOpen(true)} />
+
+      <div className="px-5 pb-24 space-y-4">
         {/* You've Been NUJ'd */}
         {nujCards.length > 0 && (
           <div className="nuj-card p-4">
@@ -234,7 +253,7 @@ const Dashboard = () => {
                           checked={newGroupMateIds.includes(mate.id)}
                           aria-label={`Select ${mate.name}`}
                         />
-                        <MateAvatar initials={mate.initials} size="sm" status={mate.lastCheckin} />
+                        <MateAvatar initials={mate.initials} size="sm" status={mate.lastCheckin} daysSinceCheckin={mate.daysSinceCheckin} />
                         <span className="text-sm font-medium">{mate.name}</span>
                       </button>
                     ))}
@@ -263,7 +282,7 @@ const Dashboard = () => {
           </Collapsible>
         </div>
 
-        {/* Your Mates */}
+        {/* Mates */}
         <div className="nuj-card p-4">
           <Collapsible
             open={openSections.mates}
@@ -273,7 +292,7 @@ const Dashboard = () => {
               <button className="w-full flex items-center justify-between text-left">
                 <div className="flex items-center gap-2">
                   <span className="text-sm" aria-hidden="true">👤︎</span>
-                  <h2 className="font-semibold text-sm tracking-tight">Your Mates</h2>
+                  <h2 className="font-semibold text-sm tracking-tight">Mates</h2>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-muted-foreground">{mates.length}</span>
@@ -285,14 +304,39 @@ const Dashboard = () => {
               </button>
             </CollapsibleTrigger>
             <CollapsibleContent className="pt-3">
+              <div className="flex items-center gap-2 mb-3 overflow-x-auto pb-1">
+                <span className="text-xs text-muted-foreground shrink-0">Last checked in:</span>
+                {([
+                  { key: "all", label: "All" },
+                  { key: "today", label: "Today" },
+                  { key: "yesterday", label: "Yesterday" },
+                  { key: "few-days", label: "Few days" },
+                ] as Array<{ key: MatesFilter; label: string }>).map((option) => (
+                  <button
+                    key={option.key}
+                    onClick={() => setMatesFilter(option.key)}
+                    className={`text-xs px-2.5 py-1 rounded-full transition-colors whitespace-nowrap ${
+                      matesFilter === option.key
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+
               <div className="divide-y divide-border/50 max-h-[190px] overflow-y-auto pr-1">
-                {sortedMates.map((mate) => (
+                {filteredMates.map((mate) => (
                   <MateRow
                     key={mate.id}
                     mate={mate}
                     onClick={() => navigate(`/mate/${mate.id}`)}
                   />
                 ))}
+                {filteredMates.length === 0 && (
+                  <p className="text-xs text-muted-foreground py-3 px-1">No mates for this filter.</p>
+                )}
               </div>
               <button
                 onClick={() => navigate("/mates")}
@@ -324,8 +368,10 @@ const Dashboard = () => {
             </CollapsibleTrigger>
             <CollapsibleContent className="pt-3">
               <div className="space-y-3">
-                {meetUps.slice(0, 2).map((meetup) => {
+                {joinedMeetups.map((meetup) => {
                   const participatingMatesData = mates.filter((m) => meetup.participatingMates.includes(m.id));
+                  const totalJoined = Math.min(meetup.participantsRequired, participatingMatesData.length + 1);
+                  const progress = totalJoined / meetup.participantsRequired;
                   return (
                     <button
                       key={meetup.id}
@@ -334,22 +380,42 @@ const Dashboard = () => {
                     >
                       <p className="font-medium text-sm">{meetup.title}</p>
                       <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{meetup.description}</p>
+
+                      <div className="h-1.5 bg-muted rounded-full overflow-hidden mt-3 mb-2">
+                        <div
+                          className="h-full rounded-full"
+                          style={{
+                            width: `${progress * 100}%`,
+                            background: "hsl(var(--accent))",
+                          }}
+                        />
+                      </div>
+
+                      <p className="text-xs text-muted-foreground">
+                        {totalJoined}/{meetup.participantsRequired} joined
+                      </p>
+
                       <div className="flex items-center justify-between mt-3">
                         <div className="flex -space-x-1.5">
                           {participatingMatesData.map((m) => (
                             <MateAvatar key={m.id} initials={m.initials} size="sm" />
                           ))}
-                          <div className="w-8 h-8 rounded-full bg-border flex items-center justify-center text-xs text-muted-foreground font-medium border-2 border-card">
-                            +{meetup.participantsRequired - meetup.participatingMates.length}
-                          </div>
                         </div>
-                        <span className="text-xs text-muted-foreground">
-                          {meetup.participatingMates.length}/{meetup.participantsRequired} in
-                        </span>
                       </div>
+
+                      <p className="text-xs text-muted-foreground mt-2">
+                        {participatingMatesData.length > 0
+                          ? `Also joined: ${participatingMatesData.map((m) => m.name).join(", ")}`
+                          : "No mates joined yet"}
+                      </p>
                     </button>
                   );
                 })}
+                {joinedMeetups.length === 0 && (
+                  <p className="text-xs text-muted-foreground py-2 px-1">
+                    You haven't joined any meet-ups yet.
+                  </p>
+                )}
               </div>
               <button
                 onClick={() => navigate("/meetups")}
@@ -360,6 +426,10 @@ const Dashboard = () => {
             </CollapsibleContent>
           </Collapsible>
         </div>
+
+        <p className="text-center text-xs text-muted-foreground/70 py-2">
+          Just a simple way to stay connected
+        </p>
       </div>
 
       <AddMateSheet open={addMateOpen} onClose={() => setAddMateOpen(false)} />

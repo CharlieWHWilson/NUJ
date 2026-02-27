@@ -146,7 +146,7 @@ const GroupDetail = () => {
                       onClick={() => addMateToGroup(mate.id)}
                       className="w-full flex items-center gap-3 py-2 px-1 rounded-xl hover:bg-muted/50 transition-colors text-left"
                     >
-                      <MateAvatar initials={mate.initials} status={mate.lastCheckin} />
+                      <MateAvatar initials={mate.initials} status={mate.lastCheckin} daysSinceCheckin={mate.daysSinceCheckin} />
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-sm text-foreground truncate">{mate.name}</p>
                       </div>

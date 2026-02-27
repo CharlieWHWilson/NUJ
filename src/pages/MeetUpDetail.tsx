@@ -2,17 +2,21 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Users } from "lucide-react";
 import { meetUps, mates } from "@/data/mockData";
 import { MateAvatar } from "@/components/MateComponents";
+import { useJoinedMeetups } from "@/hooks/useJoinedMeetups";
 
 const MeetUpDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { hasJoinedMeetup, joinMeetup } = useJoinedMeetups();
   const meetup = meetUps.find((m) => m.id === id);
 
   if (!meetup) return null;
 
+  const isJoined = hasJoinedMeetup(meetup.id);
   const participatingMatesData = mates.filter((m) => meetup.participatingMates.includes(m.id));
-  const remaining = meetup.participantsRequired - meetup.participatingMates.length;
-  const progress = meetup.participatingMates.length / meetup.participantsRequired;
+  const totalJoined = Math.min(meetup.participantsRequired, participatingMatesData.length + (isJoined ? 1 : 0));
+  const remaining = meetup.participantsRequired - totalJoined;
+  const progress = totalJoined / meetup.participantsRequired;
 
   return (
     <div className="min-h-screen bg-background max-w-md mx-auto">
@@ -57,7 +61,7 @@ const MeetUpDetail = () => {
           <div className="space-y-1">
             {participatingMatesData.map((m) => (
               <div key={m.id} className="flex items-center gap-3 py-2">
-                <MateAvatar initials={m.initials} size="sm" status={m.lastCheckin} />
+                <MateAvatar initials={m.initials} size="sm" status={m.lastCheckin} daysSinceCheckin={m.daysSinceCheckin} />
                 <p className="text-sm font-medium">{m.name}</p>
               </div>
             ))}
@@ -86,8 +90,12 @@ const MeetUpDetail = () => {
           )}
         </div>
 
-        <button className="w-full nuj-btn-primary p-5 text-center">
-          I'm in
+        <button
+          onClick={() => joinMeetup(meetup.id)}
+          disabled={isJoined}
+          className="w-full nuj-btn-primary p-5 text-center disabled:opacity-70 disabled:cursor-default"
+        >
+          {isJoined ? "You're in" : "I'm in"}
         </button>
       </div>
     </div>

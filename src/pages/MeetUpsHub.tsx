@@ -2,9 +2,34 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Filter } from "lucide-react";
 import { meetUps, mates } from "@/data/mockData";
 import { MateAvatar } from "@/components/MateComponents";
+import { useJoinedMeetups } from "@/hooks/useJoinedMeetups";
+import { useState } from "react";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const MeetUpsHub = () => {
   const navigate = useNavigate();
+  const { hasJoinedMeetup, joinMeetup } = useJoinedMeetups();
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+
+  const categories = Array.from(new Set(meetUps.map((meetup) => meetup.activityType)));
+
+  const filteredByCategory = meetUps.filter((meetup) => {
+    if (selectedCategories.length === 0) return true;
+    return selectedCategories.includes(meetup.activityType);
+  });
+
+  const sortedMeetups = [...filteredByCategory].sort((a, b) => {
+    const aJoined = hasJoinedMeetup(a.id) ? 1 : 0;
+    const bJoined = hasJoinedMeetup(b.id) ? 1 : 0;
+    return bJoined - aJoined;
+  });
 
   return (
     <div className="min-h-screen bg-background max-w-md mx-auto">
@@ -19,10 +44,42 @@ const MeetUpsHub = () => {
 
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold tracking-tight">Meet-Ups</h1>
-          <button className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 bg-muted rounded-full">
-            <Filter size={13} />
-            Filter
-          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 bg-muted rounded-full">
+                <Filter size={13} />
+                {selectedCategories.length > 0 ? `Filter (${selectedCategories.length})` : "Filter"}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuLabel>Categories</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {categories.map((category) => (
+                <DropdownMenuCheckboxItem
+                  key={category}
+                  checked={selectedCategories.includes(category)}
+                  onCheckedChange={(checked) => {
+                    setSelectedCategories((current) => {
+                      if (checked) {
+                        if (current.includes(category)) return current;
+                        return [...current, category];
+                      }
+                      return current.filter((item) => item !== category);
+                    });
+                  }}
+                >
+                  {category}
+                </DropdownMenuCheckboxItem>
+              ))}
+              <DropdownMenuSeparator />
+              <button
+                onClick={() => setSelectedCategories([])}
+                className="w-full text-left px-2 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent rounded-sm transition-colors"
+              >
+                Clear filters
+              </button>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
         <p className="text-muted-foreground text-sm mt-2">
           Shared experiences for reconnected friends.
@@ -30,16 +87,17 @@ const MeetUpsHub = () => {
       </div>
 
       <div className="px-5 space-y-4 pb-16">
-        {meetUps.map((meetup) => {
+        {sortedMeetups.map((meetup) => {
+          const isJoined = hasJoinedMeetup(meetup.id);
           const participatingMatesData = mates.filter((m) => meetup.participatingMates.includes(m.id));
-          const remaining = meetup.participantsRequired - meetup.participatingMates.length;
-          const progress = meetup.participatingMates.length / meetup.participantsRequired;
+          const totalJoined = Math.min(meetup.participantsRequired, participatingMatesData.length + (isJoined ? 1 : 0));
+          const remaining = meetup.participantsRequired - totalJoined;
+          const progress = totalJoined / meetup.participantsRequired;
 
           return (
-            <button
+            <div
               key={meetup.id}
-              onClick={() => navigate(`/meetup/${meetup.id}`)}
-              className="w-full nuj-card p-5 text-left block"
+              className="w-full nuj-card p-5 text-left"
             >
               <div className="flex items-start justify-between gap-3 mb-3">
                 <div>
@@ -49,6 +107,14 @@ const MeetUpsHub = () => {
                   <h3 className="font-semibold text-base mt-1">{meetup.title}</h3>
                   <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{meetup.description}</p>
                 </div>
+                {!isJoined && (
+                  <button
+                    onClick={() => joinMeetup(meetup.id)}
+                    className="nuj-btn-primary px-3 py-1.5 text-xs shrink-0"
+                  >
+                    Join
+                  </button>
+                )}
               </div>
 
               {/* Progress bar */}
@@ -74,16 +140,23 @@ const MeetUpsHub = () => {
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {meetup.participatingMates.length} of {meetup.participantsRequired} in
+                  {totalJoined} of {meetup.participantsRequired} in
                 </p>
               </div>
+
+              <button
+                onClick={() => navigate(`/meetup/${meetup.id}`)}
+                className="mt-3 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                View details →
+              </button>
 
               {meetup.sponsor && (
                 <p className="text-xs text-muted-foreground mt-3 pt-3 border-t border-border/50">
                   In partnership with {meetup.sponsor}
                 </p>
               )}
-            </button>
+            </div>
           );
         })}
       </div>

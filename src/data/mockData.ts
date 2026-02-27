@@ -5,6 +5,7 @@ export interface Mate {
   name: string;
   initials: string;
   lastCheckin: PresenceStatus;
+  daysSinceCheckin?: number;
   group?: string;
 }
 
@@ -37,28 +38,28 @@ export interface NujReceived {
 const GROUPS_STORAGE_KEY = "nuj.groups.v2";
 
 export const mates: Mate[] = [
-  { id: "1", name: "Tom Shelby", initials: "TS", lastCheckin: "today", group: "Five-a-side" },
-  { id: "2", name: "Jamie Carr", initials: "JC", lastCheckin: "today", group: "Five-a-side" },
-  { id: "3", name: "Marcus Reid", initials: "MR", lastCheckin: "yesterday", group: "Uni Lot" },
-  { id: "4", name: "Dan Powell", initials: "DP", lastCheckin: "few-days", group: "Uni Lot" },
-  { id: "5", name: "Luke Haines", initials: "LH", lastCheckin: "today" },
-  { id: "6", name: "Sam Okafor", initials: "SO", lastCheckin: "yesterday", group: "Five-a-side" },
-  { id: "7", name: "Rory Flynn", initials: "RF", lastCheckin: "few-days" },
-  { id: "8", name: "Aiden Blake", initials: "AB", lastCheckin: "today", group: "Five-a-side" },
-  { id: "9", name: "Ben Carter", initials: "BC", lastCheckin: "yesterday" },
-  { id: "10", name: "Callum Dean", initials: "CD", lastCheckin: "few-days", group: "Uni Lot" },
-  { id: "11", name: "Ethan Ford", initials: "EF", lastCheckin: "today", group: "Five-a-side" },
-  { id: "12", name: "Finley Grant", initials: "FG", lastCheckin: "yesterday" },
-  { id: "13", name: "George Hale", initials: "GH", lastCheckin: "few-days", group: "Uni Lot" },
-  { id: "14", name: "Harry Irwin", initials: "HI", lastCheckin: "today", group: "Five-a-side" },
-  { id: "15", name: "Isaac Jones", initials: "IJ", lastCheckin: "yesterday", group: "Uni Lot" },
-  { id: "16", name: "Jacob King", initials: "JK", lastCheckin: "few-days" },
-  { id: "17", name: "Kai Lewis", initials: "KL", lastCheckin: "today", group: "Five-a-side" },
-  { id: "18", name: "Leon Mason", initials: "LM", lastCheckin: "yesterday" },
-  { id: "19", name: "Mason North", initials: "MN", lastCheckin: "few-days", group: "Uni Lot" },
-  { id: "20", name: "Noah Owen", initials: "NO", lastCheckin: "today" },
-  { id: "21", name: "Ollie Price", initials: "OP", lastCheckin: "yesterday", group: "Five-a-side" },
-  { id: "22", name: "Parker Quinn", initials: "PQ", lastCheckin: "few-days" },
+  { id: "1", name: "Tom Shelby", initials: "TS", lastCheckin: "today", daysSinceCheckin: 0, group: "Five-a-side" },
+  { id: "2", name: "Jamie Carr", initials: "JC", lastCheckin: "today", daysSinceCheckin: 0, group: "Five-a-side" },
+  { id: "3", name: "Marcus Reid", initials: "MR", lastCheckin: "yesterday", daysSinceCheckin: 1, group: "Uni Lot" },
+  { id: "4", name: "Dan Powell", initials: "DP", lastCheckin: "few-days", daysSinceCheckin: 4, group: "Uni Lot" },
+  { id: "5", name: "Luke Haines", initials: "LH", lastCheckin: "today", daysSinceCheckin: 0 },
+  { id: "6", name: "Sam Okafor", initials: "SO", lastCheckin: "yesterday", daysSinceCheckin: 1, group: "Five-a-side" },
+  { id: "7", name: "Rory Flynn", initials: "RF", lastCheckin: "few-days", daysSinceCheckin: 5 },
+  { id: "8", name: "Aiden Blake", initials: "AB", lastCheckin: "today", daysSinceCheckin: 0, group: "Five-a-side" },
+  { id: "9", name: "Ben Carter", initials: "BC", lastCheckin: "yesterday", daysSinceCheckin: 1 },
+  { id: "10", name: "Callum Dean", initials: "CD", lastCheckin: "few-days", daysSinceCheckin: 2, group: "Uni Lot" },
+  { id: "11", name: "Ethan Ford", initials: "EF", lastCheckin: "today", daysSinceCheckin: 0, group: "Five-a-side" },
+  { id: "12", name: "Finley Grant", initials: "FG", lastCheckin: "yesterday", daysSinceCheckin: 1 },
+  { id: "13", name: "George Hale", initials: "GH", lastCheckin: "few-days", daysSinceCheckin: 3, group: "Uni Lot" },
+  { id: "14", name: "Harry Irwin", initials: "HI", lastCheckin: "today", daysSinceCheckin: 0, group: "Five-a-side" },
+  { id: "15", name: "Isaac Jones", initials: "IJ", lastCheckin: "yesterday", daysSinceCheckin: 1, group: "Uni Lot" },
+  { id: "16", name: "Jacob King", initials: "JK", lastCheckin: "few-days", daysSinceCheckin: 4 },
+  { id: "17", name: "Kai Lewis", initials: "KL", lastCheckin: "today", daysSinceCheckin: 0, group: "Five-a-side" },
+  { id: "18", name: "Leon Mason", initials: "LM", lastCheckin: "yesterday", daysSinceCheckin: 1 },
+  { id: "19", name: "Mason North", initials: "MN", lastCheckin: "few-days", daysSinceCheckin: 5, group: "Uni Lot" },
+  { id: "20", name: "Noah Owen", initials: "NO", lastCheckin: "today", daysSinceCheckin: 0 },
+  { id: "21", name: "Ollie Price", initials: "OP", lastCheckin: "yesterday", daysSinceCheckin: 1, group: "Five-a-side" },
+  { id: "22", name: "Parker Quinn", initials: "PQ", lastCheckin: "few-days", daysSinceCheckin: 2 },
 ];
 
 const defaultGroups: Group[] = [
@@ -144,9 +145,125 @@ export const meetUps: MeetUp[] = [
     rewardDescription: "Free post-match wrap from Urban Eat when 4 players check in",
     sponsor: "Urban Eat",
   },
+  {
+    id: "m4",
+    title: "Coffee catch-up",
+    description: "Quick morning coffee before work",
+    location: "Shoreditch",
+    activityType: "Coffee",
+    participantsRequired: 2,
+    participatingMates: ["5"],
+    rewardDescription: "Free pastry when 2 mates check in",
+    sponsor: "Bean & Co",
+  },
+  {
+    id: "m5",
+    title: "Midweek pub quiz",
+    description: "Team up for trivia night at the local",
+    location: "Camden",
+    activityType: "Quiz",
+    participantsRequired: 4,
+    participatingMates: ["2", "6"],
+    rewardDescription: "Discounted entry for NUJ groups",
+    sponsor: "The Fox",
+  },
+  {
+    id: "m6",
+    title: "After-work run",
+    description: "5k social run around the park",
+    location: "Battersea",
+    activityType: "Fitness",
+    participantsRequired: 3,
+    participatingMates: ["1"],
+    rewardDescription: "Free smoothie for every runner",
+    sponsor: "Pulse Bar",
+  },
+  {
+    id: "m7",
+    title: "Street food crawl",
+    description: "Try 3 spots and vote the winner",
+    location: "Borough",
+    activityType: "Food",
+    participantsRequired: 3,
+    participatingMates: ["3", "4"],
+    rewardDescription: "2-for-1 voucher at final stop",
+    sponsor: "Market Lane",
+  },
+  {
+    id: "m8",
+    title: "Board game night",
+    description: "Bring your best strategy and snacks",
+    location: "Clapham",
+    activityType: "Games",
+    participantsRequired: 4,
+    participatingMates: ["7"],
+    rewardDescription: "Free table booking for NUJ mates",
+    sponsor: "Dice Den",
+  },
+  {
+    id: "m9",
+    title: "Cinema Tuesday",
+    description: "Catch the latest release together",
+    location: "Leicester Square",
+    activityType: "Cinema",
+    participantsRequired: 2,
+    participatingMates: ["8"],
+    rewardDescription: "Popcorn combo upgrade",
+    sponsor: "City Screens",
+  },
+  {
+    id: "m10",
+    title: "Sunday roast link-up",
+    description: "Classic roast and catch-up",
+    location: "Richmond",
+    activityType: "Food",
+    participantsRequired: 3,
+    participatingMates: ["10", "13"],
+    rewardDescription: "Complimentary dessert",
+    sponsor: "The Oak Room",
+  },
+  {
+    id: "m11",
+    title: "Rooftop sunset drinks",
+    description: "Golden hour with the crew",
+    location: "Waterloo",
+    activityType: "Drinks",
+    participantsRequired: 3,
+    participatingMates: ["11", "14"],
+    rewardDescription: "Happy hour extension",
+    sponsor: "Skyline Bar",
+  },
+  {
+    id: "m12",
+    title: "Saturday market walk",
+    description: "Browse stalls and grab brunch",
+    location: "Notting Hill",
+    activityType: "Social",
+    participantsRequired: 2,
+    participatingMates: ["12"],
+    rewardDescription: "Free coffee refill",
+    sponsor: "West Market",
+  },
+  {
+    id: "m13",
+    title: "Open mic night",
+    description: "Live music and chilled vibes",
+    location: "Hackney",
+    activityType: "Live Music",
+    participantsRequired: 3,
+    participatingMates: ["15", "19"],
+    rewardDescription: "Priority entry for NUJ groups",
+    sponsor: "The Stage",
+  },
 ];
 
-export const presenceLabel = (status: PresenceStatus): string => {
+export const presenceLabel = (status: PresenceStatus, daysSinceCheckin?: number): string => {
+  if (typeof daysSinceCheckin === "number") {
+    if (daysSinceCheckin <= 0) return "Today";
+    if (daysSinceCheckin === 1) return "Yesterday";
+    return `${daysSinceCheckin} days ago`;
+  }
+
   switch (status) {
     case "today": return "Today";
     case "yesterday": return "Yesterday";

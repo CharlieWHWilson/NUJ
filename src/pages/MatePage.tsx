@@ -55,11 +55,11 @@ const MatePage = () => {
         </button>
 
         <div className="flex items-center gap-4">
-          <MateAvatar initials={mate.initials} size="lg" status={mate.lastCheckin} />
+          <MateAvatar initials={mate.initials} size="lg" status={mate.lastCheckin} daysSinceCheckin={mate.daysSinceCheckin} />
           <div>
             <h1 className="text-2xl font-bold tracking-tight">{mate.name}</h1>
             <p className="text-muted-foreground text-sm mt-1">
-              Last checked in: {presenceLabel(mate.lastCheckin)}
+              Last checked in: {presenceLabel(mate.lastCheckin, mate.daysSinceCheckin)}
               {mate.group ? ` · ${mate.group}` : ""}
             </p>
           </div>

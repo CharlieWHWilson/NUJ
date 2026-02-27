@@ -5,27 +5,56 @@ interface MateAvatarProps {
   initials: string;
   size?: "sm" | "md" | "lg";
   status?: PresenceStatus;
+  daysSinceCheckin?: number;
 }
 
-export const MateAvatar = ({ initials, size = "md", status }: MateAvatarProps) => {
+const getDaysSinceCheckin = (status: PresenceStatus, daysSinceCheckin?: number) => {
+  if (typeof daysSinceCheckin === "number") return daysSinceCheckin;
+  if (status === "today") return 0;
+  if (status === "yesterday") return 1;
+  return 3;
+};
+
+const getPresenceColor = (days: number) => {
+  if (days <= 1) return "hsl(120 70% 42%)";
+  if (days >= 5) return "hsl(var(--destructive))";
+
+  if (days <= 3) {
+    const ratio = (days - 1) / 2;
+    const hue = 120 - ((120 - 38) * ratio);
+    return `hsl(${hue} 78% 45%)`;
+  }
+
+  const ratio = (days - 3) / 2;
+  const hue = 38 - (38 * ratio);
+  return `hsl(${hue} 78% 45%)`;
+};
+
+export const MateAvatar = ({ initials, size = "md", status, daysSinceCheckin }: MateAvatarProps) => {
   const sizeClasses = {
     sm: "w-8 h-8 text-xs",
     md: "w-11 h-11 text-sm",
     lg: "w-16 h-16 text-lg",
   };
 
+  const resolvedDays = status ? getDaysSinceCheckin(status, daysSinceCheckin) : null;
+
   return (
     <div className={cn("relative rounded-full bg-secondary flex items-center justify-center font-semibold text-foreground shrink-0", sizeClasses[size])}>
       {initials}
-      {status && (
+      {status && status === "today" && (
         <span
-          className={cn(
-            "absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-card",
-            status === "today" ? "nuj-presence-today" : "",
-            status === "yesterday" ? "nuj-presence-yesterday" : "",
-            status === "few-days" ? "nuj-presence-few-days" : ""
-          )}
-          title={presenceLabel(status)}
+          className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full border-2 border-card bg-background flex items-center justify-center text-[11px]"
+          title={presenceLabel(status, resolvedDays ?? undefined)}
+        >
+          👋
+        </span>
+      )}
+      {status && status !== "today" && resolvedDays !== null && (
+        <span
+          className="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-card"
+          style={{ backgroundColor: getPresenceColor(resolvedDays) }}
+          title={resolvedDays <= 1 ? "Checked in within last 24h" : `${resolvedDays} days since check-in`}
         />
       )}
     </div>
@@ -44,11 +73,11 @@ export const MateRow = ({ mate, onClick, showGroup = true }: MateRowProps) => {
       onClick={onClick}
       className="w-full flex items-center gap-3 py-3 px-1 hover:bg-muted/50 rounded-xl transition-colors text-left"
     >
-      <MateAvatar initials={mate.initials} status={mate.lastCheckin} />
+      <MateAvatar initials={mate.initials} status={mate.lastCheckin} daysSinceCheckin={mate.daysSinceCheckin} />
       <div className="flex-1 min-w-0">
         <p className="font-medium text-sm text-foreground truncate">{mate.name}</p>
         <p className="text-xs text-muted-foreground mt-0.5">
-          {presenceLabel(mate.lastCheckin)}
+          {presenceLabel(mate.lastCheckin, mate.daysSinceCheckin)}
           {showGroup && mate.group ? ` · ${mate.group}` : ""}
         </p>
       </div>

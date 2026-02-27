@@ -111,7 +111,7 @@ const Dashboard = () => {
                   onClick={() => navigate("/")}
                   className="font-medium text-sm text-foreground hover:text-muted-foreground transition-colors"
                 >
-                  You are here today
+                  You're here today
                 </button>
               ) : (
                 <p className="font-medium text-sm text-foreground">Not checked in yet</p>
@@ -148,10 +148,9 @@ const Dashboard = () => {
                 <button className="w-full flex items-center justify-between text-left">
                   <div className="flex items-center gap-2">
                     <span className="text-sm" aria-hidden="true">👉</span>
-                    <h2 className="font-semibold text-sm tracking-tight">You've been NUJ'd</h2>
+                    <h2 className="font-semibold text-sm tracking-tight">You have {nujCards.length} NUJs</h2>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">{nujCards.length}</span>
                     <ChevronDown
                       size={16}
                       className={`text-muted-foreground transition-transform ${openSections.nuj ? "rotate-180" : ""}`}
@@ -161,19 +160,28 @@ const Dashboard = () => {
               </CollapsibleTrigger>
               <CollapsibleContent className="pt-3">
                 <div className="flex gap-2 overflow-x-auto pb-1">
-                  {nujCards.map((nuj) => (
-                    <button
-                      key={nuj.id}
-                      onClick={() => setSelectedNuj(nuj.id)}
-                      className="shrink-0 w-40 p-3 bg-muted/40 hover:bg-muted rounded-xl transition-colors text-left"
-                    >
-                      <div className="flex items-center gap-2">
-                        <MateAvatar initials={nuj.fromMateInitials} size="sm" />
-                        <p className="text-sm font-medium">{nuj.fromMateName}</p>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-2">{nuj.time}</p>
-                    </button>
-                  ))}
+                  {nujCards.map((nuj) => {
+                    const nujMate = mates.find((mate) => mate.id === nuj.fromMateId);
+
+                    return (
+                      <button
+                        key={nuj.id}
+                        onClick={() => setSelectedNuj(nuj.id)}
+                        className="shrink-0 w-40 p-3 bg-muted/40 hover:bg-muted rounded-xl transition-colors text-left"
+                      >
+                        <div className="flex items-center gap-2">
+                          <MateAvatar
+                            initials={nuj.fromMateInitials}
+                            size="sm"
+                            status={nujMate?.lastCheckin}
+                            daysSinceCheckin={nujMate?.daysSinceCheckin}
+                          />
+                          <p className="text-sm font-medium">{nuj.fromMateName}</p>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-2">{nuj.time}</p>
+                      </button>
+                    );
+                  })}
                 </div>
               </CollapsibleContent>
             </Collapsible>
@@ -193,7 +201,9 @@ const Dashboard = () => {
                   <h2 className="font-semibold text-sm tracking-tight">Groups</h2>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">{groupsList.length}</span>
+                  {openSections.groups && (
+                    <span className="text-xs text-muted-foreground">{groupsList.length}</span>
+                  )}
                   <ChevronDown
                     size={16}
                     className={`text-muted-foreground transition-transform ${openSections.groups ? "rotate-180" : ""}`}
@@ -214,12 +224,12 @@ const Dashboard = () => {
                     >
                       <div className="flex -space-x-2">
                         {groupMates.slice(0, 3).map((m) => (
-                          <MateAvatar key={m.id} initials={m.initials} size="sm" />
+                          <MateAvatar key={m.id} initials={m.initials} size="sm" status={m.lastCheckin} daysSinceCheckin={m.daysSinceCheckin} />
                         ))}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium">{group.name}</p>
-                        <p className="text-xs text-muted-foreground">{todayInGroup} checked in today</p>
+                        <p className="text-xs text-muted-foreground">{todayInGroup}/{groupMates.length} checked in today</p>
                       </div>
                       <ChevronRight size={14} className="text-muted-foreground shrink-0" />
                     </button>
@@ -295,7 +305,9 @@ const Dashboard = () => {
                   <h2 className="font-semibold text-sm tracking-tight">Mates</h2>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">{mates.length}</span>
+                  {openSections.mates && (
+                    <span className="text-xs text-muted-foreground">{mates.length}</span>
+                  )}
                   <ChevronDown
                     size={16}
                     className={`text-muted-foreground transition-transform ${openSections.mates ? "rotate-180" : ""}`}
@@ -360,58 +372,68 @@ const Dashboard = () => {
                   <MapPin size={15} className="text-muted-foreground" />
                   <h2 className="font-semibold text-sm tracking-tight">Meet-Ups</h2>
                 </div>
-                <ChevronDown
-                  size={16}
-                  className={`text-muted-foreground transition-transform ${openSections.meetups ? "rotate-180" : ""}`}
-                />
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">{joinedMeetups.length} joined</span>
+                  <ChevronDown
+                    size={16}
+                    className={`text-muted-foreground transition-transform ${openSections.meetups ? "rotate-180" : ""}`}
+                  />
+                </div>
               </button>
             </CollapsibleTrigger>
             <CollapsibleContent className="pt-3">
-              <div className="space-y-3">
-                {joinedMeetups.map((meetup) => {
-                  const participatingMatesData = mates.filter((m) => meetup.participatingMates.includes(m.id));
-                  const totalJoined = Math.min(meetup.participantsRequired, participatingMatesData.length + 1);
-                  const progress = totalJoined / meetup.participantsRequired;
-                  return (
-                    <button
-                      key={meetup.id}
-                      onClick={() => navigate(`/meetup/${meetup.id}`)}
-                      className="w-full text-left p-4 bg-muted/40 hover:bg-muted rounded-xl transition-colors"
-                    >
-                      <p className="font-medium text-sm">{meetup.title}</p>
-                      <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{meetup.description}</p>
+              <div className="rounded-xl bg-muted/40 p-3">
+                <p className="text-xs text-muted-foreground mb-2">Joined meet-ups</p>
+                {joinedMeetups.length > 0 ? (
+                  <div className="relative">
+                    <div className="pointer-events-none absolute inset-y-0 left-0 w-6 bg-gradient-to-r from-muted/70 to-transparent rounded-l-xl" />
+                    <div className="pointer-events-none absolute inset-y-0 right-0 w-6 bg-gradient-to-l from-muted/70 to-transparent rounded-r-xl" />
+                    <div className="flex gap-2 overflow-x-auto pb-1">
+                      {joinedMeetups.map((meetup) => {
+                      const participatingMatesData = mates.filter((m) => meetup.participatingMates.includes(m.id));
+                      const totalJoined = Math.min(meetup.participantsRequired, participatingMatesData.length + 1);
+                      const progress = totalJoined / meetup.participantsRequired;
 
-                      <div className="h-1.5 bg-muted rounded-full overflow-hidden mt-3 mb-2">
-                        <div
-                          className="h-full rounded-full"
-                          style={{
-                            width: `${progress * 100}%`,
-                            background: "hsl(var(--accent))",
-                          }}
-                        />
-                      </div>
+                      return (
+                        <button
+                          key={meetup.id}
+                          onClick={() => navigate(`/meetup/${meetup.id}`)}
+                          className="shrink-0 w-60 text-left p-4 bg-card hover:bg-muted rounded-xl transition-colors"
+                        >
+                          <p className="font-medium text-sm">{meetup.title}</p>
+                          <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{meetup.description}</p>
 
-                      <p className="text-xs text-muted-foreground">
-                        {totalJoined}/{meetup.participantsRequired} joined
-                      </p>
+                          <div className="h-1.5 bg-muted rounded-full overflow-hidden mt-3 mb-2">
+                            <div
+                              className="h-full rounded-full"
+                              style={{
+                                width: `${progress * 100}%`,
+                                background: "hsl(var(--accent))",
+                              }}
+                            />
+                          </div>
 
-                      <div className="flex items-center justify-between mt-3">
-                        <div className="flex -space-x-1.5">
-                          {participatingMatesData.map((m) => (
-                            <MateAvatar key={m.id} initials={m.initials} size="sm" />
-                          ))}
-                        </div>
-                      </div>
+                          <p className="text-xs text-muted-foreground">
+                            {totalJoined}/{meetup.participantsRequired} joined
+                          </p>
 
-                      <p className="text-xs text-muted-foreground mt-2">
-                        {participatingMatesData.length > 0
-                          ? `Also joined: ${participatingMatesData.map((m) => m.name).join(", ")}`
-                          : "No mates joined yet"}
-                      </p>
-                    </button>
-                  );
-                })}
-                {joinedMeetups.length === 0 && (
+                          <div className="flex -space-x-1.5 mt-3">
+                            {participatingMatesData.map((m) => (
+                              <MateAvatar key={m.id} initials={m.initials} size="sm" status={m.lastCheckin} daysSinceCheckin={m.daysSinceCheckin} />
+                            ))}
+                          </div>
+
+                          <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
+                            {participatingMatesData.length > 0
+                              ? `Also joined: ${participatingMatesData.map((m) => m.name).join(", ")}`
+                              : "No mates joined yet"}
+                          </p>
+                        </button>
+                      );
+                    })}
+                    </div>
+                  </div>
+                ) : (
                   <p className="text-xs text-muted-foreground py-2 px-1">
                     You haven't joined any meet-ups yet.
                   </p>

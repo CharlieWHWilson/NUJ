@@ -3,16 +3,25 @@ import { ArrowLeft, Users } from "lucide-react";
 import { meetUps, mates } from "@/data/mockData";
 import { MateAvatar } from "@/components/MateComponents";
 import { useJoinedMeetups } from "@/hooks/useJoinedMeetups";
+import { getCurrentUser } from "@/lib/auth";
 
 const MeetUpDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { hasJoinedMeetup, joinMeetup } = useJoinedMeetups();
+  const { hasJoinedMeetup, joinMeetup, leaveMeetup } = useJoinedMeetups();
   const meetup = meetUps.find((m) => m.id === id);
 
   if (!meetup) return null;
 
   const isJoined = hasJoinedMeetup(meetup.id);
+  const currentUser = getCurrentUser();
+  const currentUserName = currentUser?.name?.trim() || "You";
+  const currentUserInitials = currentUserName
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("") || "YU";
   const participatingMatesData = mates.filter((m) => meetup.participatingMates.includes(m.id));
   const totalJoined = Math.min(meetup.participantsRequired, participatingMatesData.length + (isJoined ? 1 : 0));
   const remaining = meetup.participantsRequired - totalJoined;
@@ -59,6 +68,12 @@ const MeetUpDetail = () => {
           </div>
 
           <div className="space-y-1">
+            {isJoined && (
+              <div className="flex items-center gap-3 py-2">
+                <MateAvatar initials={currentUserInitials} size="sm" status="today" daysSinceCheckin={0} />
+                <p className="text-sm font-medium">You</p>
+              </div>
+            )}
             {participatingMatesData.map((m) => (
               <div key={m.id} className="flex items-center gap-3 py-2">
                 <MateAvatar initials={m.initials} size="sm" status={m.lastCheckin} daysSinceCheckin={m.daysSinceCheckin} />
@@ -90,13 +105,21 @@ const MeetUpDetail = () => {
           )}
         </div>
 
-        <button
-          onClick={() => joinMeetup(meetup.id)}
-          disabled={isJoined}
-          className="w-full nuj-btn-primary p-5 text-center disabled:opacity-70 disabled:cursor-default"
-        >
-          {isJoined ? "You're in" : "I'm in"}
-        </button>
+        {isJoined ? (
+          <button
+            onClick={() => leaveMeetup(meetup.id)}
+            className="w-full p-5 text-center rounded-2xl bg-muted text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Leave meet-up
+          </button>
+        ) : (
+          <button
+            onClick={() => joinMeetup(meetup.id)}
+            className="w-full nuj-btn-primary p-5 text-center"
+          >
+            I'm in
+          </button>
+        )}
       </div>
     </div>
   );

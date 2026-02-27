@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, MessageSquare, Mail, Phone, Zap } from "lucide-react";
+import { ArrowLeft, MessageSquare, Mail, Phone } from "lucide-react";
 import { mates } from "@/data/mockData";
 import { MateAvatar } from "@/components/MateComponents";
 import { presenceLabel } from "@/data/mockData";
@@ -14,7 +14,7 @@ const MatePage = () => {
   const actions = [
     {
       label: "Send NUJ",
-      icon: <Zap size={20} />,
+      icon: <span className="text-lg leading-none">👉</span>,
       description: "A silent signal. No words needed.",
       primary: true,
       onClick: () => alert(`NUJ sent to ${mate.name}`),

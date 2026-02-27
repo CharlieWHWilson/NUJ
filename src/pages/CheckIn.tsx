@@ -45,9 +45,9 @@ const CheckIn = () => {
                 : "hsl(var(--primary-foreground))",
             }}
           >
-            <span className="text-5xl">{checkedIn ? "✓" : "👍"}</span>
+            <span className="text-5xl">{checkedIn ? "👋" : "👍"}</span>
             <span className="text-xl font-semibold tracking-tight">
-              {checkedIn ? "You're in" : "You good?"}
+              {checkedIn ? "You're here today" : "You good?"}
             </span>
           </button>
 

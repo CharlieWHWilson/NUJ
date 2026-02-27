@@ -38,11 +38,21 @@ export const useJoinedMeetups = () => {
     });
   };
 
+  const leaveMeetup = (meetupId: string) => {
+    setJoinedMeetupIds((currentIds) => {
+      if (!currentIds.includes(meetupId)) return currentIds;
+      const nextIds = currentIds.filter((id) => id !== meetupId);
+      saveJoinedMeetups(nextIds);
+      return nextIds;
+    });
+  };
+
   const hasJoinedMeetup = (meetupId: string) => joinedMeetupIdsSet.has(meetupId);
 
   return {
     joinedMeetupIds,
     hasJoinedMeetup,
     joinMeetup,
+    leaveMeetup,
   };
 };

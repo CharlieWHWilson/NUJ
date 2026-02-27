@@ -37,6 +37,18 @@ export const MateAvatar = ({ initials, size = "md", status, daysSinceCheckin }: 
     lg: "w-16 h-16 text-lg",
   };
 
+  const todayBadgeClasses = {
+    sm: "-bottom-0 -right-0 w-3 h-3 text-[7px] border border-card",
+    md: "-bottom-0.5 -right-0.5 w-5 h-5 text-[11px] border-2 border-card",
+    lg: "-bottom-1 -right-1 w-6 h-6 text-xs border-2 border-card",
+  };
+
+  const activityDotClasses = {
+    sm: "bottom-0 right-0 w-1.5 h-1.5 border border-card",
+    md: "bottom-0 right-0 w-3 h-3 border-2 border-card",
+    lg: "bottom-0 right-0 w-3.5 h-3.5 border-2 border-card",
+  };
+
   const resolvedDays = status ? getDaysSinceCheckin(status, daysSinceCheckin) : null;
 
   return (
@@ -44,7 +56,7 @@ export const MateAvatar = ({ initials, size = "md", status, daysSinceCheckin }: 
       {initials}
       {status && status === "today" && (
         <span
-          className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full border-2 border-card bg-background flex items-center justify-center text-[11px]"
+          className={cn("absolute rounded-full bg-background flex items-center justify-center", todayBadgeClasses[size])}
           title={presenceLabel(status, resolvedDays ?? undefined)}
         >
           👋
@@ -52,7 +64,7 @@ export const MateAvatar = ({ initials, size = "md", status, daysSinceCheckin }: 
       )}
       {status && status !== "today" && resolvedDays !== null && (
         <span
-          className="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-card"
+          className={cn("absolute rounded-full", activityDotClasses[size])}
           style={{ backgroundColor: getPresenceColor(resolvedDays) }}
           title={resolvedDays <= 1 ? "Checked in within last 24h" : `${resolvedDays} days since check-in`}
         />

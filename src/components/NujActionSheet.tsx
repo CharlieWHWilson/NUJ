@@ -19,7 +19,7 @@ export const NujActionSheet = ({ nuj, mate, onClose, onActionComplete }: NujActi
 
   const actions = [
     {
-      label: "NUJ back",
+      label: "Acknowledge NUJ",
       icon: <span className="text-base leading-none">👉</span>,
       onClick: () => {
         alert(`NUJ sent back to ${mate.name}`);
@@ -61,7 +61,7 @@ export const NujActionSheet = ({ nuj, mate, onClose, onActionComplete }: NujActi
       >
         <div className="w-10 h-1 bg-border rounded-full mx-auto mb-6" />
         <div className="flex items-center gap-3 mb-6">
-          <MateAvatar initials={nuj.fromMateInitials} size="md" />
+          <MateAvatar initials={nuj.fromMateInitials} size="md" status={mate.lastCheckin} daysSinceCheckin={mate.daysSinceCheckin} />
           <div>
             <p className="font-semibold">{nuj.fromMateName} NUJ'd you</p>
             <p className="text-xs text-muted-foreground">{nuj.time}</p>

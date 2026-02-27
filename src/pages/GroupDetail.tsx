@@ -61,6 +61,20 @@ const GroupDetail = () => {
     setGroupName(nextGroupName);
   };
 
+  const deleteGroup = () => {
+    if (!group) return;
+
+    const confirmed = window.confirm(`Delete ${group.name}?`);
+    if (!confirmed) return;
+
+    const groupIndex = groups.findIndex((candidate) => candidate.id === group.id);
+    if (groupIndex === -1) return;
+
+    groups.splice(groupIndex, 1);
+    saveGroupsToStorage(groups);
+    navigate("/dashboard");
+  };
+
   if (!group) return null;
 
   return (
@@ -157,6 +171,13 @@ const GroupDetail = () => {
                   ))
                 )}
               </div>
+
+              <button
+                onClick={deleteGroup}
+                className="mt-4 text-sm font-medium text-destructive hover:text-destructive/80 transition-colors"
+              >
+                Delete group
+              </button>
             </div>
           )}
         </div>

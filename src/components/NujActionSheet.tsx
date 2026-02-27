@@ -1,4 +1,4 @@
-import { MessageSquare, Mail, Phone, Zap } from "lucide-react";
+import { MessageSquare, Mail, Phone } from "lucide-react";
 import { NujReceived, Mate } from "@/data/mockData";
 import { MateAvatar } from "@/components/MateComponents";
 
@@ -6,26 +6,24 @@ interface NujActionSheetProps {
   nuj: NujReceived;
   mate: Mate;
   onClose: () => void;
+  onActionComplete: (nujId: string) => void;
 }
 
-export const NujActionSheet = ({ nuj, mate, onClose }: NujActionSheetProps) => {
+export const NujActionSheet = ({ nuj, mate, onClose, onActionComplete }: NujActionSheetProps) => {
   if (!nuj || !mate) return null;
+
+  const completeAction = () => {
+    onActionComplete(nuj.id);
+    onClose();
+  };
 
   const actions = [
     {
-      label: "Respond",
-      icon: <MessageSquare size={18} />,
-      onClick: () => {
-        window.open(`https://wa.me/?text=Hey+${mate.name.split(" ")[0]}`, "_blank");
-        onClose();
-      },
-    },
-    {
       label: "NUJ back",
-      icon: <Zap size={18} />,
+      icon: <span className="text-base leading-none">👉</span>,
       onClick: () => {
         alert(`NUJ sent back to ${mate.name}`);
-        onClose();
+        completeAction();
       },
     },
     {
@@ -33,7 +31,7 @@ export const NujActionSheet = ({ nuj, mate, onClose }: NujActionSheetProps) => {
       icon: <MessageSquare size={18} />,
       onClick: () => {
         window.open(`https://wa.me/`, "_blank");
-        onClose();
+        completeAction();
       },
     },
     {
@@ -41,7 +39,7 @@ export const NujActionSheet = ({ nuj, mate, onClose }: NujActionSheetProps) => {
       icon: <Phone size={18} />,
       onClick: () => {
         window.open(`sms:`, "_blank");
-        onClose();
+        completeAction();
       },
     },
     {
@@ -49,7 +47,7 @@ export const NujActionSheet = ({ nuj, mate, onClose }: NujActionSheetProps) => {
       icon: <Mail size={18} />,
       onClick: () => {
         window.open(`mailto:`, "_blank");
-        onClose();
+        completeAction();
       },
     },
   ];

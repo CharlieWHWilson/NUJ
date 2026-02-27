@@ -66,12 +66,14 @@ const CheckIn = () => {
       </div>
 
       <div className="pb-10 text-center">
-        <button
-          onClick={() => navigate("/dashboard")}
-          className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground transition-colors"
-        >
-          See who's around →
-        </button>
+        {checkedIn && (
+          <button
+            onClick={() => navigate("/dashboard")}
+            className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground transition-colors"
+          >
+            See who's around →
+          </button>
+        )}
       </div>
     </div>
   );

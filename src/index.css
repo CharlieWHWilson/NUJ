@@ -8,8 +8,8 @@
 
 @layer base {
   :root {
-    /* Warm off-white canvas */
-    --background: 36 20% 97%;
+    /* Soft sky-blue canvas */
+    --background: 208 75% 90%;
     --foreground: 215 28% 13%;
 
     --card: 0 0% 100%;

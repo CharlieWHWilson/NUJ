@@ -1,5 +1,5 @@
 import { MessageSquare, Mail, Phone } from "lucide-react";
-import { NujReceived, Mate } from "@/data/mockData";
+import { NujReceived, Mate, formatNujTimestamp } from "@/data/mockData";
 import { MateAvatar } from "@/components/MateComponents";
 
 interface NujActionSheetProps {
@@ -64,7 +64,7 @@ export const NujActionSheet = ({ nuj, mate, onClose, onActionComplete }: NujActi
           <MateAvatar initials={nuj.fromMateInitials} size="md" status={mate.lastCheckin} daysSinceCheckin={mate.daysSinceCheckin} />
           <div>
             <p className="font-semibold">{nuj.fromMateName} NUJ'd you</p>
-            <p className="text-xs text-muted-foreground">{nuj.time}</p>
+            <p className="text-xs text-muted-foreground">{formatNujTimestamp(nuj.sentAt)}</p>
           </div>
         </div>
         <div className="space-y-2">

@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { ChevronDown, ChevronRight, Plus, MapPin } from "lucide-react";
 import { TopNav } from "@/components/TopNav";
 import { MateRow, MateAvatar } from "@/components/MateComponents";
-import { mates, groups, nujsReceived, meetUps, saveGroupsToStorage } from "@/data/mockData";
+import { mates, groups, nujsReceived, meetUps, saveGroupsToStorage, formatNujTimestamp } from "@/data/mockData";
 import { AddMateSheet } from "@/components/AddMateSheet";
 import { NujActionSheet } from "@/components/NujActionSheet";
 import { useCheckin } from "@/hooks/useCheckin";
@@ -13,10 +13,19 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 
 type SectionKey = "nuj" | "mates" | "groups" | "meetups";
-type MatesFilter = "all" | "today" | "yesterday" | "few-days";
+type MatesFilter = "today" | "last-3" | "over-3";
+
+const getDaysSinceCheckin = (mate: { lastCheckin: "today" | "yesterday" | "few-days"; daysSinceCheckin?: number }) => {
+  if (typeof mate.daysSinceCheckin === "number") return mate.daysSinceCheckin;
+  if (mate.lastCheckin === "today") return 0;
+  if (mate.lastCheckin === "yesterday") return 1;
+  return 3;
+};
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const shouldExpandNuj = Boolean((location.state as { expandNuj?: boolean } | null)?.expandNuj);
   const { checkedIn } = useCheckin();
   const { hasJoinedMeetup } = useJoinedMeetups();
   const [addMateOpen, setAddMateOpen] = useState(false);
@@ -27,22 +36,21 @@ const Dashboard = () => {
   const [newGroupName, setNewGroupName] = useState("");
   const [groupMateSearch, setGroupMateSearch] = useState("");
   const [newGroupMateIds, setNewGroupMateIds] = useState<string[]>([]);
-  const [matesFilter, setMatesFilter] = useState<MatesFilter>("all");
+  const [matesFilter, setMatesFilter] = useState<MatesFilter>("today");
   const [openSections, setOpenSections] = useState<Record<SectionKey, boolean>>({
-    nuj: false,
+    nuj: shouldExpandNuj,
     mates: false,
     groups: false,
     meetups: false,
   });
 
-  const sortedMates = [...mates].sort((a, b) => {
-    const order = { today: 0, yesterday: 1, "few-days": 2 };
-    return order[a.lastCheckin] - order[b.lastCheckin];
-  });
+  const sortedMates = [...mates].sort((a, b) => getDaysSinceCheckin(a) - getDaysSinceCheckin(b));
 
   const filteredMates = sortedMates.filter((mate) => {
-    if (matesFilter === "all") return true;
-    return mate.lastCheckin === matesFilter;
+    const daysSinceCheckin = getDaysSinceCheckin(mate);
+    if (matesFilter === "today") return daysSinceCheckin === 0;
+    if (matesFilter === "last-3") return daysSinceCheckin <= 3;
+    return daysSinceCheckin > 3;
   });
 
   const joinedMeetups = meetUps.filter((meetup) => hasJoinedMeetup(meetup.id));
@@ -177,18 +185,18 @@ const Dashboard = () => {
                       <button
                         key={nuj.id}
                         onClick={() => setSelectedNuj(nuj.id)}
-                        className="shrink-0 w-40 p-3 bg-muted/40 hover:bg-muted rounded-xl transition-colors text-left"
+                        className="shrink-0 w-32 p-2 bg-muted/40 hover:bg-muted rounded-xl transition-colors text-left"
                       >
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5">
                           <MateAvatar
                             initials={nuj.fromMateInitials}
                             size="sm"
                             status={nujMate?.lastCheckin}
                             daysSinceCheckin={nujMate?.daysSinceCheckin}
                           />
-                          <p className="text-sm font-medium">{nuj.fromMateName}</p>
+                          <p className="text-xs font-medium leading-tight line-clamp-2">{nuj.fromMateName}</p>
                         </div>
-                        <p className="text-xs text-muted-foreground mt-2">{nuj.time}</p>
+                        <p className="text-[11px] text-muted-foreground mt-1">NUJ'd {formatNujTimestamp(nuj.sentAt)}</p>
                       </button>
                     );
                   })}
@@ -329,10 +337,9 @@ const Dashboard = () => {
               <div className="flex items-center gap-2 mb-3 overflow-x-auto pb-1">
                 <span className="text-xs text-muted-foreground shrink-0">Last checked in:</span>
                 {([
-                  { key: "all", label: "All" },
                   { key: "today", label: "Today" },
-                  { key: "yesterday", label: "Yesterday" },
-                  { key: "few-days", label: "Few days" },
+                  { key: "last-3", label: "Last 3 days" },
+                  { key: "over-3", label: "Over 3 days" },
                 ] as Array<{ key: MatesFilter; label: string }>).map((option) => (
                   <button
                     key={option.key}

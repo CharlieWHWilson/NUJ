@@ -8,7 +8,7 @@ const CheckIn = () => {
 
   const handleCheckin = () => {
     doCheckin();
-    setTimeout(() => navigate("/dashboard"), 300);
+    setTimeout(() => navigate("/dashboard", { state: { expandNuj: true } }), 300);
   };
 
   return (

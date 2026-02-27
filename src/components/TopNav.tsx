@@ -12,10 +12,10 @@ export const TopNav = ({ onAddMate }: TopNavProps) => {
   const isCheckin = location.pathname === "/";
 
   return (
-    <div className="flex items-center justify-between px-6 pt-12 pb-4">
+    <div className={`flex items-center px-6 pt-12 pb-4 ${isCheckin ? "justify-center" : "justify-between"}`}>
       <button
         onClick={() => navigate("/")}
-        className="text-2xl font-bold tracking-tight text-foreground select-none"
+        className={`${isCheckin ? "text-3xl" : "text-2xl"} font-bold tracking-tight text-foreground select-none`}
         style={{ letterSpacing: "-0.04em" }}
       >
         NUJ

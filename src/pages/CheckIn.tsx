@@ -20,12 +20,14 @@ const CheckIn = () => {
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
-            background: "radial-gradient(ellipse 60% 40% at 50% 55%, hsl(33 90% 58% / 0.07) 0%, transparent 70%)",
+            background: checkedIn
+              ? "radial-gradient(ellipse 60% 40% at 50% 55%, hsl(142 70% 40% / 0.08) 0%, transparent 70%)"
+              : "radial-gradient(ellipse 60% 40% at 50% 55%, hsl(33 90% 58% / 0.07) 0%, transparent 70%)",
           }}
         />
 
         <div className="relative text-center">
-          <p className="text-muted-foreground text-sm font-medium mb-16 tracking-wide uppercase" style={{ letterSpacing: "0.1em" }}>
+          <p className="text-muted-foreground text-lg font-medium mb-16 tracking-wide uppercase" style={{ letterSpacing: "0.1em" }}>
             {new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}
           </p>
 
@@ -35,13 +37,13 @@ const CheckIn = () => {
             className="nuj-btn-primary w-64 h-64 rounded-full flex flex-col items-center justify-center gap-3 mx-auto shadow-xl disabled:opacity-70 disabled:cursor-default"
             style={{
               boxShadow: checkedIn
-                ? "0 8px 32px hsl(33 90% 58% / 0.2)"
+                ? "0 8px 32px hsl(142 70% 40% / 0.16)"
                 : "0 8px 40px hsl(215 28% 13% / 0.18)",
               background: checkedIn
-                ? "hsl(var(--accent))"
+                ? "hsl(142 45% 92%)"
                 : "hsl(var(--primary))",
               color: checkedIn
-                ? "hsl(var(--accent-foreground))"
+                ? "hsl(154 62% 18%)"
                 : "hsl(var(--primary-foreground))",
             }}
           >

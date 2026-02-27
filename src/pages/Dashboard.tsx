@@ -100,19 +100,29 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-background max-w-md mx-auto">
       <div className="px-5 pt-5">
-        <div className="nuj-card p-4">
+        <div
+          className={`nuj-card p-4 ${checkedIn ? "cursor-pointer bg-emerald-50/60 border-emerald-200/70" : ""}`}
+          onClick={checkedIn ? () => navigate("/") : undefined}
+          role={checkedIn ? "button" : undefined}
+          tabIndex={checkedIn ? 0 : undefined}
+          onKeyDown={checkedIn
+            ? (event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                navigate("/");
+              }
+            }
+            : undefined}
+        >
           <div className={`flex items-center gap-2.5 ${checkedIn ? "justify-center" : ""}`}>
             <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "hsl(var(--nuj-amber-light))" }}>
               <span className="text-base">👋</span>
             </div>
             <div className={checkedIn ? "text-center" : ""}>
               {checkedIn ? (
-                <button
-                  onClick={() => navigate("/")}
-                  className="font-medium text-sm text-foreground hover:text-muted-foreground transition-colors"
-                >
+                <p className="font-medium text-sm text-foreground">
                   You're here today
-                </button>
+                </p>
               ) : (
                 <p className="font-medium text-sm text-foreground">Not checked in yet</p>
               )}

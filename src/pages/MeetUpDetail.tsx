@@ -1,13 +1,22 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Users } from "lucide-react";
+import { useState } from "react";
+import { ArrowLeft, Users, Link2, MessageSquare, Mail, Phone } from "lucide-react";
 import { meetUps, mates } from "@/data/mockData";
 import { MateAvatar } from "@/components/MateComponents";
 import { useJoinedMeetups } from "@/hooks/useJoinedMeetups";
 import { getCurrentUser } from "@/lib/auth";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 const MeetUpDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [shareOpen, setShareOpen] = useState(false);
   const { hasJoinedMeetup, joinMeetup, leaveMeetup } = useJoinedMeetups();
   const meetup = meetUps.find((m) => m.id === id);
 
@@ -26,6 +35,20 @@ const MeetUpDetail = () => {
   const totalJoined = Math.min(meetup.participantsRequired, participatingMatesData.length + (isJoined ? 1 : 0));
   const remaining = meetup.participantsRequired - totalJoined;
   const progress = totalJoined / meetup.participantsRequired;
+  const shareLink = typeof window === "undefined"
+    ? `${import.meta.env.BASE_URL}meetup/${meetup.id}`
+    : window.location.href;
+  const shareText = `Join me for \"${meetup.title}\" on NUJ`;
+
+  const copyShareLink = async () => {
+    try {
+      await navigator.clipboard.writeText(shareLink);
+      alert("Link copied");
+      setShareOpen(false);
+    } catch {
+      alert("Unable to copy link on this device.");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background max-w-md mx-auto">
@@ -52,9 +75,58 @@ const MeetUpDetail = () => {
 
         {/* Progress */}
         <div className="nuj-card p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <Users size={15} className="text-muted-foreground" />
-            <h2 className="font-semibold text-sm">Who's in</h2>
+          <div className="flex items-center justify-between gap-2 mb-4">
+            <div className="flex items-center gap-2">
+              <Users size={15} className="text-muted-foreground" />
+              <h2 className="font-semibold text-sm">Who's in</h2>
+            </div>
+
+            <Dialog open={shareOpen} onOpenChange={setShareOpen}>
+              <DialogTrigger asChild>
+                <button className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors">
+                  + share
+                </button>
+              </DialogTrigger>
+              <DialogContent className="max-w-sm">
+                <DialogHeader>
+                  <DialogTitle>Share this meet-up</DialogTitle>
+                </DialogHeader>
+
+                <div className="space-y-2">
+                  <button
+                    onClick={copyShareLink}
+                    className="w-full flex items-center gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors text-left"
+                  >
+                    <Link2 size={17} className="text-muted-foreground" />
+                    <span className="text-sm font-medium">Copy link</span>
+                  </button>
+
+                  <button
+                    onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(`${shareText} ${shareLink}`)}`, "_blank")}
+                    className="w-full flex items-center gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors text-left"
+                  >
+                    <MessageSquare size={17} className="text-muted-foreground" />
+                    <span className="text-sm font-medium">WhatsApp</span>
+                  </button>
+
+                  <button
+                    onClick={() => window.open(`sms:?&body=${encodeURIComponent(`${shareText} ${shareLink}`)}`, "_blank")}
+                    className="w-full flex items-center gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors text-left"
+                  >
+                    <Phone size={17} className="text-muted-foreground" />
+                    <span className="text-sm font-medium">SMS</span>
+                  </button>
+
+                  <button
+                    onClick={() => window.open(`mailto:?subject=${encodeURIComponent(`NUJ Meet-up: ${meetup.title}`)}&body=${encodeURIComponent(`${shareText}\n\n${shareLink}`)}`, "_blank")}
+                    className="w-full flex items-center gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors text-left"
+                  >
+                    <Mail size={17} className="text-muted-foreground" />
+                    <span className="text-sm font-medium">Email</span>
+                  </button>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
 
           <div className="h-1.5 bg-muted rounded-full overflow-hidden mb-4">
@@ -120,6 +192,7 @@ const MeetUpDetail = () => {
             I'm in
           </button>
         )}
+
       </div>
     </div>
   );

@@ -1,12 +1,14 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, MessageSquare, Mail, Phone } from "lucide-react";
-import { mates } from "@/data/mockData";
+import { useState } from "react";
+import { ArrowLeft, MessageSquare, Mail, Phone, Trash2 } from "lucide-react";
+import { mates, removeMateFromData } from "@/data/mockData";
 import { MateAvatar } from "@/components/MateComponents";
 import { presenceLabel } from "@/data/mockData";
 
 const MatePage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [showRemovePrompt, setShowRemovePrompt] = useState(false);
   const mate = mates.find((m) => m.id === id);
 
   if (!mate) return null;
@@ -41,6 +43,13 @@ const MatePage = () => {
       onClick: () => window.open(`mailto:`, "_blank"),
     },
   ];
+
+  const handleRemoveMate = () => {
+    const removed = removeMateFromData(mate.id);
+    if (removed) {
+      navigate("/mates");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background max-w-md mx-auto">
@@ -100,6 +109,33 @@ const MatePage = () => {
             </div>
           </button>
         ))}
+
+        <div className="pt-2 flex justify-end">
+          {!showRemovePrompt ? (
+            <button
+              onClick={() => setShowRemovePrompt(true)}
+              className="w-9 h-9 flex items-center justify-center rounded-full bg-muted text-muted-foreground hover:text-destructive hover:bg-muted/80 transition-colors"
+              aria-label="Remove mate"
+            >
+              <Trash2 size={16} />
+            </button>
+          ) : (
+            <div className="flex items-center gap-2 rounded-xl border border-border bg-muted/40 px-3 py-2">
+              <button
+                onClick={handleRemoveMate}
+                className="text-xs font-semibold text-destructive hover:text-destructive/80 transition-colors"
+              >
+                Remove
+              </button>
+              <button
+                onClick={() => setShowRemovePrompt(false)}
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

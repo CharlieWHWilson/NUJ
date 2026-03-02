@@ -297,3 +297,21 @@ export const presenceLabel = (status: PresenceStatus, daysSinceCheckin?: number)
     case "few-days": return "A few days ago";
   }
 };
+
+export const removeMateFromData = (mateId: string) => {
+  const mateIndex = mates.findIndex((mate) => mate.id === mateId);
+  if (mateIndex === -1) return false;
+
+  mates.splice(mateIndex, 1);
+
+  groups.forEach((group) => {
+    group.mates = group.mates.filter((id) => id !== mateId);
+  });
+  saveGroupsToStorage(groups);
+
+  meetUps.forEach((meetup) => {
+    meetup.participatingMates = meetup.participatingMates.filter((id) => id !== mateId);
+  });
+
+  return true;
+};

@@ -3,21 +3,24 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { mates } from "@/data/mockData";
 import { MateRow } from "@/components/MateComponents";
+import { Slider } from "@/components/ui/slider";
 
-type MatesFilter = "all" | "today" | "yesterday" | "few-days";
+const getDaysSinceCheckin = (mate: { lastCheckin: "today" | "yesterday" | "few-days"; daysSinceCheckin?: number }) => {
+  if (typeof mate.daysSinceCheckin === "number") return mate.daysSinceCheckin;
+  if (mate.lastCheckin === "today") return 0;
+  if (mate.lastCheckin === "yesterday") return 1;
+  return 3;
+};
 
 const MatesHub = () => {
   const navigate = useNavigate();
-  const [matesFilter, setMatesFilter] = useState<MatesFilter>("all");
+  const [matesDayRange, setMatesDayRange] = useState<[number, number]>([0, 31]);
 
-  const sortedMates = [...mates].sort((a, b) => {
-    const order = { today: 0, yesterday: 1, "few-days": 2 };
-    return order[a.lastCheckin] - order[b.lastCheckin];
-  });
+  const sortedMates = [...mates].sort((a, b) => getDaysSinceCheckin(a) - getDaysSinceCheckin(b));
 
   const filteredMates = sortedMates.filter((mate) => {
-    if (matesFilter === "all") return true;
-    return mate.lastCheckin === matesFilter;
+    const daysSinceCheckin = getDaysSinceCheckin(mate);
+    return daysSinceCheckin >= matesDayRange[0] && daysSinceCheckin <= matesDayRange[1];
   });
 
   return (
@@ -36,26 +39,20 @@ const MatesHub = () => {
       </div>
 
       <div className="px-5 pb-16">
-        <div className="flex items-center gap-2 mb-3 overflow-x-auto pb-1">
-          <span className="text-xs text-muted-foreground shrink-0">Last checked in:</span>
-          {([
-            { key: "all", label: "All" },
-            { key: "today", label: "Today" },
-            { key: "yesterday", label: "Yesterday" },
-            { key: "few-days", label: "Few days" },
-          ] as Array<{ key: MatesFilter; label: string }>).map((option) => (
-            <button
-              key={option.key}
-              onClick={() => setMatesFilter(option.key)}
-              className={`text-xs px-2.5 py-1 rounded-full transition-colors whitespace-nowrap ${
-                matesFilter === option.key
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {option.label}
-            </button>
-          ))}
+        <div className="mb-3">
+          <div className="flex justify-start mb-2">
+            <span className="text-xs text-muted-foreground">not checked in for {matesDayRange[0]} days</span>
+          </div>
+          <Slider
+            value={matesDayRange}
+            min={0}
+            max={31}
+            step={1}
+            onValueChange={(value) => {
+              if (value.length < 2) return;
+              setMatesDayRange([value[0] ?? 0, value[1] ?? 31]);
+            }}
+          />
         </div>
 
         <div className="nuj-card p-4 divide-y divide-border/50">

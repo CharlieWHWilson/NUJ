@@ -11,15 +11,21 @@ import { useJoinedMeetups } from "@/hooks/useJoinedMeetups";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Slider } from "@/components/ui/slider";
 
 type SectionKey = "nuj" | "mates" | "groups" | "meetups";
-type MatesFilter = "today" | "last-3" | "over-3";
 
 const getDaysSinceCheckin = (mate: { lastCheckin: "today" | "yesterday" | "few-days"; daysSinceCheckin?: number }) => {
   if (typeof mate.daysSinceCheckin === "number") return mate.daysSinceCheckin;
   if (mate.lastCheckin === "today") return 0;
   if (mate.lastCheckin === "yesterday") return 1;
   return 3;
+};
+
+const formatDayLabel = (days: number) => {
+  if (days === 0) return "Today";
+  if (days === 1) return "1 day ago";
+  return `${days} days ago`;
 };
 
 const Dashboard = () => {
@@ -36,7 +42,7 @@ const Dashboard = () => {
   const [newGroupName, setNewGroupName] = useState("");
   const [groupMateSearch, setGroupMateSearch] = useState("");
   const [newGroupMateIds, setNewGroupMateIds] = useState<string[]>([]);
-  const [matesFilter, setMatesFilter] = useState<MatesFilter>("today");
+  const [matesDayRange, setMatesDayRange] = useState<[number, number]>([0, 31]);
   const [openSections, setOpenSections] = useState<Record<SectionKey, boolean>>({
     nuj: shouldExpandNuj,
     mates: false,
@@ -48,9 +54,8 @@ const Dashboard = () => {
 
   const filteredMates = sortedMates.filter((mate) => {
     const daysSinceCheckin = getDaysSinceCheckin(mate);
-    if (matesFilter === "today") return daysSinceCheckin === 0;
-    if (matesFilter === "last-3") return daysSinceCheckin <= 3;
-    return daysSinceCheckin > 3;
+    const [minDays, maxDays] = matesDayRange;
+    return daysSinceCheckin >= minDays && daysSinceCheckin <= maxDays;
   });
 
   const joinedMeetups = meetUps.filter((meetup) => hasJoinedMeetup(meetup.id));
@@ -303,7 +308,7 @@ const Dashboard = () => {
                   className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
                 >
                   <Plus size={13} />
-                  {isAddingGroup ? "Cancel" : "Add group"}
+                  {isAddingGroup ? "Cancel" : "New group"}
                 </button>
               </div>
             </CollapsibleContent>
@@ -334,27 +339,6 @@ const Dashboard = () => {
               </button>
             </CollapsibleTrigger>
             <CollapsibleContent className="pt-3">
-              <div className="flex items-center gap-2 mb-3 overflow-x-auto pb-1">
-                <span className="text-xs text-muted-foreground shrink-0">Last checked in:</span>
-                {([
-                  { key: "today", label: "Today" },
-                  { key: "last-3", label: "Last 3 days" },
-                  { key: "over-3", label: "Over 3 days" },
-                ] as Array<{ key: MatesFilter; label: string }>).map((option) => (
-                  <button
-                    key={option.key}
-                    onClick={() => setMatesFilter(option.key)}
-                    className={`text-xs px-2.5 py-1 rounded-full transition-colors whitespace-nowrap ${
-                      matesFilter === option.key
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-
               <div className="divide-y divide-border/50 max-h-[190px] overflow-y-auto pr-1">
                 {filteredMates.map((mate) => (
                   <MateRow
@@ -373,6 +357,22 @@ const Dashboard = () => {
               >
                 See all {mates.length} mates <ChevronRight size={14} />
               </button>
+
+              <div className="mt-3">
+                <div className="flex justify-start mb-2">
+                  <span className="text-xs text-muted-foreground">not checked in for {matesDayRange[0]} days</span>
+                </div>
+                <Slider
+                  value={matesDayRange}
+                  min={0}
+                  max={31}
+                  step={1}
+                  onValueChange={(value) => {
+                    if (value.length < 2) return;
+                    setMatesDayRange([value[0] ?? 0, value[1] ?? 31]);
+                  }}
+                />
+              </div>
             </CollapsibleContent>
           </Collapsible>
         </div>

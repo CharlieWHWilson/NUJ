@@ -328,9 +328,6 @@ const Dashboard = () => {
                   <h2 className="font-semibold text-sm tracking-tight">Mates</h2>
                 </div>
                 <div className="flex items-center gap-2">
-                  {openSections.mates && (
-                    <span className="text-xs text-muted-foreground">{mates.length}</span>
-                  )}
                   <ChevronDown
                     size={16}
                     className={`text-muted-foreground transition-transform ${openSections.mates ? "rotate-180" : ""}`}
@@ -355,12 +352,12 @@ const Dashboard = () => {
                 onClick={() => navigate("/mates")}
                 className="w-full mt-3 text-sm text-muted-foreground flex items-center justify-center gap-1 hover:text-foreground transition-colors py-1"
               >
-                See all {mates.length} mates <ChevronRight size={14} />
+                See all mates <ChevronRight size={14} />
               </button>
 
               <div className="mt-3">
                 <div className="flex justify-start mb-2">
-                  <span className="text-xs text-muted-foreground">not checked in for {matesDayRange[0]} days</span>
+                  <span className="text-xs text-muted-foreground">{filteredMates.length} not checked in for {matesDayRange[0]} days</span>
                 </div>
                 <Slider
                   value={matesDayRange}

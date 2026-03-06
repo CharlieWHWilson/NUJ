@@ -5,6 +5,14 @@ import { mates, groups, saveGroupsToStorage } from "@/data/mockData";
 import { MateAvatar, MateRow } from "@/components/MateComponents";
 import { useParams } from "react-router-dom";
 import { Input } from "@/components/ui/input";
+import { Slider } from "@/components/ui/slider";
+
+const getDaysSinceCheckin = (mate: { lastCheckin: "today" | "yesterday" | "few-days"; daysSinceCheckin?: number }) => {
+  if (typeof mate.daysSinceCheckin === "number") return mate.daysSinceCheckin;
+  if (mate.lastCheckin === "today") return 0;
+  if (mate.lastCheckin === "yesterday") return 1;
+  return 3;
+};
 
 const GroupDetail = () => {
   const { id } = useParams();
@@ -14,6 +22,7 @@ const GroupDetail = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [groupName, setGroupName] = useState(group?.name ?? "");
   const [groupMateIds, setGroupMateIds] = useState<string[]>(group?.mates ?? []);
+  const [matesDayRange, setMatesDayRange] = useState<[number, number]>([0, 31]);
 
   useEffect(() => {
     if (!group) return;
@@ -25,6 +34,14 @@ const GroupDetail = () => {
     () => mates.filter((mate) => groupMateIds.includes(mate.id)),
     [groupMateIds],
   );
+
+  const filteredGroupMates = useMemo(() => {
+    const [minDays, maxDays] = matesDayRange;
+    return groupMates.filter((mate) => {
+      const daysSinceCheckin = getDaysSinceCheckin(mate);
+      return daysSinceCheckin >= minDays && daysSinceCheckin <= maxDays;
+    });
+  }, [groupMates, matesDayRange]);
 
   const filteredAvailableMates = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -117,7 +134,7 @@ const GroupDetail = () => {
 
       <div className="px-5 pb-16">
         <div className="nuj-card p-4">
-          {groupMates.map((mate) => (
+          {filteredGroupMates.map((mate) => (
             <div key={mate.id} className="flex items-center gap-2">
               <div className="flex-1 min-w-0">
                 <MateRow
@@ -137,6 +154,26 @@ const GroupDetail = () => {
               )}
             </div>
           ))}
+
+          {filteredGroupMates.length === 0 && (
+            <p className="text-xs text-muted-foreground py-3 px-1">No mates for this filter.</p>
+          )}
+
+          <div className="mt-3">
+            <div className="flex justify-start mb-2">
+              <span className="text-xs text-muted-foreground">{filteredGroupMates.length} not checked in for {matesDayRange[0]} days</span>
+            </div>
+            <Slider
+              value={matesDayRange}
+              min={0}
+              max={31}
+              step={1}
+              onValueChange={(value) => {
+                if (value.length < 2) return;
+                setMatesDayRange([value[0] ?? 0, value[1] ?? 31]);
+              }}
+            />
+          </div>
 
           {isEditing && (
             <div className="mt-4 pt-4 border-t border-border">

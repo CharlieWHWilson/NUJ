@@ -35,13 +35,12 @@ const MatesHub = () => {
         </button>
 
         <h1 className="text-2xl font-bold tracking-tight">Mates</h1>
-        <p className="text-muted-foreground text-sm mt-1">{mates.length} mates</p>
       </div>
 
       <div className="px-5 pb-16">
         <div className="mb-3">
           <div className="flex justify-start mb-2">
-            <span className="text-xs text-muted-foreground">not checked in for {matesDayRange[0]} days</span>
+            <span className="text-xs text-muted-foreground">{filteredMates.length} not checked in for {matesDayRange[0]} days</span>
           </div>
           <Slider
             value={matesDayRange}

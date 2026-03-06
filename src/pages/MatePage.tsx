@@ -125,7 +125,7 @@ const MatePage = () => {
                 onClick={handleRemoveMate}
                 className="text-xs font-semibold text-destructive hover:text-destructive/80 transition-colors"
               >
-                Remove
+                Remove mate
               </button>
               <button
                 onClick={() => setShowRemovePrompt(false)}

@@ -76,7 +76,7 @@ export const scheduleDailyReminderNotification = () => {
   scheduledReminderTimeout = window.setTimeout(() => {
     if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
       new Notification("NUJ check-in reminder", {
-        body: "Time to check in and let your mates know you're around.",
+        body: "Time for a quick check-in so your mates know you’re there.",
       });
     }
 

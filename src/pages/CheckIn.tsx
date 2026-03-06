@@ -55,13 +55,13 @@ const CheckIn = () => {
 
           {!checkedIn && (
             <p className="text-muted-foreground text-sm mt-12 max-w-xs mx-auto leading-relaxed">
-              One tap. No message. Just letting your mates know you're around.
+              A quick tap so your mates know you’re there
             </p>
           )}
 
           {checkedIn && (
             <p className="text-muted-foreground text-sm mt-12 max-w-xs mx-auto leading-relaxed">
-              Your mates will see you're around today.
+              Your mates will see you've checked in
             </p>
           )}
         </div>

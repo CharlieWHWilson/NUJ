@@ -1,8 +1,11 @@
+
 export interface AuthUser {
+  id: string;
   name: string;
   email: string;
   phone: string;
 }
+
 
 interface StoredAuthUser extends AuthUser {
   password: string;
@@ -11,7 +14,7 @@ interface StoredAuthUser extends AuthUser {
 const USERS_STORAGE_KEY = "nuj.auth.users";
 const SESSION_STORAGE_KEY = "nuj.auth.session";
 
-const loadUsers = (): StoredAuthUser[] => {
+export const loadUsers = (): StoredAuthUser[] => {
   if (typeof window === "undefined") return [];
 
   try {
@@ -25,7 +28,8 @@ const loadUsers = (): StoredAuthUser[] => {
       if (!value || typeof value !== "object") return false;
       const user = value as Partial<StoredAuthUser>;
       return (
-        typeof user.name === "string"
+        typeof user.id === "string"
+        && typeof user.name === "string"
         && typeof user.email === "string"
         && typeof user.phone === "string"
         && typeof user.password === "string"
@@ -46,6 +50,13 @@ const saveSession = (user: AuthUser) => {
   localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(user));
 };
 
+function generateUserId() {
+  return (
+    Date.now().toString(36) +
+    Math.random().toString(36).substring(2, 10)
+  );
+}
+
 export const registerUser = (input: { name: string; email: string; phone: string; password: string }) => {
   const users = loadUsers();
   const normalizedEmail = input.email.trim().toLowerCase();
@@ -55,6 +66,7 @@ export const registerUser = (input: { name: string; email: string; phone: string
   }
 
   const createdUser: StoredAuthUser = {
+    id: generateUserId(),
     name: input.name.trim(),
     email: normalizedEmail,
     phone: input.phone.trim(),
@@ -62,7 +74,7 @@ export const registerUser = (input: { name: string; email: string; phone: string
   };
 
   saveUsers([...users, createdUser]);
-  saveSession({ name: createdUser.name, email: createdUser.email, phone: createdUser.phone });
+  saveSession({ id: createdUser.id, name: createdUser.name, email: createdUser.email, phone: createdUser.phone });
 
   return { ok: true as const };
 };
@@ -79,7 +91,9 @@ export const loginUser = (input: { email: string; password: string }) => {
     return { ok: false as const, message: "Invalid email or password." };
   }
 
+
   saveSession({
+    id: existingUser.id,
     name: existingUser.name,
     email: existingUser.email,
     phone: existingUser.phone,
@@ -99,11 +113,17 @@ export const getCurrentUser = (): AuthUser | null => {
     if (!parsedValue || typeof parsedValue !== "object") return null;
 
     const user = parsedValue as Partial<AuthUser>;
-    if (typeof user.name !== "string" || typeof user.email !== "string" || typeof user.phone !== "string") {
+    if (
+      typeof user.id !== "string" ||
+      typeof user.name !== "string" ||
+      typeof user.email !== "string" ||
+      typeof user.phone !== "string"
+    ) {
       return null;
     }
 
     return {
+      id: user.id,
       name: user.name,
       email: user.email,
       phone: user.phone,

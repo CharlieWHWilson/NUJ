@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { mates } from "@/data/mockData";
 import { MateRow } from "@/components/MateComponents";
 import { Slider } from "@/components/ui/slider";
+import { AddMateSheet } from "@/components/AddMateSheet";
 
 const getDaysSinceCheckin = (mate: { lastCheckin: "today" | "yesterday" | "few-days"; daysSinceCheckin?: number }) => {
   if (typeof mate.daysSinceCheckin === "number") return mate.daysSinceCheckin;
@@ -23,18 +24,28 @@ const MatesHub = () => {
     return daysSinceCheckin >= matesDayRange[0] && daysSinceCheckin <= matesDayRange[1];
   });
 
+  const [addMateOpen, setAddMateOpen] = useState(false);
+
   return (
     <div className="min-h-screen bg-background max-w-md mx-auto">
-      <div className="px-5 pt-12 pb-6">
+      <div className="px-2 pt-12 pb-2">
         <button
           onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-8"
+          className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-4"
         >
           <ArrowLeft size={18} />
           <span className="text-sm">Back</span>
         </button>
-
-        <h1 className="text-2xl font-bold tracking-tight">Mates</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold tracking-tight">Mates</h1>
+          <button
+            onClick={() => setAddMateOpen(true)}
+            className="w-7 h-7 flex items-center justify-center rounded-full bg-muted text-foreground hover:bg-secondary transition-colors"
+            aria-label="Add mate"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          </button>
+        </div>
       </div>
 
       <div className="px-5 pb-16">
@@ -67,6 +78,9 @@ const MatesHub = () => {
           )}
         </div>
       </div>
+      {addMateOpen && (
+        <AddMateSheet open={addMateOpen} onClose={() => setAddMateOpen(false)} />
+      )}
     </div>
   );
 };

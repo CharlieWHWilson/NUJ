@@ -1,6 +1,13 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { ChevronDown, ChevronRight, Plus, MapPin } from "lucide-react";
+import { ChevronDown, ChevronRight, Plus, MapPin, HelpCircle } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { TopNav } from "@/components/TopNav";
 import { MateRow, MateAvatar } from "@/components/MateComponents";
 import { mates, groups, nujsReceived, meetUps, saveGroupsToStorage, formatNujTimestamp } from "@/data/mockData";
@@ -157,7 +164,44 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <TopNav onAddMate={() => setAddMateOpen(true)} />
+      <div className="flex items-center justify-between px-2 pt-2 pb-2">
+        <span className="font-bold text-xl text-black select-none" style={{ minWidth: 32 }}>
+          NUJ
+        </span>
+        <div className="flex items-center gap-2">
+          <TopNav onAddMate={() => setAddMateOpen(true)} showButtonsOnly />
+          <Dialog>
+          <DialogTrigger asChild>
+            <button
+              className="w-7 h-7 flex items-center justify-center rounded-full bg-muted text-foreground hover:bg-secondary transition-colors"
+              aria-label="What is NUJ?"
+            >
+              <HelpCircle size={16} />
+            </button>
+          </DialogTrigger>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>What is NUJ?</DialogTitle>
+            </DialogHeader>
+            <div className="text-sm text-muted-foreground space-y-4 max-h-[70vh] overflow-y-auto pr-1">
+              <p>NUJ is the easy way to stay connected with mates, without pressure, guilt or long messages.</p>
+              <p>Life gets busy, contact drifts and keeping in touch can feel harder than it should.</p>
+              <p>NUJ removes that barrier by making it easy to acknowledge each other regularly even when nothing specific is said.</p>
+              <div>
+                <p className="font-medium text-foreground mb-2">How it works</p>
+                <ol className="list-decimal pl-5 space-y-2">
+                  <li><strong>Check in</strong> – Tap once to say “you’re around.” No typing, no explanation, it takes a second. Nothing more needed, you’re ‘around’.</li>
+                  <li><strong>See who’s around</strong> – Your mates’ last check-ins are visible: today, yesterday, or a few days ago. Quiet awareness, nothing more.</li>
+                  <li><strong>Gentle nudges</strong> – If someone’s been quiet, send a small NUJ to show you’re thinking of them.</li>
+                  <li><strong>Meet-ups</strong> – Check in together regularly enough and you can unlock discounts for real-world activities. A chance to catch up and spend time together (win/win).</li>
+                </ol>
+              </div>
+              <p className="text-foreground text-center">Just a simple way to stay connected.</p>
+            </div>
+          </DialogContent>
+          </Dialog>
+        </div>
+      </div>
 
       <div className="px-5 pb-24 space-y-4">
         {/* You've Been NUJ'd */}

@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "deploy": "vite build && cp dist/index.html dist/404.html && echo 'Deploy ready. Use GitHub Actions to publish.'"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

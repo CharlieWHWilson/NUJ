@@ -71,7 +71,7 @@ const Auth = () => {
     <div className="min-h-screen bg-background max-w-md mx-auto px-5 pt-16 pb-16">
       <div className="text-center mb-8">
         <h1 className="text-3xl font-bold tracking-tight">NUJ</h1>
-        <p className="text-sm text-muted-foreground mt-2">Sign in or create your account</p>
+        <p className="text-sm text-muted-foreground mt-2">Sign in or create an account</p>
       </div>
 
       <div className="nuj-card p-4">

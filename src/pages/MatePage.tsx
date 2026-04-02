@@ -2,6 +2,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { ArrowLeft, MessageSquare, Mail, Phone, Trash2 } from "lucide-react";
 import { mates, removeMateFromData } from "@/data/mockData";
+import { addNujSent } from "@/data/nujsSent";
 import { MateAvatar } from "@/components/MateComponents";
 import { presenceLabel } from "@/data/mockData";
 
@@ -19,7 +20,16 @@ const MatePage = () => {
       icon: <span className="text-lg leading-none">👉</span>,
       description: "A silent signal. No words needed.",
       primary: true,
-      onClick: () => alert(`NUJ sent to ${mate.name}`),
+      onClick: () => {
+        addNujSent({
+          id: `s${Date.now()}`,
+          toMateId: mate.id,
+          toMateName: mate.name,
+          toMateInitials: mate.initials,
+          sentAt: new Date().toISOString(),
+        });
+        alert(`NUJ sent to ${mate.name}`);
+      },
     },
     {
       label: "WhatsApp",

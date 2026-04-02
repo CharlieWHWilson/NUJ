@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ChevronDown, ChevronRight, Plus, MapPin, HelpCircle } from "lucide-react";
 import {
@@ -11,6 +11,7 @@ import {
 import { TopNav } from "@/components/TopNav";
 import { MateRow, MateAvatar } from "@/components/MateComponents";
 import { mates, groups, nujsReceived, meetUps, saveGroupsToStorage, formatNujTimestamp } from "@/data/mockData";
+import { getNujsSent } from "@/data/nujsSent";
 import { AddMateSheet } from "@/components/AddMateSheet";
 import { NujActionSheet } from "@/components/NujActionSheet";
 import { useCheckin } from "@/hooks/useCheckin";
@@ -45,13 +46,30 @@ const Dashboard = () => {
   const [selectedNuj, setSelectedNuj] = useState<string | null>(null);
   const [nujCards, setNujCards] = useState(nujsReceived);
   const [groupsList, setGroupsList] = useState(groups);
+  const [nujSentCards, setNujSentCards] = useState(getNujsSent());
+
+  // Keep sent NUJs in sync with localStorage
+  // (in case user sends a NUJ from MatePage and returns here)
+  // This will update on tab focus or navigation
+  React.useEffect(() => {
+    const sync = () => setNujSentCards(getNujsSent());
+    window.addEventListener("focus", sync);
+    window.addEventListener("storage", sync);
+    return () => {
+      window.removeEventListener("focus", sync);
+      window.removeEventListener("storage", sync);
+    };
+  }, []);
   const [isAddingGroup, setIsAddingGroup] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
   const [groupMateSearch, setGroupMateSearch] = useState("");
   const [newGroupMateIds, setNewGroupMateIds] = useState<string[]>([]);
   const [matesDayRange, setMatesDayRange] = useState<[number, number]>([0, 31]);
-  const [openSections, setOpenSections] = useState<Record<SectionKey, boolean>>({
+  const [openSections, setOpenSections] = useState<
+    Record<SectionKey | "nujSent", boolean>
+  >({
     nuj: shouldExpandNuj,
+    nujSent: false,
     mates: false,
     groups: false,
     meetups: false,
@@ -67,7 +85,7 @@ const Dashboard = () => {
 
   const joinedMeetups = meetUps.filter((meetup) => hasJoinedMeetup(meetup.id));
 
-  const setSectionOpen = (section: SectionKey, open: boolean) => {
+  const setSectionOpen = (section: SectionKey | "nujSent", open: boolean) => {
     setOpenSections((current) => ({ ...current, [section]: open }));
   };
 
@@ -203,55 +221,112 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <div className="px-5 pb-24 space-y-4">
-        {/* You've Been NUJ'd */}
-        {nujCards.length > 0 && (
-          <div className="nuj-card p-4">
-            <Collapsible
-              open={openSections.nuj}
-              onOpenChange={(open) => setSectionOpen("nuj", open)}
-            >
-              <CollapsibleTrigger asChild>
-                <button className="w-full flex items-center justify-between text-left">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm" aria-hidden="true">👉</span>
-                    <h2 className="font-semibold text-sm tracking-tight">You have {nujCards.length} NUJs</h2>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <ChevronDown
-                      size={16}
-                      className={`text-muted-foreground transition-transform ${openSections.nuj ? "rotate-180" : ""}`}
-                    />
-                  </div>
-                </button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="pt-3">
-                <div className="flex gap-2 overflow-x-auto pb-1">
-                  {nujCards.map((nuj) => {
-                    const nujMate = mates.find((mate) => mate.id === nuj.fromMateId);
 
-                    return (
-                      <button
-                        key={nuj.id}
-                        onClick={() => setSelectedNuj(nuj.id)}
-                        className="shrink-0 w-32 p-2 bg-muted/40 hover:bg-muted rounded-xl transition-colors text-left"
-                      >
-                        <div className="flex items-center gap-1.5">
-                          <MateAvatar
-                            initials={nuj.fromMateInitials}
-                            size="sm"
-                            status={nujMate?.lastCheckin}
-                            daysSinceCheckin={nujMate?.daysSinceCheckin}
-                          />
-                          <p className="text-xs font-medium leading-tight line-clamp-2">{nuj.fromMateName}</p>
-                        </div>
-                        <p className="text-[11px] text-muted-foreground mt-1">NUJ'd {formatNujTimestamp(nuj.sentAt)}</p>
-                      </button>
-                    );
-                  })}
+      <div className="px-5 pb-24 space-y-4">
+        {/* Side-by-side NUJ boxes */}
+        {(nujCards.length > 0 || nujSentCards.length > 0) && (
+          <div className="flex gap-4">
+            {/* You have x NUJs box */}
+            <div className={`transition-all duration-300 w-1/2 min-w-[120px]`}> 
+              <Collapsible
+                open={openSections.nuj}
+                onOpenChange={(open) => setSectionOpen("nuj", open)}
+              >
+                <div className="nuj-card border border-border w-full p-0">
+                  <CollapsibleTrigger asChild>
+                    <button className="w-full flex items-center justify-between text-left px-4 py-3 hover:bg-muted/40 focus:outline-none">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm" aria-hidden="true">👉</span>
+                        <h2 className="font-semibold text-sm tracking-tight">You have {nujCards.length} NUJs</h2>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <ChevronDown
+                          size={16}
+                          className={`text-muted-foreground transition-transform ${openSections.nuj ? "rotate-180" : ""}`}
+                        />
+                      </div>
+                    </button>
+                  </CollapsibleTrigger>
+                  {openSections.nuj && (
+                    <CollapsibleContent className="pt-3 px-4 pb-4">
+                      <div className="flex gap-2 overflow-x-auto pb-1">
+                        {nujCards.length > 0 ? nujCards.map((nuj) => {
+                          const nujMate = mates.find((mate) => mate.id === nuj.fromMateId);
+                          return (
+                            <button
+                              key={nuj.id}
+                              onClick={() => setSelectedNuj(nuj.id)}
+                              className="shrink-0 w-32 p-2 bg-muted/40 hover:bg-muted rounded-xl transition-colors text-left"
+                            >
+                              <div className="flex items-center gap-1.5">
+                                <MateAvatar
+                                  initials={nuj.fromMateInitials}
+                                  size="sm"
+                                  status={nujMate?.lastCheckin}
+                                  daysSinceCheckin={nujMate?.daysSinceCheckin}
+                                />
+                                <p className="text-xs font-medium leading-tight line-clamp-2">{nuj.fromMateName}</p>
+                              </div>
+                              <p className="text-[11px] text-muted-foreground mt-1">NUJ'd {formatNujTimestamp(nuj.sentAt)}</p>
+                            </button>
+                          );
+                        }) : <span className="text-xs text-muted-foreground">No NUJs</span>}
+                      </div>
+                    </CollapsibleContent>
+                  )}
                 </div>
-              </CollapsibleContent>
-            </Collapsible>
+              </Collapsible>
+            </div>
+            {/* NUJs you've sent box */}
+            <div className={`transition-all duration-300 w-1/2 min-w-[120px]`}>
+              <Collapsible
+                open={openSections.nujSent}
+                onOpenChange={(open) => setSectionOpen("nujSent", open)}
+              >
+                <div className="nuj-card border border-border w-full p-0">
+                  <CollapsibleTrigger asChild>
+                    <button className="w-full flex items-center justify-between text-left px-4 py-3 hover:bg-muted/40 focus:outline-none">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm" aria-hidden="true">👈</span>
+                        <h2 className="font-semibold text-sm tracking-tight">NUJs you've sent</h2>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <ChevronDown
+                          size={16}
+                          className={`text-muted-foreground transition-transform ${openSections.nujSent ? "rotate-180" : ""}`}
+                        />
+                      </div>
+                    </button>
+                  </CollapsibleTrigger>
+                  {openSections.nujSent && (
+                    <CollapsibleContent className="pt-3 px-4 pb-4">
+                      <div className="flex gap-2 overflow-x-auto pb-1">
+                        {nujSentCards.length > 0 ? nujSentCards.map((nuj) => {
+                          const nujMate = mates.find((mate) => mate.id === nuj.toMateId);
+                          return (
+                            <div
+                              key={nuj.id}
+                              className="shrink-0 w-32 p-2 bg-muted/40 rounded-xl transition-colors text-left"
+                            >
+                              <div className="flex items-center gap-1.5">
+                                <MateAvatar
+                                  initials={nuj.toMateInitials}
+                                  size="sm"
+                                  status={nujMate?.lastCheckin}
+                                  daysSinceCheckin={nujMate?.daysSinceCheckin}
+                                />
+                                <p className="text-xs font-medium leading-tight line-clamp-2">{nuj.toMateName}</p>
+                              </div>
+                              <p className="text-[11px] text-muted-foreground mt-1">Sent {formatNujTimestamp(nuj.sentAt)}</p>
+                            </div>
+                          );
+                        }) : <span className="text-xs text-muted-foreground">No NUJs sent</span>}
+                      </div>
+                    </CollapsibleContent>
+                  )}
+                </div>
+              </Collapsible>
+            </div>
           </div>
         )}
 

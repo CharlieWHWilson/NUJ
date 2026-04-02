@@ -12,6 +12,7 @@ export const AddMateSheet = ({ open, onClose }: AddMateSheetProps) => {
   const [tab, setTab] = useState<'share' | 'find'>('share');
   const [searchId, setSearchId] = useState('');
   const [searchResult, setSearchResult] = useState<null | { name: string; id: string }>(null);
+    const [addSuccess, setAddSuccess] = useState(false);
   const [searchError, setSearchError] = useState('');
 
   if (!open) return null;
@@ -107,10 +108,38 @@ export const AddMateSheet = ({ open, onClose }: AddMateSheetProps) => {
               >Search</button>
             </div>
             {searchResult && (
-              <div className="mt-2 p-3 rounded-lg bg-muted/50">
+              <button
+                className="mt-2 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors w-full text-left border border-primary/30"
+                onClick={() => {
+                  setAddSuccess(false);
+                  // Load mates from storage
+                  let matesArr = [];
+                  try {
+                    const raw = window.localStorage.getItem("nuj.mates.v1");
+                    matesArr = raw ? JSON.parse(raw) : [];
+                  } catch { matesArr = []; }
+                  // Prevent duplicates
+                  if (matesArr.some((m: any) => m.id === searchResult.id)) {
+                    setAddSuccess(false);
+                    setSearchError("Mate already added.");
+                    return;
+                  }
+                  // Add new mate
+                  const initials = searchResult.name.split(" ").map((n) => n[0]).join("").toUpperCase();
+                  const newMate = { id: searchResult.id, name: searchResult.name, initials, lastCheckin: "few-days" };
+                  matesArr.push(newMate);
+                  window.localStorage.setItem("nuj.mates.v1", JSON.stringify(matesArr));
+                  setAddSuccess(true);
+                  setSearchError("");
+                }}
+              >
                 <span className="font-medium">{searchResult.name}</span>
                 <span className="block text-xs text-muted-foreground mt-1">User ID: {searchResult.id}</span>
-              </div>
+                <span className="block text-xs text-primary mt-1">Click to add to mates</span>
+              </button>
+            )}
+            {addSuccess && (
+              <div className="mt-2 text-sm text-green-600">Mate added!</div>
             )}
             {searchError && (
               <div className="mt-2 text-sm text-red-500">{searchError}</div>

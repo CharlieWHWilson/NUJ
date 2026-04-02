@@ -1,3 +1,25 @@
+const MATES_STORAGE_KEY = "nuj.mates.v1";
+
+export const saveMatesToStorage = (nextMates: Mate[]) => {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(MATES_STORAGE_KEY, JSON.stringify(nextMates));
+};
+
+export const loadMatesFromStorage = (): Mate[] => {
+  if (typeof window === "undefined") return [...mates];
+  try {
+    const rawValue = window.localStorage.getItem(MATES_STORAGE_KEY);
+    if (!rawValue) return [...mates];
+    const parsedValue: unknown = JSON.parse(rawValue);
+    if (!Array.isArray(parsedValue)) return [...mates];
+    // Basic validation
+    return parsedValue.filter(
+      (m) => m && typeof m.id === "string" && typeof m.name === "string" && typeof m.initials === "string"
+    );
+  } catch {
+    return [...mates];
+  }
+};
 export type PresenceStatus = "today" | "yesterday" | "few-days";
 
 export interface Mate {

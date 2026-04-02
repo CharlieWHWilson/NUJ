@@ -10,8 +10,8 @@ import {
 } from "@/components/ui/dialog";
 import { TopNav } from "@/components/TopNav";
 import { MateRow, MateAvatar } from "@/components/MateComponents";
-import { mates, groups, nujsReceived, meetUps, saveGroupsToStorage, formatNujTimestamp } from "@/data/mockData";
-import { getNujsSent } from "@/data/nujsSent";
+import { groups, meetUps, saveGroupsToStorage, formatNujTimestamp } from "@/data/mockData";
+import supabaseApi from "@/lib/supabaseApi";
 import { AddMateSheet } from "@/components/AddMateSheet";
 import { NujActionSheet } from "@/components/NujActionSheet";
 import { useCheckin } from "@/hooks/useCheckin";
@@ -44,21 +44,35 @@ const Dashboard = () => {
   const { hasJoinedMeetup } = useJoinedMeetups();
   const [addMateOpen, setAddMateOpen] = useState(false);
   const [selectedNuj, setSelectedNuj] = useState<string | null>(null);
-  const [nujCards, setNujCards] = useState(nujsReceived);
+  const [nujCards, setNujCards] = useState<any[]>([]);
+  const [nujSentCards, setNujSentCards] = useState<any[]>([]);
+  const [mates, setMates] = useState<any[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [groupsList, setGroupsList] = useState(groups);
-  const [nujSentCards, setNujSentCards] = useState(getNujsSent());
 
-  // Keep sent NUJs in sync with localStorage
-  // (in case user sends a NUJ from MatePage and returns here)
-  // This will update on tab focus or navigation
+  // Fetch users, mates, and NUJs from Supabase
   React.useEffect(() => {
-    const sync = () => setNujSentCards(getNujsSent());
-    window.addEventListener("focus", sync);
-    window.addEventListener("storage", sync);
-    return () => {
-      window.removeEventListener("focus", sync);
-      window.removeEventListener("storage", sync);
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        // Replace with actual user id from auth when available
+        const userId = "demo-user-id";
+        const [usersData, matesData, nujsData] = await Promise.all([
+          supabaseApi.fetchUsers(),
+          supabaseApi.fetchMates(userId),
+          supabaseApi.fetchNUJs(userId),
+        ]);
+        setUsers(usersData);
+        setMates(matesData.map((m: any) => m.mate || m));
+        setNujCards(nujsData.filter((n: any) => n.to_user_id === userId));
+        setNujSentCards(nujsData.filter((n: any) => n.from_user_id === userId));
+      } catch (e) {
+        // Optionally handle error
+      }
+      setLoading(false);
     };
+    fetchData();
   }, []);
   const [isAddingGroup, setIsAddingGroup] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
@@ -135,6 +149,13 @@ const Dashboard = () => {
     setIsAddingGroup(false);
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <span className="text-muted-foreground">Loading...</span>
+      </div>
+    );
+  }
   return (
     <div className="min-h-screen bg-background max-w-md mx-auto">
       <div className="px-5 pt-5">

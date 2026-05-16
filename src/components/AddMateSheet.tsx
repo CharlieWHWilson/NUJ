@@ -1,7 +1,7 @@
 import { Share2, MessageSquare, Mail, Link, UserSearch, ClipboardCopy, Phone } from "lucide-react";
 import { useState } from "react";
 import { getCurrentUser } from "@/lib/auth";
-import { loadUsers } from "@/lib/auth";
+import { supabase } from "@/lib/supabase";
 
 interface AddMateSheetProps {
   open: boolean;
@@ -12,8 +12,9 @@ export const AddMateSheet = ({ open, onClose }: AddMateSheetProps) => {
   const [tab, setTab] = useState<'share' | 'find'>('share');
   const [searchId, setSearchId] = useState('');
   const [searchResult, setSearchResult] = useState<null | { name: string; id: string }>(null);
-    const [addSuccess, setAddSuccess] = useState(false);
+  const [addSuccess, setAddSuccess] = useState(false);
   const [searchError, setSearchError] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
 
   if (!open) return null;
 
@@ -22,6 +23,67 @@ export const AddMateSheet = ({ open, onClose }: AddMateSheetProps) => {
   const shareMsg = user
     ? `Join me on NUJ - an easy way to stay connected.\n\nSign up at https://charliewhwilson.github.io/NUJ\n\nThen add me by using the ID: ${user.id}`
     : `Join me on NUJ - an easy way to stay connected.\n\nSign up at https://charliewhwilson.github.io/NUJ\n\nThen add me by using my User ID!`;
+
+  const handleSearch = async () => {
+    setSearchError('');
+    setSearchResult(null);
+    setIsSearching(true);
+
+    try {
+      // Search for user by ID in profiles table
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, name')
+        .eq('id', searchId.trim())
+        .single();
+
+      if (error || !data) {
+        setSearchError('No user found with that ID.');
+        setIsSearching(false);
+        return;
+      }
+
+      setSearchResult({ name: data.name, id: data.id });
+    } catch (err) {
+      setSearchError('Search failed. Please try again.');
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleAddMate = () => {
+    setAddSuccess(false);
+    if (!searchResult) return;
+
+    // Load mates from storage
+    let matesArr = [];
+    try {
+      const raw = window.localStorage.getItem("nuj.mates.v1");
+      matesArr = raw ? JSON.parse(raw) : [];
+    } catch { 
+      matesArr = []; 
+    }
+
+    // Prevent duplicates
+    if (matesArr.some((m: any) => m.id === searchResult.id)) {
+      setAddSuccess(false);
+      setSearchError("Mate already added.");
+      return;
+    }
+
+    // Add new mate
+    const initials = searchResult.name.split(" ").map((n) => n[0]).join("").toUpperCase();
+    const newMate = { 
+      id: searchResult.id, 
+      name: searchResult.name, 
+      initials, 
+      lastCheckin: "few-days" 
+    };
+    matesArr.push(newMate);
+    window.localStorage.setItem("nuj.mates.v1", JSON.stringify(matesArr));
+    setAddSuccess(true);
+    setSearchError("");
+  };
 
   return (
     <>
@@ -91,47 +153,20 @@ export const AddMateSheet = ({ open, onClose }: AddMateSheetProps) => {
                 placeholder="Paste User ID here"
                 value={searchId}
                 onChange={e => setSearchId(e.target.value)}
+                disabled={isSearching}
               />
               <button
-                className="nuj-btn-primary px-4 rounded-lg"
-                onClick={() => {
-                  setSearchError('');
-                  setSearchResult(null);
-                  const users = loadUsers();
-                  const found = users.find(u => u.id === searchId.trim());
-                  if (found) {
-                    setSearchResult({ name: found.name, id: found.id });
-                  } else {
-                    setSearchError('No user found with that ID.');
-                  }
-                }}
-              >Search</button>
+                className="nuj-btn-primary px-4 rounded-lg disabled:opacity-50"
+                onClick={handleSearch}
+                disabled={isSearching}
+              >
+                {isSearching ? 'Searching...' : 'Search'}
+              </button>
             </div>
             {searchResult && (
               <button
                 className="mt-2 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors w-full text-left border border-primary/30"
-                onClick={() => {
-                  setAddSuccess(false);
-                  // Load mates from storage
-                  let matesArr = [];
-                  try {
-                    const raw = window.localStorage.getItem("nuj.mates.v1");
-                    matesArr = raw ? JSON.parse(raw) : [];
-                  } catch { matesArr = []; }
-                  // Prevent duplicates
-                  if (matesArr.some((m: any) => m.id === searchResult.id)) {
-                    setAddSuccess(false);
-                    setSearchError("Mate already added.");
-                    return;
-                  }
-                  // Add new mate
-                  const initials = searchResult.name.split(" ").map((n) => n[0]).join("").toUpperCase();
-                  const newMate = { id: searchResult.id, name: searchResult.name, initials, lastCheckin: "few-days" };
-                  matesArr.push(newMate);
-                  window.localStorage.setItem("nuj.mates.v1", JSON.stringify(matesArr));
-                  setAddSuccess(true);
-                  setSearchError("");
-                }}
+                onClick={handleAddMate}
               >
                 <span className="font-medium">{searchResult.name}</span>
                 <span className="block text-xs text-muted-foreground mt-1">User ID: {searchResult.id}</span>

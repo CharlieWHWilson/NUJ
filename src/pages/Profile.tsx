@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ClipboardCopy, MessageSquare, Mail, Phone, Share2 } from "lucide-react";
 import {
   Dialog,
@@ -7,7 +7,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -16,13 +16,23 @@ import {
   saveDailyReminderSettings,
   scheduleDailyReminderNotification,
 } from "@/lib/dailyReminder";
-import { getCurrentUser, logoutUser } from "@/lib/auth";
+import { getCurrentUser, logoutUser, AuthUser } from "@/lib/auth";
 import { CHECKIN_STORAGE_KEY } from "@/hooks/useCheckin";
 
 const Profile = () => {
   const navigate = useNavigate();
   const initialReminderSettings = loadDailyReminderSettings();
-  const user = getCurrentUser();
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadUser = async () => {
+      const currentUser = await getCurrentUser();
+      setUser(currentUser);
+      setIsLoading(false);
+    };
+    loadUser();
+  }, []);
 
   const [dailyReminderEnabled, setDailyReminderEnabled] = useState(initialReminderSettings.enabled);
   const [reminderTime, setReminderTime] = useState(initialReminderSettings.time);
@@ -69,13 +79,27 @@ const Profile = () => {
 
   const [shareOpen, setShareOpen] = useState(false);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     localStorage.removeItem(CHECKIN_STORAGE_KEY);
-    logoutUser();
+    await logoutUser();
     navigate("/auth");
   };
 
-  if (!user) return null;
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background max-w-md mx-auto flex items-center justify-center">
+        <Loader2 size={24} className="animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-background max-w-md mx-auto flex items-center justify-center">
+        <p className="text-muted-foreground">Unable to load profile</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background max-w-md mx-auto">
@@ -146,21 +170,21 @@ const Profile = () => {
                   <span className="text-sm font-medium">Copy message</span>
                 </button>
                 <button
-                  onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(`Join me on NUJ - an easy way to stay connected.\n\nGet started at https://charliewhwilson.github.io/NUJ\n\nAdd me by using the ID: ${user.id}`)}`, "_blank")}
+                  onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(`Join me on NUJ - an easy way to stay connected.\n\nGet started at https://charliewhwilson.github.io/NUJ\n\nAdd me by using the ID: ${user.id}`)}`)}
                   className="w-full flex items-center gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors text-left"
                 >
                   <MessageSquare size={17} className="text-muted-foreground" />
                   <span className="text-sm font-medium">WhatsApp</span>
                 </button>
                 <button
-                  onClick={() => window.open(`sms:?&body=${encodeURIComponent(`Join me on NUJ - an easy way to stay connected.\n\nGet started at https://charliewhwilson.github.io/NUJ\n\nAdd me by using the ID: ${user.id}`)}`, "_blank")}
+                  onClick={() => window.open(`sms:?&body=${encodeURIComponent(`Join me on NUJ - an easy way to stay connected.\n\nGet started at https://charliewhwilson.github.io/NUJ\n\nAdd me by using the ID: ${user.id}`)}`)}
                   className="w-full flex items-center gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors text-left"
                 >
                   <Phone size={17} className="text-muted-foreground" />
                   <span className="text-sm font-medium">SMS</span>
                 </button>
                 <button
-                  onClick={() => window.open(`mailto:?subject=${encodeURIComponent("Join me on NUJ!")}&body=${encodeURIComponent(`Join me on NUJ - an easy way to stay connected.\n\nGet started at https://charliewhwilson.github.io/NUJ\n\nAdd me by using the ID: ${user.id}`)}`, "_blank")}
+                  onClick={() => window.open(`mailto:?subject=${encodeURIComponent("Join me on NUJ!")}&body=${encodeURIComponent(`Join me on NUJ - an easy way to stay connected.\n\nGet started at https://charliewhwilson.github.io/NUJ\n\nAdd me by using the ID: ${user.id}`)}`)}
                   className="w-full flex items-center gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors text-left"
                 >
                   <Mail size={17} className="text-muted-foreground" />

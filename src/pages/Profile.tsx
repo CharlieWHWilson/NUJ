@@ -5,6 +5,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Loader2 } from "lucide-react";
@@ -167,6 +168,7 @@ const Profile = () => {
             <DialogContent className="max-w-sm">
               <DialogHeader>
                 <DialogTitle>Send your User ID</DialogTitle>
+                <DialogDescription>Share your ID with mates</DialogDescription>
               </DialogHeader>
               <div className="space-y-2">
                 <button

@@ -81,6 +81,15 @@ const DialogDescription = React.forwardRef<
 ));
 DialogDescription.displayName = DialogPrimitive.Description.displayName;
 
+// Expose DialogDescription to window to guard against stale HMR/runtime bundles
+if (typeof window !== "undefined") {
+  try {
+    (window as any).DialogDescription = DialogDescription;
+  } catch (e) {
+    // ignore; non-critical
+  }
+}
+
 export {
   Dialog,
   DialogPortal,

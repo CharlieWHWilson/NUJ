@@ -159,7 +159,6 @@ const Profile = () => {
                 <DialogTitle>Send your User ID</DialogTitle>
               </DialogHeader>
               <div className="space-y-2">
-                {/* Share message removed from card, only in share options */}
                 <button
                   onClick={() => {
                     navigator.clipboard.writeText(`Join me on NUJ - an easy way to stay connected.\n\nGet started at https://charliewhwilson.github.io/NUJ\n\nAdd me by using the ID: ${user.id}`);
@@ -170,21 +169,24 @@ const Profile = () => {
                   <span className="text-sm font-medium">Copy message</span>
                 </button>
                 <button
-                  onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(`Join me on NUJ - an easy way to stay connected.\n\nGet started at https://charliewhwilson.github.io/NUJ\n\nAdd me by using the ID: ${user.id}`)}`)}
+                  onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(`Join me on NUJ - an easy way to stay connected.\n\nGet started at https://charliewhwilson.github.io/NUJ\n\nAdd me by using the ID: ${user.id}`)}`)
+                  }
                   className="w-full flex items-center gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors text-left"
                 >
                   <MessageSquare size={17} className="text-muted-foreground" />
                   <span className="text-sm font-medium">WhatsApp</span>
                 </button>
                 <button
-                  onClick={() => window.open(`sms:?&body=${encodeURIComponent(`Join me on NUJ - an easy way to stay connected.\n\nGet started at https://charliewhwilson.github.io/NUJ\n\nAdd me by using the ID: ${user.id}`)}`)}
+                  onClick={() => window.open(`sms:?&body=${encodeURIComponent(`Join me on NUJ - an easy way to stay connected.\n\nGet started at https://charliewhwilson.github.io/NUJ\n\nAdd me by using the ID: ${user.id}`)}`)
+                  }
                   className="w-full flex items-center gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors text-left"
                 >
                   <Phone size={17} className="text-muted-foreground" />
                   <span className="text-sm font-medium">SMS</span>
                 </button>
                 <button
-                  onClick={() => window.open(`mailto:?subject=${encodeURIComponent("Join me on NUJ!")}&body=${encodeURIComponent(`Join me on NUJ - an easy way to stay connected.\n\nGet started at https://charliewhwilson.github.io/NUJ\n\nAdd me by using the ID: ${user.id}`)}`)}
+                  onClick={() => window.open(`mailto:?subject=${encodeURIComponent("Join me on NUJ!")}&body=${encodeURIComponent(`Join me on NUJ - an easy way to stay connected.\n\nGet started at https://charliewhwilson.github.io/NUJ\n\nAdd me by using the ID: ${user.id}`)}`)
+                  }
                   className="w-full flex items-center gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors text-left"
                 >
                   <Mail size={17} className="text-muted-foreground" />

@@ -7,10 +7,11 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { TopNav } from "@/components/TopNav";
 import { MateRow, MateAvatar } from "@/components/MateComponents";
-import { mates, groups, nujsReceived, meetUps, saveGroupsToStorage, formatNujTimestamp } from "@/data/mockData";
+import { mates as initialMates, groups, nujsReceived, meetUps, saveGroupsToStorage, formatNujTimestamp, loadMatesFromStorage } from "@/data/mockData";
 import { getNujsSent } from "@/data/nujsSent";
 import { AddMateSheet } from "@/components/AddMateSheet";
 import { NujActionSheet } from "@/components/NujActionSheet";
@@ -43,6 +44,7 @@ const Dashboard = () => {
   const { checkedIn } = useCheckin();
   const { hasJoinedMeetup } = useJoinedMeetups();
   const [addMateOpen, setAddMateOpen] = useState(false);
+  const [mates, setMates] = useState(() => loadMatesFromStorage());
   const [selectedNuj, setSelectedNuj] = useState<string | null>(null);
   const [nujCards, setNujCards] = useState(nujsReceived);
   const [groupsList, setGroupsList] = useState(groups);
@@ -198,6 +200,7 @@ const Dashboard = () => {
             </button>
           </DialogTrigger>
           <DialogContent className="max-w-md">
+            <DialogDescription>This dialog provides information about NUJ and how it works.</DialogDescription>
             <DialogHeader>
               <DialogTitle>What is NUJ?</DialogTitle>
             </DialogHeader>
@@ -396,18 +399,19 @@ const Dashboard = () => {
 
                   <div className="max-h-36 overflow-y-auto space-y-2 pr-1">
                     {filteredMatesForNewGroup.map((mate) => (
-                      <button
+                      <div
                         key={mate.id}
                         onClick={() => toggleNewGroupMate(mate.id)}
-                        className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-muted transition-colors text-left"
+                        className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-muted transition-colors cursor-pointer"
                       >
                         <Checkbox
                           checked={newGroupMateIds.includes(mate.id)}
                           aria-label={`Select ${mate.name}`}
+                          onCheckedChange={() => toggleNewGroupMate(mate.id)}
                         />
                         <MateAvatar initials={mate.initials} size="sm" status={mate.lastCheckin} daysSinceCheckin={mate.daysSinceCheckin} />
                         <span className="text-sm font-medium">{mate.name}</span>
-                      </button>
+                      </div>
                     ))}
                   </div>
 
@@ -587,7 +591,7 @@ const Dashboard = () => {
         </p>
       </div>
 
-      <AddMateSheet open={addMateOpen} onClose={() => setAddMateOpen(false)} />
+      <AddMateSheet open={addMateOpen} onClose={() => setAddMateOpen(false)} onMateAdded={() => setMates(loadMatesFromStorage())} />
       {selectedNujCard && selectedNujMate && (
         <NujActionSheet
           nuj={selectedNujCard}

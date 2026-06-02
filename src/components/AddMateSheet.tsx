@@ -1,25 +1,26 @@
 import { Share2, MessageSquare, Mail, Link, UserSearch, ClipboardCopy, Phone } from "lucide-react";
 import { useState } from "react";
-import { getCurrentUser } from "@/lib/auth";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { supabase } from "@/lib/supabase";
 
 interface AddMateSheetProps {
   open: boolean;
   onClose: () => void;
+  onMateAdded?: () => void;
 }
 
-export const AddMateSheet = ({ open, onClose }: AddMateSheetProps) => {
+export const AddMateSheet = ({ open, onClose, onMateAdded }: AddMateSheetProps) => {
   const [tab, setTab] = useState<'share' | 'find'>('share');
   const [searchId, setSearchId] = useState('');
   const [searchResult, setSearchResult] = useState<null | { name: string; id: string }>(null);
   const [addSuccess, setAddSuccess] = useState(false);
   const [searchError, setSearchError] = useState('');
   const [isSearching, setIsSearching] = useState(false);
+  const user = useCurrentUser();
 
   if (!open) return null;
 
   // Share logic (same as Profile page)
-  const user = getCurrentUser();
   const shareMsg = user
     ? `Join me on NUJ - an easy way to stay connected.\n\nSign up at https://charliewhwilson.github.io/NUJ\n\nThen add me by using the ID: ${user.id}`
     : `Join me on NUJ - an easy way to stay connected.\n\nSign up at https://charliewhwilson.github.io/NUJ\n\nThen add me by using my User ID!`;
@@ -33,17 +34,26 @@ export const AddMateSheet = ({ open, onClose }: AddMateSheetProps) => {
       // Search for user by ID in profiles table
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, name')
+        .select('id, username')
         .eq('id', searchId.trim())
-        .single();
+        .maybeSingle();
 
-      if (error || !data) {
+      if (error) {
+        const message = error.status === 403
+          ? 'Profile lookup blocked by Supabase RLS. Please allow public SELECT on profiles.'
+          : error.message || 'No user found with that ID.';
+        setSearchError(message);
+        setIsSearching(false);
+        return;
+      }
+
+      if (!data) {
         setSearchError('No user found with that ID.');
         setIsSearching(false);
         return;
       }
 
-      setSearchResult({ name: data.name, id: data.id });
+      setSearchResult({ name: data.username, id: data.id });
     } catch (err) {
       setSearchError('Search failed. Please try again.');
     } finally {
@@ -83,6 +93,13 @@ export const AddMateSheet = ({ open, onClose }: AddMateSheetProps) => {
     window.localStorage.setItem("nuj.mates.v1", JSON.stringify(matesArr));
     setAddSuccess(true);
     setSearchError("");
+    onMateAdded?.();
+    setTimeout(() => {
+      setSearchResult(null);
+      setSearchId("");
+      setAddSuccess(false);
+      onClose();
+    }, 1000);
   };
 
   return (
@@ -164,14 +181,15 @@ export const AddMateSheet = ({ open, onClose }: AddMateSheetProps) => {
               </button>
             </div>
             {searchResult && (
-              <button
-                className="mt-2 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors w-full text-left border border-primary/30"
-                onClick={handleAddMate}
-              >
-                <span className="font-medium">{searchResult.name}</span>
-                <span className="block text-xs text-muted-foreground mt-1">User ID: {searchResult.id}</span>
-                <span className="block text-xs text-primary mt-1">Click to add to mates</span>
-              </button>
+              <div className="mt-2 p-3 rounded-lg bg-muted/50 border border-primary/30">
+                <p className="font-medium mb-3">{searchResult.name}</p>
+                <button
+                  onClick={handleAddMate}
+                  className="w-full nuj-btn-primary px-4 py-2 rounded-lg text-sm"
+                >
+                  Add mate
+                </button>
+              </div>
             )}
             {addSuccess && (
               <div className="mt-2 text-sm text-green-600">Mate added!</div>

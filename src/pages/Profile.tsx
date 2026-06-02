@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { ClipboardCopy, MessageSquare, Mail, Phone, Share2 } from "lucide-react";
 import {
   Dialog,
@@ -8,7 +8,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -17,33 +17,20 @@ import {
   saveDailyReminderSettings,
   scheduleDailyReminderNotification,
 } from "@/lib/dailyReminder";
-import { getCurrentUser, logoutUser, AuthUser } from "@/lib/auth";
+import { logoutUser } from "@/lib/auth";
+import { clearAppStorage } from "@/lib/utils";
 import { CHECKIN_STORAGE_KEY } from "@/hooks/useCheckin";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 const Profile = () => {
   const navigate = useNavigate();
   const initialReminderSettings = loadDailyReminderSettings();
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const user = useCurrentUser();
 
-  useEffect(() => {
-    const loadUser = async () => {
-      const currentUser = await getCurrentUser();
-      setUser(currentUser);
-      setIsLoading(false);
-    };
-    loadUser();
-  }, []);
-
-  const [dailyReminderEnabled, setDailyReminderEnabled] = useState(
-    initialReminderSettings.enabled
-  );
+  const [dailyReminderEnabled, setDailyReminderEnabled] = useState(initialReminderSettings.enabled);
   const [reminderTime, setReminderTime] = useState(initialReminderSettings.time);
 
-  const persistReminderSettings = (
-    nextEnabled: boolean,
-    nextTime: string
-  ) => {
+  const persistReminderSettings = (nextEnabled: boolean, nextTime: string) => {
     saveDailyReminderSettings({
       enabled: nextEnabled,
       time: nextTime,
@@ -63,10 +50,9 @@ const Profile = () => {
       return;
     }
 
-    const permission =
-      Notification.permission === "granted"
-        ? "granted"
-        : await Notification.requestPermission();
+    const permission = Notification.permission === "granted"
+      ? "granted"
+      : await Notification.requestPermission();
 
     if (permission !== "granted") {
       alert("Allow notifications to enable daily check-in reminders.");
@@ -87,28 +73,32 @@ const Profile = () => {
   const [shareOpen, setShareOpen] = useState(false);
 
   const handleLogout = async () => {
-    localStorage.removeItem(CHECKIN_STORAGE_KEY);
+    clearAppStorage();
     await logoutUser();
     navigate("/auth");
   };
 
-  if (isLoading) {
+  if (user === undefined) {
     return (
-      <div className="min-h-screen bg-background max-w-md mx-auto flex items-center justify-center">
-        <Loader2 size={24} className="animate-spin text-muted-foreground" />
+      <div className="min-h-screen flex items-center justify-center bg-background text-muted-foreground">
+        Loading profile...
       </div>
     );
   }
 
-  if (!user) {
+  if (user === null) {
     return (
-      <div className="min-h-screen bg-background max-w-md mx-auto flex items-center justify-center">
-        <p className="text-muted-foreground">Unable to load profile</p>
+      <div className="min-h-screen flex items-center justify-center bg-background text-muted-foreground px-5 text-center">
+        <div>
+          <p className="text-lg font-medium">Unable to load profile</p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Your account appears to be authenticated, but profile details could not be retrieved.
+            Refresh the page or log out and back in to recover.
+          </p>
+        </div>
       </div>
     );
   }
-
-  const shareUrl = `Join me on NUJ - an easy way to stay connected.\n\nGet started at https://charliewhwilson.github.io/NUJ\n\nAdd me by using the ID: ${user.id}`;
 
   return (
     <div className="min-h-screen bg-background max-w-md mx-auto">
@@ -122,25 +112,21 @@ const Profile = () => {
         </button>
 
         <h1 className="text-2xl font-bold tracking-tight">Profile</h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          Your account and reminders
-        </p>
+        <p className="text-muted-foreground text-sm mt-1">Your account and reminders</p>
       </div>
 
       <div className="px-5 pb-16 space-y-4">
         <div className="nuj-card p-4 space-y-4">
           <div>
-            <Label>Name</Label>
-            <Input value={user.name} readOnly className="mt-2" />
+            <Label>Username</Label>
+            <Input value={user.username} readOnly className="mt-2" />
           </div>
-          <div>
-            <Label>Email</Label>
-            <Input value={user.email} readOnly className="mt-2" />
-          </div>
-          <div>
-            <Label>Phone</Label>
-            <Input value={user.phone} readOnly className="mt-2" />
-          </div>
+          {user.email && (
+            <div>
+              <Label>Email</Label>
+              <Input value={user.email} readOnly className="mt-2" />
+            </div>
+          )}
           <div className="flex items-center gap-2">
             <Label>User ID:</Label>
             <span className="text-sm text-muted-foreground">{user.id}</span>
@@ -163,17 +149,18 @@ const Profile = () => {
               <Share2 size={16} />
             </button>
           </div>
-
+          {/* Share Dialog */}
           <Dialog open={shareOpen} onOpenChange={setShareOpen}>
             <DialogContent className="max-w-sm">
+              <DialogDescription>This dialog allows you to send your User ID to others.</DialogDescription>
               <DialogHeader>
                 <DialogTitle>Send your User ID</DialogTitle>
-                <DialogDescription>Share your ID with mates</DialogDescription>
               </DialogHeader>
               <div className="space-y-2">
+                {/* Share message removed from card, only in share options */}
                 <button
                   onClick={() => {
-                    navigator.clipboard.writeText(shareUrl);
+                    navigator.clipboard.writeText(`Join me on NUJ - an easy way to stay connected.\n\nGet started at https://charliewhwilson.github.io/NUJ\n\nAdd me by using the ID: ${user.id}`);
                   }}
                   className="w-full flex items-center gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors text-left"
                 >
@@ -181,29 +168,21 @@ const Profile = () => {
                   <span className="text-sm font-medium">Copy message</span>
                 </button>
                 <button
-                  onClick={() =>
-                    window.open(`https://wa.me/?text=${encodeURIComponent(shareUrl)}`)
-                  }
+                  onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(`Join me on NUJ - an easy way to stay connected.\n\nGet started at https://charliewhwilson.github.io/NUJ\n\nAdd me by using the ID: ${user.id}`)}`, "_blank")}
                   className="w-full flex items-center gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors text-left"
                 >
                   <MessageSquare size={17} className="text-muted-foreground" />
                   <span className="text-sm font-medium">WhatsApp</span>
                 </button>
                 <button
-                  onClick={() =>
-                    window.open(`sms:?&body=${encodeURIComponent(shareUrl)}`)
-                  }
+                  onClick={() => window.open(`sms:?&body=${encodeURIComponent(`Join me on NUJ - an easy way to stay connected.\n\nGet started at https://charliewhwilson.github.io/NUJ\n\nAdd me by using the ID: ${user.id}`)}`, "_blank")}
                   className="w-full flex items-center gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors text-left"
                 >
                   <Phone size={17} className="text-muted-foreground" />
                   <span className="text-sm font-medium">SMS</span>
                 </button>
                 <button
-                  onClick={() =>
-                    window.open(
-                      `mailto:?subject=${encodeURIComponent("Join me on NUJ!")}&body=${encodeURIComponent(shareUrl)}`
-                    )
-                  }
+                  onClick={() => window.open(`mailto:?subject=${encodeURIComponent("Join me on NUJ!")}&body=${encodeURIComponent(`Join me on NUJ - an easy way to stay connected.\n\nGet started at https://charliewhwilson.github.io/NUJ\n\nAdd me by using the ID: ${user.id}`)}`, "_blank")}
                   className="w-full flex items-center gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors text-left"
                 >
                   <Mail size={17} className="text-muted-foreground" />
@@ -218,9 +197,7 @@ const Profile = () => {
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="font-medium text-sm">Daily check-in reminder</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Receive a push notification at your selected time
-              </p>
+              <p className="text-xs text-muted-foreground mt-1">Receive a push notification at your selected time</p>
             </div>
             <Switch
               checked={dailyReminderEnabled}
@@ -235,9 +212,7 @@ const Profile = () => {
               id="reminder-time"
               type="time"
               value={reminderTime}
-              onChange={(event) =>
-                handleChangeReminderTime(event.target.value)
-              }
+              onChange={(event) => handleChangeReminderTime(event.target.value)}
               disabled={!dailyReminderEnabled}
               className="mt-2"
             />

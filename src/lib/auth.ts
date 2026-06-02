@@ -2,9 +2,8 @@ import { supabase } from "./supabase";
 
 export interface AuthUser {
   id: string;
-  name: string;
-  email: string;
-  phone: string;
+  username: string;
+  email?: string;
 }
 
 export const registerUser = async (input: {
@@ -14,10 +13,16 @@ export const registerUser = async (input: {
   password: string;
 }) => {
   try {
-    // Create auth user
+    // Create auth user and store basic metadata
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: input.email,
       password: input.password,
+      options: {
+        data: {
+          name: input.name,
+          phone: input.phone,
+        },
+      },
     });
 
     if (authError) {
@@ -28,19 +33,26 @@ export const registerUser = async (input: {
       return { ok: false as const, message: "Registration failed: No user returned" };
     }
 
-    // Create profile
+    if (!authData.session) {
+      return {
+        ok: true as const,
+        requiresEmailConfirmation: true,
+      };
+    }
+
     const { error: profileError } = await supabase.from("profiles").insert({
       id: authData.user.id,
-      name: input.name,
-      email: input.email,
-      phone: input.phone,
+      username: input.name,
     });
 
     if (profileError) {
       return { ok: false as const, message: profileError.message };
     }
 
-    return { ok: true as const };
+    return {
+      ok: true as const,
+      requiresEmailConfirmation: false,
+    };
   } catch (error) {
     return { ok: false as const, message: "Registration failed" };
   }
@@ -71,19 +83,33 @@ export const getCurrentUser = async (): Promise<AuthUser | null> => {
     const { data } = await supabase.auth.getUser();
     if (!data.user) return null;
 
-    const { data: profile, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", data.user.id)
-      .single();
+    const authUser = data.user;
+    const fallbackUsername = authUser.user_metadata?.name ?? authUser.email ?? "Unknown user";
 
-    if (error || !profile) return null;
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("username")
+      .eq("id", authUser.id)
+      .maybeSingle();
+
+    if (profileError) {
+      return null;
+    }
+
+    if (!profile) {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (sessionData.session) {
+        await supabase.from("profiles").insert({
+          id: authUser.id,
+          username: fallbackUsername,
+        });
+      }
+    }
 
     return {
-      id: profile.id,
-      name: profile.name,
-      email: profile.email,
-      phone: profile.phone,
+      id: authUser.id,
+      username: profile?.username ?? fallbackUsername,
+      email: authUser.email ?? undefined,
     };
   } catch {
     return null;

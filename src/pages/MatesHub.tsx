@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
-import { mates } from "@/data/mockData";
+import { loadMatesFromStorage } from "@/data/mockData";
 import { MateRow } from "@/components/MateComponents";
 import { Slider } from "@/components/ui/slider";
 import { AddMateSheet } from "@/components/AddMateSheet";
@@ -16,6 +16,12 @@ const getDaysSinceCheckin = (mate: { lastCheckin: "today" | "yesterday" | "few-d
 const MatesHub = () => {
   const navigate = useNavigate();
   const [matesDayRange, setMatesDayRange] = useState<[number, number]>([0, 31]);
+  const [mates, setMates] = useState(() => loadMatesFromStorage());
+  const [addMateOpen, setAddMateOpen] = useState(false);
+
+  const reloadMates = () => {
+    setMates(loadMatesFromStorage());
+  };
 
   const sortedMates = [...mates].sort((a, b) => getDaysSinceCheckin(a) - getDaysSinceCheckin(b));
 
@@ -23,8 +29,6 @@ const MatesHub = () => {
     const daysSinceCheckin = getDaysSinceCheckin(mate);
     return daysSinceCheckin >= matesDayRange[0] && daysSinceCheckin <= matesDayRange[1];
   });
-
-  const [addMateOpen, setAddMateOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-background max-w-md mx-auto">
@@ -79,7 +83,7 @@ const MatesHub = () => {
         </div>
       </div>
       {addMateOpen && (
-        <AddMateSheet open={addMateOpen} onClose={() => setAddMateOpen(false)} />
+        <AddMateSheet open={addMateOpen} onClose={() => setAddMateOpen(false)} onMateAdded={reloadMates} />
       )}
     </div>
   );

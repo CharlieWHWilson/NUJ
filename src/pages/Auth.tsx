@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { registerUser, loginUser } from "@/lib/auth";
@@ -7,6 +7,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogTrigger,
 } from "@/components/ui/dialog";
 
@@ -26,14 +27,21 @@ const Auth = () => {
   const [registerPassword, setRegisterPassword] = useState("");
   const [registerConfirmPassword, setRegisterConfirmPassword] = useState("");
 
-  const submitLogin = (event: React.FormEvent<HTMLFormElement>) => {
+  const [loading, setLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+
+  const submitLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setErrorMessage("");
+    setSuccessMessage("");
+    setLoading(true);
 
-    const result = loginUser({
+    const result = await loginUser({
       email: loginEmail,
       password: loginPassword,
     });
+
+    setLoading(false);
 
     if (!result.ok) {
       setErrorMessage(result.message);
@@ -43,24 +51,33 @@ const Auth = () => {
     navigate("/");
   };
 
-  const submitRegister = (event: React.FormEvent<HTMLFormElement>) => {
+  const submitRegister = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setErrorMessage("");
+    setSuccessMessage("");
 
     if (registerPassword !== registerConfirmPassword) {
       setErrorMessage("Passwords do not match.");
       return;
     }
 
-    const result = registerUser({
+    setLoading(true);
+    const result = await registerUser({
       name: registerName,
       email: registerEmail,
       phone: registerPhone,
       password: registerPassword,
     });
+    setLoading(false);
 
     if (!result.ok) {
       setErrorMessage(result.message);
+      return;
+    }
+
+    if (result.requiresEmailConfirmation) {
+      setSuccessMessage("Account created. Check your email to verify your account, then log in.");
+      setMode("login");
       return;
     }
 
@@ -98,6 +115,10 @@ const Auth = () => {
 
         {errorMessage && (
           <p className="text-sm text-destructive mb-4">{errorMessage}</p>
+        )}
+
+        {successMessage && (
+          <p className="text-sm text-success mb-4">{successMessage}</p>
         )}
 
         {mode === "login" ? (
@@ -172,6 +193,7 @@ const Auth = () => {
             </button>
           </DialogTrigger>
           <DialogContent className="max-w-md">
+            <DialogDescription>This dialog allows you to send your User ID to others.</DialogDescription>
             <DialogHeader>
               <DialogTitle>What is NUJ?</DialogTitle>
             </DialogHeader>

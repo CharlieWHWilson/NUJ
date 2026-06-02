@@ -4,12 +4,13 @@ import { ArrowLeft, Users, Link2, MessageSquare, Mail, Phone } from "lucide-reac
 import { meetUps, mates } from "@/data/mockData";
 import { MateAvatar } from "@/components/MateComponents";
 import { useJoinedMeetups } from "@/hooks/useJoinedMeetups";
-import { getCurrentUser } from "@/lib/auth";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogTrigger,
 } from "@/components/ui/dialog";
 
@@ -19,12 +20,12 @@ const MeetUpDetail = () => {
   const [shareOpen, setShareOpen] = useState(false);
   const { hasJoinedMeetup, joinMeetup, leaveMeetup } = useJoinedMeetups();
   const meetup = meetUps.find((m) => m.id === id);
+  const currentUser = useCurrentUser();
 
-  if (!meetup) return null;
+  if (!meetup || currentUser === undefined) return null;
 
   const isJoined = hasJoinedMeetup(meetup.id);
-  const currentUser = getCurrentUser();
-  const currentUserName = currentUser?.name?.trim() || "You";
+  const currentUserName = currentUser?.username?.trim() || "You";
   const currentUserInitials = currentUserName
     .split(" ")
     .filter(Boolean)
@@ -88,6 +89,7 @@ const MeetUpDetail = () => {
                 </button>
               </DialogTrigger>
               <DialogContent className="max-w-sm">
+                <DialogDescription>This dialog allows you to share this meet-up with others.</DialogDescription>
                 <DialogHeader>
                   <DialogTitle>Share this meet-up</DialogTitle>
                 </DialogHeader>

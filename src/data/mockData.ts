@@ -1,23 +1,25 @@
 const MATES_STORAGE_KEY = "nuj.mates.v1";
 
+const defaultMates: Mate[] = [];
+
 export const saveMatesToStorage = (nextMates: Mate[]) => {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(MATES_STORAGE_KEY, JSON.stringify(nextMates));
 };
 
 export const loadMatesFromStorage = (): Mate[] => {
-  if (typeof window === "undefined") return [...mates];
+  if (typeof window === "undefined") return [...defaultMates];
   try {
     const rawValue = window.localStorage.getItem(MATES_STORAGE_KEY);
-    if (!rawValue) return [...mates];
+    if (!rawValue) return [...defaultMates];
     const parsedValue: unknown = JSON.parse(rawValue);
-    if (!Array.isArray(parsedValue)) return [...mates];
+    if (!Array.isArray(parsedValue)) return [...defaultMates];
     // Basic validation
     return parsedValue.filter(
       (m) => m && typeof m.id === "string" && typeof m.name === "string" && typeof m.initials === "string"
     );
   } catch {
-    return [...mates];
+    return [...defaultMates];
   }
 };
 export type PresenceStatus = "today" | "yesterday" | "few-days";
@@ -59,35 +61,9 @@ export interface NujReceived {
 
 const GROUPS_STORAGE_KEY = "nuj.groups.v2";
 
-export const mates: Mate[] = [
-  { id: "1", name: "Tom Shelby", initials: "TS", lastCheckin: "today", daysSinceCheckin: 0, group: "Five-a-side" },
-  { id: "2", name: "Jamie Carr", initials: "JC", lastCheckin: "yesterday", daysSinceCheckin: 1, group: "Five-a-side" },
-  { id: "3", name: "Marcus Reid", initials: "MR", lastCheckin: "few-days", daysSinceCheckin: 2, group: "Uni Lot" },
-  { id: "4", name: "Dan Powell", initials: "DP", lastCheckin: "few-days", daysSinceCheckin: 3, group: "Uni Lot" },
-  { id: "5", name: "Luke Haines", initials: "LH", lastCheckin: "few-days", daysSinceCheckin: 4 },
-  { id: "6", name: "Sam Okafor", initials: "SO", lastCheckin: "few-days", daysSinceCheckin: 5, group: "Five-a-side" },
-  { id: "7", name: "Rory Flynn", initials: "RF", lastCheckin: "few-days", daysSinceCheckin: 6 },
-  { id: "8", name: "Aiden Blake", initials: "AB", lastCheckin: "few-days", daysSinceCheckin: 7, group: "Five-a-side" },
-  { id: "9", name: "Ben Carter", initials: "BC", lastCheckin: "few-days", daysSinceCheckin: 8 },
-  { id: "10", name: "Callum Dean", initials: "CD", lastCheckin: "few-days", daysSinceCheckin: 9, group: "Uni Lot" },
-  { id: "11", name: "Ethan Ford", initials: "EF", lastCheckin: "few-days", daysSinceCheckin: 10, group: "Five-a-side" },
-  { id: "12", name: "Finley Grant", initials: "FG", lastCheckin: "few-days", daysSinceCheckin: 12 },
-  { id: "13", name: "George Hale", initials: "GH", lastCheckin: "few-days", daysSinceCheckin: 14, group: "Uni Lot" },
-  { id: "14", name: "Harry Irwin", initials: "HI", lastCheckin: "few-days", daysSinceCheckin: 16, group: "Five-a-side" },
-  { id: "15", name: "Isaac Jones", initials: "IJ", lastCheckin: "few-days", daysSinceCheckin: 18, group: "Uni Lot" },
-  { id: "16", name: "Jacob King", initials: "JK", lastCheckin: "few-days", daysSinceCheckin: 20 },
-  { id: "17", name: "Kai Lewis", initials: "KL", lastCheckin: "few-days", daysSinceCheckin: 22, group: "Five-a-side" },
-  { id: "18", name: "Leon Mason", initials: "LM", lastCheckin: "few-days", daysSinceCheckin: 24 },
-  { id: "19", name: "Mason North", initials: "MN", lastCheckin: "few-days", daysSinceCheckin: 26, group: "Uni Lot" },
-  { id: "20", name: "Noah Owen", initials: "NO", lastCheckin: "few-days", daysSinceCheckin: 28 },
-  { id: "21", name: "Ollie Price", initials: "OP", lastCheckin: "few-days", daysSinceCheckin: 30, group: "Five-a-side" },
-  { id: "22", name: "Parker Quinn", initials: "PQ", lastCheckin: "few-days", daysSinceCheckin: 31 },
-];
+export const mates: Mate[] = loadMatesFromStorage();
 
-const defaultGroups: Group[] = [
-  { id: "g1", name: "Five-a-side", mates: ["1", "2", "6", "8", "11", "14", "17", "21"] },
-  { id: "g2", name: "Uni Lot", mates: ["3", "4", "10", "13", "15", "19"] },
-];
+const defaultGroups: Group[] = [];
 
 const isValidGroup = (value: unknown): value is Group => {
   if (!value || typeof value !== "object") return false;
@@ -130,12 +106,7 @@ const toIsoFromNowOffset = (millisecondsAgo: number): string => {
   return new Date(Date.now() - millisecondsAgo).toISOString();
 };
 
-export const nujsReceived: NujReceived[] = [
-  { id: "n1", fromMateId: "1", fromMateName: "Tom Shelby", fromMateInitials: "TS", sentAt: toIsoFromNowOffset(2 * 60 * 60 * 1000) },
-  { id: "n2", fromMateId: "5", fromMateName: "Luke Haines", fromMateInitials: "LH", sentAt: toIsoFromNowOffset(4 * 60 * 60 * 1000) },
-  { id: "n3", fromMateId: "8", fromMateName: "Aiden Blake", fromMateInitials: "AB", sentAt: toIsoFromNowOffset(5 * 60 * 60 * 1000) },
-  { id: "n4", fromMateId: "11", fromMateName: "Ethan Ford", fromMateInitials: "EF", sentAt: toIsoFromNowOffset(28 * 60 * 60 * 1000) },
-];
+export const nujsReceived: NujReceived[] = [];
 
 export const formatNujTimestamp = (sentAt: string): string => {
   const sentTime = new Date(sentAt).getTime();

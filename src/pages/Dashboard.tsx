@@ -200,7 +200,6 @@ const Dashboard = () => {
             </button>
           </DialogTrigger>
           <DialogContent className="max-w-md">
-            <DialogDescription>This dialog provides information about NUJ and how it works.</DialogDescription>
             <DialogHeader>
               <DialogTitle>What is NUJ?</DialogTitle>
             </DialogHeader>

@@ -1,16 +1,34 @@
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useState } from "react";
 import { ArrowLeft, MessageSquare, Mail, Phone, Trash2 } from "lucide-react";
-import { mates, removeMateFromData } from "@/data/mockData";
+import { loadMatesFromStorage, Mate, removeMateFromData, presenceLabel } from "@/data/mockData";
 import { addNujSent } from "@/data/nujsSent";
 import { MateAvatar } from "@/components/MateComponents";
-import { presenceLabel } from "@/data/mockData";
 
 const MatePage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [showRemovePrompt, setShowRemovePrompt] = useState(false);
-  const mate = mates.find((m) => m.id === id);
+  const [mate, setMate] = useState<Mate | null>(null);
+
+  useEffect(() => {
+    if (!id) {
+      setMate(null);
+      return;
+    }
+    setMate(loadMatesFromStorage().find((m) => m.id === id) ?? null);
+  }, [id]);
+
+  useEffect(() => {
+    const onStorageChange = (event: StorageEvent) => {
+      if (!event.key || event.key === "nuj.mates.v1") {
+        setMate(loadMatesFromStorage().find((m) => m.id === id) ?? null);
+      }
+    };
+
+    window.addEventListener("storage", onStorageChange);
+    return () => window.removeEventListener("storage", onStorageChange);
+  }, [id]);
 
   if (!mate) return null;
 

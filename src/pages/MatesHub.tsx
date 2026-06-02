@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { loadMatesFromStorage } from "@/data/mockData";
@@ -22,6 +22,17 @@ const MatesHub = () => {
   const reloadMates = () => {
     setMates(loadMatesFromStorage());
   };
+
+  useEffect(() => {
+    const onStorageChange = (event: StorageEvent) => {
+      if (!event.key || event.key === "nuj.mates.v1") {
+        reloadMates();
+      }
+    };
+
+    window.addEventListener("storage", onStorageChange);
+    return () => window.removeEventListener("storage", onStorageChange);
+  }, []);
 
   const sortedMates = [...mates].sort((a, b) => getDaysSinceCheckin(a) - getDaysSinceCheckin(b));
 

@@ -54,14 +54,26 @@ const Dashboard = () => {
   // (in case user sends a NUJ from MatePage and returns here)
   // This will update on tab focus or navigation
   React.useEffect(() => {
-    const sync = () => setNujSentCards(getNujsSent());
-    window.addEventListener("focus", sync);
-    window.addEventListener("storage", sync);
+    const syncNujs = () => setNujSentCards(getNujsSent());
+    window.addEventListener("focus", syncNujs);
+    window.addEventListener("storage", syncNujs);
     return () => {
-      window.removeEventListener("focus", sync);
-      window.removeEventListener("storage", sync);
+      window.removeEventListener("focus", syncNujs);
+      window.removeEventListener("storage", syncNujs);
     };
   }, []);
+
+  React.useEffect(() => {
+    const syncMates = (event: StorageEvent) => {
+      if (!event.key || event.key === "nuj.mates.v1") {
+        setMates(loadMatesFromStorage());
+      }
+    };
+
+    window.addEventListener("storage", syncMates);
+    return () => window.removeEventListener("storage", syncMates);
+  }, []);
+
   const [isAddingGroup, setIsAddingGroup] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
   const [groupMateSearch, setGroupMateSearch] = useState("");

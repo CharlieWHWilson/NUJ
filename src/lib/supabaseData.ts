@@ -196,19 +196,47 @@ export const upsertCurrentUserCheckin = async (): Promise<void> => {
   const checkedInAt = new Date().toISOString();
   const checkedInDate = checkedInAt.slice(0, 10);
 
-  const { error } = await supabase.from("checkins").upsert(
-    {
-      user_id: userId,
-      checked_in_at: checkedInAt,
-      checked_in_date: checkedInDate,
-      updated_at: checkedInAt,
-    },
-    { onConflict: "user_id" }
-  );
+  const primaryPayload = {
+    user_id: userId,
+    checked_in_at: checkedInAt,
+    checked_in_date: checkedInDate,
+    updated_at: checkedInAt,
+  };
 
-  if (error) {
-    throw error;
+  const fallbackPayloadWithoutUpdatedAt = {
+    user_id: userId,
+    checked_in_at: checkedInAt,
+    checked_in_date: checkedInDate,
+  };
+
+  const fallbackPayloadMinimal = {
+    user_id: userId,
+    checked_in_at: checkedInAt,
+  };
+
+  const tryUpsert = async (payload: Record<string, string>) => {
+    const { error } = await supabase
+      .from("checkins")
+      .upsert(payload, { onConflict: "user_id" });
+    return error;
+  };
+
+  let error = await tryUpsert(primaryPayload);
+  if (!error) return;
+
+  const primaryMessage = error.message.toLowerCase();
+  if (primaryMessage.includes("updated_at")) {
+    error = await tryUpsert(fallbackPayloadWithoutUpdatedAt);
+    if (!error) return;
   }
+
+  const fallbackMessage = error.message.toLowerCase();
+  if (fallbackMessage.includes("checked_in_date")) {
+    error = await tryUpsert(fallbackPayloadMinimal);
+    if (!error) return;
+  }
+
+  throw error;
 };
 
 export const getLatestCheckinForUser = async (userId: string) => {

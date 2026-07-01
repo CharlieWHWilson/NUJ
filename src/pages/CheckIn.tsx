@@ -71,7 +71,7 @@ const CheckIn = () => {
 
           {error && (
             <p className="text-destructive text-sm mt-5 max-w-xs mx-auto leading-relaxed">
-              Unable to save your check-in right now. Please try again.
+              Unable to save your check-in right now. {error}
             </p>
           )}
         </div>

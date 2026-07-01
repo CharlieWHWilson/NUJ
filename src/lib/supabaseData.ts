@@ -222,6 +222,39 @@ export const upsertCurrentUserCheckin = async (): Promise<void> => {
     return error;
   };
 
+  const writeWithoutUpsert = async (payload: Record<string, string>) => {
+    const { data: existingRow, error: fetchError } = await supabase
+      .from("checkins")
+      .select("user_id")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (fetchError) {
+      throw new Error(fetchError.message || "Failed to read existing check-in row");
+    }
+
+    if (existingRow) {
+      const { error: updateError } = await supabase
+        .from("checkins")
+        .update(payload)
+        .eq("user_id", userId);
+
+      if (updateError) {
+        throw new Error(updateError.message || "Failed to update check-in row");
+      }
+
+      return;
+    }
+
+    const { error: insertError } = await supabase
+      .from("checkins")
+      .insert(payload);
+
+    if (insertError) {
+      throw new Error(insertError.message || "Failed to insert check-in row");
+    }
+  };
+
   let error = await tryUpsert(primaryPayload);
   if (!error) return;
 
@@ -237,7 +270,22 @@ export const upsertCurrentUserCheckin = async (): Promise<void> => {
     if (!error) return;
   }
 
-  throw error;
+  const finalMessage = error.message.toLowerCase();
+  if (finalMessage.includes("on conflict") || finalMessage.includes("unique") || finalMessage.includes("exclusion constraint")) {
+    try {
+      await writeWithoutUpsert(fallbackPayloadWithoutUpdatedAt);
+      return;
+    } catch (writeError) {
+      throw writeError instanceof Error
+        ? writeError
+        : new Error("Check-in save failed in Supabase");
+    }
+  }
+
+  const errorMessage =
+    (error as { message?: string } | null)?.message
+    ?? "Check-in save failed in Supabase";
+  throw new Error(errorMessage);
 };
 
 export const getLatestCheckinForUser = async (userId: string) => {

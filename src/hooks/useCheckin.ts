@@ -7,6 +7,17 @@ import {
 } from "@/lib/supabaseData";
 import { supabase } from "@/lib/supabase";
 
+const toErrorMessage = (error: unknown, fallback: string) => {
+  if (error instanceof Error && error.message) return error.message;
+  if (typeof error === "object" && error !== null && "message" in error) {
+    const maybeMessage = (error as { message?: unknown }).message;
+    if (typeof maybeMessage === "string" && maybeMessage.length > 0) {
+      return maybeMessage;
+    }
+  }
+  return fallback;
+};
+
 export const useCheckin = (currentUserId?: string) => {
   const [checkedIn, setCheckedIn] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -51,7 +62,7 @@ export const useCheckin = (currentUserId?: string) => {
       } catch (err) {
         if (active) {
           setCheckedIn(false);
-          setError(err instanceof Error ? err.message : "Failed to load check-in status");
+          setError(toErrorMessage(err, "Failed to load check-in status"));
           setLoading(false);
         }
       }
@@ -79,7 +90,7 @@ export const useCheckin = (currentUserId?: string) => {
       return true;
     } catch (err) {
       setCheckedIn(false);
-      setError(err instanceof Error ? err.message : "Check-in failed");
+      setError(toErrorMessage(err, "Check-in failed"));
       return false;
     }
   };

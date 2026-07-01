@@ -8,6 +8,7 @@ type NujRow = {
   sender_user_id: string;
   recipient_user_id: string;
   created_at: string;
+  acknowledged_at: string | null;
 };
 
 type MateLookupRow = {
@@ -66,7 +67,7 @@ export const useNujsSupabase = () => {
 
       const { data: receivedData, error: receivedError } = await supabase
         .from("nujs")
-        .select("id, sender_user_id, recipient_user_id, created_at")
+        .select("id, sender_user_id, recipient_user_id, created_at, acknowledged_at")
         .eq("recipient_user_id", currentUserId)
         .order("created_at", { ascending: false });
 
@@ -74,7 +75,7 @@ export const useNujsSupabase = () => {
 
       const { data: sentData, error: sentError } = await supabase
         .from("nujs")
-        .select("id, sender_user_id, recipient_user_id, created_at")
+        .select("id, sender_user_id, recipient_user_id, created_at, acknowledged_at")
         .eq("sender_user_id", currentUserId)
         .order("created_at", { ascending: false });
 
@@ -104,7 +105,9 @@ export const useNujsSupabase = () => {
         }
       }
 
-      const formattedReceived: NujReceived[] = receivedRows.map((row) => {
+      const formattedReceived: NujReceived[] = receivedRows
+        .filter((row) => !row.acknowledged_at)
+        .map((row) => {
         const mate = matesByUserId.get(row.sender_user_id);
         const profile = profilesById.get(row.sender_user_id);
         const resolvedName = mate?.name ?? profile?.username ?? "Unknown mate";
@@ -175,18 +178,18 @@ export const useNujsSupabase = () => {
     }
   };
 
-  const removeReceivedNuj = async (nujId: string) => {
+  const acknowledgeReceivedNuj = async (nujId: string) => {
     try {
-      const { error: deleteError } = await supabase
+      const { error: updateError } = await supabase
         .from("nujs")
-        .delete()
+        .update({ acknowledged_at: new Date().toISOString() })
         .eq("id", nujId);
 
-      if (deleteError) throw deleteError;
+      if (updateError) throw updateError;
 
       setNujsReceived((prev) => prev.filter((n) => n.id !== nujId));
     } catch (err) {
-      console.error("Error removing received NUJ:", err);
+      console.error("Error acknowledging received NUJ:", err);
       throw err;
     }
   };
@@ -197,7 +200,7 @@ export const useNujsSupabase = () => {
     loading,
     error,
     sendNuj,
-    removeReceivedNuj,
+    acknowledgeReceivedNuj,
     refresh,
   };
 };

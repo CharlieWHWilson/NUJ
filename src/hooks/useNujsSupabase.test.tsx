@@ -14,6 +14,7 @@ type SupabaseState = {
     sender_user_id: string;
     recipient_user_id: string;
     created_at: string;
+    acknowledged_at: string | null;
   }>;
   matesByUserId: Record<
     string,
@@ -48,6 +49,7 @@ const supabaseMock = vi.hoisted(() => {
       _filters: [] as Array<{ op: string; field: string; value: any }>,
       _order: undefined as { field: string; ascending: boolean } | undefined,
       _insertPayload: undefined as any,
+      _updatePayload: undefined as any,
       _delete: false,
 
       select(selection: string) {
@@ -81,10 +83,16 @@ const supabaseMock = vi.hoisted(() => {
               sender_user_id: row.sender_user_id,
               recipient_user_id: row.recipient_user_id,
               created_at: "2026-07-01T10:00:00.000Z",
+              acknowledged_at: null,
             });
           }
         }
 
+        return this;
+      },
+
+      update(payload: any) {
+        this._updatePayload = payload;
         return this;
       },
 
@@ -111,6 +119,16 @@ const supabaseMock = vi.hoisted(() => {
 
   const executeQuery = async (query: any): Promise<QueryResult> => {
     const table = query._table;
+
+    if (query._updatePayload && table === "nujs") {
+      const idFilter = query._filters.find((f: any) => f.field === "id");
+      if (idFilter) {
+        state.nujs = state.nujs.map((row) =>
+          row.id === idFilter.value ? { ...row, ...query._updatePayload } : row
+        );
+      }
+      return makeResult(null);
+    }
 
     if (query._delete && table === "nujs") {
       const idFilter = query._filters.find((f: any) => f.field === "id");
@@ -207,6 +225,7 @@ describe("useNujsSupabase", () => {
         sender_user_id: "user-a",
         recipient_user_id: "user-b",
         created_at: "2026-07-01T10:00:00.000Z",
+        acknowledged_at: null,
       },
     ];
     state.currentUserId = "user-b";
@@ -221,13 +240,14 @@ describe("useNujsSupabase", () => {
     expect(result.current.nujsReceived[0].fromMateName).toBe("User A");
   });
 
-  it("recipient can delete a received NUJ", async () => {
+  it("recipient can acknowledge a received NUJ", async () => {
     state.nujs = [
       {
         id: "n-1",
         sender_user_id: "user-a",
         recipient_user_id: "user-b",
         created_at: "2026-07-01T10:00:00.000Z",
+        acknowledged_at: null,
       },
     ];
     state.currentUserId = "user-b";
@@ -239,9 +259,32 @@ describe("useNujsSupabase", () => {
     });
 
     await act(async () => {
-      await result.current.removeReceivedNuj("n-1");
+      await result.current.acknowledgeReceivedNuj("n-1");
     });
 
     expect(result.current.nujsReceived).toHaveLength(0);
+    expect(state.nujs[0].acknowledged_at).not.toBeNull();
+  });
+
+  it("hides acknowledged NUJs from the active inbox while retaining them in storage", async () => {
+    state.nujs = [
+      {
+        id: "n-1",
+        sender_user_id: "user-a",
+        recipient_user_id: "user-b",
+        created_at: "2026-07-01T10:00:00.000Z",
+        acknowledged_at: "2026-07-01T11:00:00.000Z",
+      },
+    ];
+    state.currentUserId = "user-b";
+
+    const { result } = renderHook(() => useNujsSupabase());
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    expect(result.current.nujsReceived).toHaveLength(0);
+    expect(state.nujs).toHaveLength(1);
   });
 });

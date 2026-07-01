@@ -52,7 +52,7 @@ const Dashboard = () => {
   const {
     nujsReceived,
     nujsSent,
-    removeReceivedNuj,
+    acknowledgeReceivedNuj,
   } = useNujsSupabase();
   const [addMateOpen, setAddMateOpen] = useState(false);
   const [selectedNuj, setSelectedNuj] = useState<string | null>(null);
@@ -87,7 +87,7 @@ const Dashboard = () => {
   };
 
   const completeNujAction = async (nujId: string) => {
-    await removeReceivedNuj(nujId);
+    await acknowledgeReceivedNuj(nujId);
     setSelectedNuj(null);
   };
 

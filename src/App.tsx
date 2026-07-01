@@ -20,7 +20,9 @@ import { isAuthenticated } from "./lib/auth";
 
 const queryClient = new QueryClient();
 
-const ProtectedRoute = ({ children, authState }: { children: JSX.Element; authState: "loading" | "authenticated" | "unauthenticated" }) => {
+export type AuthState = "loading" | "authenticated" | "unauthenticated";
+
+const ProtectedRoute = ({ children, authState }: { children: JSX.Element; authState: AuthState }) => {
   if (authState === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background text-muted-foreground">
@@ -34,6 +36,22 @@ const ProtectedRoute = ({ children, authState }: { children: JSX.Element; authSt
   }
 
   return children;
+};
+
+export const HomeRoute = ({ authState }: { authState: AuthState }) => {
+  if (authState === "loading") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background text-muted-foreground">
+        Loading authentication...
+      </div>
+    );
+  }
+
+  if (authState === "authenticated") {
+    return <Navigate to="/check-in" replace />;
+  }
+
+  return <Navigate to="/auth" replace />;
 };
 
 const App = () => {
@@ -67,9 +85,10 @@ const App = () => {
           <Routes>
             <Route
               path="/auth"
-              element={authState === "authenticated" ? <Navigate to="/" replace /> : <Auth />}
+              element={authState === "authenticated" ? <Navigate to="/check-in" replace /> : <Auth />}
             />
-            <Route path="/" element={<ProtectedRoute authState={authState}><CheckIn /></ProtectedRoute>} />
+            <Route path="/" element={<HomeRoute authState={authState} />} />
+            <Route path="/check-in" element={<ProtectedRoute authState={authState}><CheckIn /></ProtectedRoute>} />
             <Route path="/dashboard" element={<ProtectedRoute authState={authState}><Dashboard /></ProtectedRoute>} />
             <Route path="/mates" element={<ProtectedRoute authState={authState}><MatesHub /></ProtectedRoute>} />
             <Route path="/mate/:id" element={<ProtectedRoute authState={authState}><MatePage /></ProtectedRoute>} />

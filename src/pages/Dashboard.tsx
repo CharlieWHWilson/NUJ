@@ -11,11 +11,13 @@ import {
 } from "@/components/ui/dialog";
 import { TopNav } from "@/components/TopNav";
 import { MateRow, MateAvatar } from "@/components/MateComponents";
-import { mates as initialMates, groups, nujsReceived, meetUps, saveGroupsToStorage, formatNujTimestamp, loadMatesFromStorage } from "@/data/mockData";
+import { groups, nujsReceived, meetUps, saveGroupsToStorage, formatNujTimestamp } from "@/data/mockData";
 import { getNujsSent } from "@/data/nujsSent";
 import { AddMateSheet } from "@/components/AddMateSheet";
 import { NujActionSheet } from "@/components/NujActionSheet";
 import { useCheckin } from "@/hooks/useCheckin";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useMatesSupabase } from "@/hooks/useMatesSupabase";
 import { useJoinedMeetups } from "@/hooks/useJoinedMeetups";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
@@ -41,10 +43,11 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const shouldExpandNuj = Boolean((location.state as { expandNuj?: boolean } | null)?.expandNuj);
-  const { checkedIn } = useCheckin();
+  const currentUser = useCurrentUser();
+  const { checkedIn } = useCheckin(currentUser?.id);
   const { hasJoinedMeetup } = useJoinedMeetups();
+  const { mates, refresh: refreshMates } = useMatesSupabase();
   const [addMateOpen, setAddMateOpen] = useState(false);
-  const [mates, setMates] = useState(() => loadMatesFromStorage());
   const [selectedNuj, setSelectedNuj] = useState<string | null>(null);
   const [nujCards, setNujCards] = useState(nujsReceived);
   const [groupsList, setGroupsList] = useState(groups);
@@ -61,17 +64,6 @@ const Dashboard = () => {
       window.removeEventListener("focus", syncNujs);
       window.removeEventListener("storage", syncNujs);
     };
-  }, []);
-
-  React.useEffect(() => {
-    const syncMates = (event: StorageEvent) => {
-      if (!event.key || event.key === "nuj.mates.v1") {
-        setMates(loadMatesFromStorage());
-      }
-    };
-
-    window.addEventListener("storage", syncMates);
-    return () => window.removeEventListener("storage", syncMates);
   }, []);
 
   const [isAddingGroup, setIsAddingGroup] = useState(false);
@@ -602,7 +594,7 @@ const Dashboard = () => {
         </p>
       </div>
 
-      <AddMateSheet open={addMateOpen} onClose={() => setAddMateOpen(false)} onMateAdded={() => setMates(loadMatesFromStorage())} />
+      <AddMateSheet open={addMateOpen} onClose={() => setAddMateOpen(false)} onMateAdded={() => void refreshMates()} />
       {selectedNujCard && selectedNujMate && (
         <NujActionSheet
           nuj={selectedNujCard}

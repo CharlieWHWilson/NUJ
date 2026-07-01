@@ -1,16 +1,88 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import {
+  derivePresenceStatus,
+  getCurrentUserId,
+  getLatestCheckinForUser,
+  upsertCurrentUserCheckin,
+} from "@/lib/supabaseData";
+import { supabase } from "@/lib/supabase";
 
-export const CHECKIN_STORAGE_KEY = "nuj_checkin_date_v2";
+export const useCheckin = (currentUserId?: string) => {
+  const [checkedIn, setCheckedIn] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [authSyncNonce, setAuthSyncNonce] = useState(0);
 
-export const useCheckin = () => {
-  const today = new Date().toDateString();
-  const stored = localStorage.getItem(CHECKIN_STORAGE_KEY);
-  const [checkedIn, setCheckedIn] = useState(stored === today);
+  useEffect(() => {
+    const authSubscription = supabase.auth.onAuthStateChange(() => {
+      setAuthSyncNonce((prev) => prev + 1);
+    });
 
-  const doCheckin = () => {
-    localStorage.setItem(CHECKIN_STORAGE_KEY, today);
-    setCheckedIn(true);
+    return () => {
+      authSubscription.data?.subscription?.unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    const syncCheckinState = async () => {
+      if (active) {
+        setLoading(true);
+        setError(null);
+      }
+
+      const resolvedUserId = currentUserId ?? await getCurrentUserId();
+
+      if (!resolvedUserId) {
+        if (active) {
+          setCheckedIn(false);
+          setLoading(false);
+        }
+        return;
+      }
+
+      try {
+        const latestCheckin = await getLatestCheckinForUser(resolvedUserId);
+        if (active) {
+          setCheckedIn(derivePresenceStatus(latestCheckin) === "today");
+          setLoading(false);
+        }
+      } catch (err) {
+        if (active) {
+          setCheckedIn(false);
+          setError(err instanceof Error ? err.message : "Failed to load check-in status");
+          setLoading(false);
+        }
+      }
+    };
+
+    void syncCheckinState();
+
+    return () => {
+      active = false;
+    };
+  }, [currentUserId, authSyncNonce]);
+
+  const doCheckin = async () => {
+    const resolvedUserId = currentUserId ?? await getCurrentUserId();
+
+    if (!resolvedUserId) {
+      setError("You must be logged in to check in");
+      return false;
+    }
+
+    try {
+      setError(null);
+      await upsertCurrentUserCheckin();
+      setCheckedIn(true);
+      return true;
+    } catch (err) {
+      setCheckedIn(false);
+      setError(err instanceof Error ? err.message : "Check-in failed");
+      return false;
+    }
   };
 
-  return { checkedIn, doCheckin };
+  return { checkedIn, doCheckin, loading, error };
 };

@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
-import { loadMatesFromStorage } from "@/data/mockData";
 import { MateRow } from "@/components/MateComponents";
 import { Slider } from "@/components/ui/slider";
 import { AddMateSheet } from "@/components/AddMateSheet";
+import { useMatesSupabase } from "@/hooks/useMatesSupabase";
 
 const getDaysSinceCheckin = (mate: { lastCheckin: "today" | "yesterday" | "few-days"; daysSinceCheckin?: number }) => {
   if (typeof mate.daysSinceCheckin === "number") return mate.daysSinceCheckin;
@@ -16,23 +16,8 @@ const getDaysSinceCheckin = (mate: { lastCheckin: "today" | "yesterday" | "few-d
 const MatesHub = () => {
   const navigate = useNavigate();
   const [matesDayRange, setMatesDayRange] = useState<[number, number]>([0, 31]);
-  const [mates, setMates] = useState(() => loadMatesFromStorage());
+  const { mates, refresh: refreshMates } = useMatesSupabase();
   const [addMateOpen, setAddMateOpen] = useState(false);
-
-  const reloadMates = () => {
-    setMates(loadMatesFromStorage());
-  };
-
-  useEffect(() => {
-    const onStorageChange = (event: StorageEvent) => {
-      if (!event.key || event.key === "nuj.mates.v1") {
-        reloadMates();
-      }
-    };
-
-    window.addEventListener("storage", onStorageChange);
-    return () => window.removeEventListener("storage", onStorageChange);
-  }, []);
 
   const sortedMates = [...mates].sort((a, b) => getDaysSinceCheckin(a) - getDaysSinceCheckin(b));
 
@@ -94,7 +79,7 @@ const MatesHub = () => {
         </div>
       </div>
       {addMateOpen && (
-        <AddMateSheet open={addMateOpen} onClose={() => setAddMateOpen(false)} onMateAdded={reloadMates} />
+        <AddMateSheet open={addMateOpen} onClose={() => setAddMateOpen(false)} onMateAdded={() => void refreshMates()} />
       )}
     </div>
   );

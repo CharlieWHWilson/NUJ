@@ -1,14 +1,18 @@
 import { useNavigate } from "react-router-dom";
 import { TopNav } from "@/components/TopNav";
 import { useCheckin } from "@/hooks/useCheckin";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 const CheckIn = () => {
   const navigate = useNavigate();
-  const { checkedIn, doCheckin } = useCheckin();
+  const currentUser = useCurrentUser();
+  const { checkedIn, doCheckin, error } = useCheckin(currentUser?.id);
 
-  const handleCheckin = () => {
-    doCheckin();
-    setTimeout(() => navigate("/dashboard", { state: { expandNuj: true } }), 300);
+  const handleCheckin = async () => {
+    const saved = await doCheckin();
+    if (saved) {
+      setTimeout(() => navigate("/dashboard", { state: { expandNuj: true } }), 300);
+    }
   };
 
   return (
@@ -62,6 +66,12 @@ const CheckIn = () => {
           {checkedIn && (
             <p className="text-muted-foreground text-sm mt-12 max-w-xs mx-auto leading-relaxed">
               Your mates will see you've checked in
+            </p>
+          )}
+
+          {error && (
+            <p className="text-destructive text-sm mt-5 max-w-xs mx-auto leading-relaxed">
+              Unable to save your check-in right now. Please try again.
             </p>
           )}
         </div>

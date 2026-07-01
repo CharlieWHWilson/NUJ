@@ -117,8 +117,13 @@ export const getCurrentUser = async (): Promise<AuthUser | null> => {
 };
 
 export const isAuthenticated = async (): Promise<boolean> => {
-  const { data } = await supabase.auth.getSession();
-  return !!data.session;
+  try {
+    const { data, error } = await supabase.auth.getUser();
+    if (error) return false;
+    return !!data.user;
+  } catch {
+    return false;
+  }
 };
 
 export const logoutUser = async () => {

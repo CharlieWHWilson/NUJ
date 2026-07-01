@@ -57,7 +57,7 @@ export const MateAvatar = ({ initials, size = "md", status, daysSinceCheckin }: 
       {status && status === "today" && (
         <span
           className={cn("absolute rounded-full bg-background flex items-center justify-center", todayBadgeClasses[size])}
-          title={presenceLabel(status, resolvedDays ?? undefined)}
+          title={presenceLabel(status, resolvedDays ?? undefined, undefined)}
         >
           👋
         </span>
@@ -89,7 +89,7 @@ export const MateRow = ({ mate, onClick, showGroup = true }: MateRowProps) => {
       <div className="flex-1 min-w-0">
         <p className="font-medium text-sm text-foreground truncate">{mate.name}</p>
         <p className="text-xs text-muted-foreground mt-0.5">
-          {presenceLabel(mate.lastCheckin, mate.daysSinceCheckin)}
+          {presenceLabel(mate.lastCheckin, mate.daysSinceCheckin, mate.lastCheckinAt)}
           {showGroup && mate.group ? ` · ${mate.group}` : ""}
         </p>
       </div>

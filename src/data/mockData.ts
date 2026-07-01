@@ -5,6 +5,29 @@ const defaultMates: Mate[] = [];
 export const saveMatesToStorage = (nextMates: Mate[]) => {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(MATES_STORAGE_KEY, JSON.stringify(nextMates));
+  mates = nextMates;
+};
+
+export const addMateToData = (nextMate: Mate) => {
+  const updatedMates = [...mates, nextMate];
+  saveMatesToStorage(updatedMates);
+  return nextMate;
+};
+
+export const updateMateCheckinById = (mateId: string, lastCheckin: PresenceStatus, daysSinceCheckin?: number) => {
+  const existingMateIndex = mates.findIndex((mate) => mate.id === mateId);
+  if (existingMateIndex === -1) return false;
+
+  const updatedMate = {
+    ...mates[existingMateIndex],
+    lastCheckin,
+    daysSinceCheckin,
+  };
+
+  const updatedMates = [...mates];
+  updatedMates[existingMateIndex] = updatedMate;
+  saveMatesToStorage(updatedMates);
+  return true;
 };
 
 export const loadMatesFromStorage = (): Mate[] => {
@@ -30,6 +53,7 @@ export interface Mate {
   initials: string;
   lastCheckin: PresenceStatus;
   daysSinceCheckin?: number;
+  lastCheckinAt?: string;
   group?: string;
 }
 
@@ -61,7 +85,7 @@ export interface NujReceived {
 
 const GROUPS_STORAGE_KEY = "nuj.groups.v2";
 
-export const mates: Mate[] = loadMatesFromStorage();
+export let mates: Mate[] = loadMatesFromStorage();
 
 const defaultGroups: Group[] = [];
 
@@ -277,7 +301,25 @@ export const meetUps: MeetUp[] = [
   },
 ];
 
-export const presenceLabel = (status: PresenceStatus, daysSinceCheckin?: number): string => {
+export const presenceLabel = (status: PresenceStatus, daysSinceCheckin?: number, lastCheckinAt?: string): string => {
+  if (lastCheckinAt) {
+    const checkedInTs = new Date(lastCheckinAt).getTime();
+    if (!Number.isNaN(checkedInTs)) {
+      const elapsedMs = Date.now() - checkedInTs;
+      if (elapsedMs < 60_000) return "Just now";
+
+      const elapsedMinutes = Math.floor(elapsedMs / 60_000);
+      if (elapsedMinutes < 60) return `${elapsedMinutes}m ago`;
+
+      const elapsedHours = Math.floor(elapsedMinutes / 60);
+      if (elapsedHours < 24) return `${elapsedHours}h ago`;
+
+      const elapsedDays = Math.floor(elapsedHours / 24);
+      if (elapsedDays === 1) return "Yesterday";
+      return `${elapsedDays} days ago`;
+    }
+  }
+
   if (typeof daysSinceCheckin === "number") {
     if (daysSinceCheckin <= 0) return "Today";
     if (daysSinceCheckin === 1) return "Yesterday";
@@ -306,5 +348,6 @@ export const removeMateFromData = (mateId: string) => {
     meetup.participatingMates = meetup.participatingMates.filter((id) => id !== mateId);
   });
 
+  saveMatesToStorage(mates);
   return true;
 };

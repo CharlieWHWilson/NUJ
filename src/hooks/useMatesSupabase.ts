@@ -1,78 +1,46 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { Mate, PresenceStatus } from "@/data/mockData";
+import type { Mate } from "@/data/mockData";
+import { addCurrentUserMate, fetchCurrentUserMates } from "@/lib/supabaseData";
 
 export const useMatesSupabase = () => {
   const [mates, setMates] = useState<Mate[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchMates = async () => {
-      try {
-        setLoading(true);
-        const { data: userData } = await supabase.auth.getUser();
-        if (!userData.user) {
-          setMates([]);
-          setLoading(false);
-          return;
-        }
-
-        const { data, error: fetchError } = await supabase
-          .from("mates")
-          .select("*")
-          .eq("user_id", userData.user.id)
-          .order("name");
-
-        if (fetchError) throw fetchError;
-
-        const formattedMates: Mate[] = (data || []).map((mate: any) => ({
-          id: mate.id,
-          name: mate.name,
-          initials: mate.initials,
-          lastCheckin: mate.last_checkin as PresenceStatus,
-          daysSinceCheckin: mate.days_since_checkin || undefined,
-        }));
-
-        setMates(formattedMates);
-        setError(null);
-      } catch (err) {
-        console.error("Error fetching mates:", err);
-        setError(err instanceof Error ? err.message : "Failed to fetch mates");
-        setMates([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchMates();
+  const refresh = useCallback(async () => {
+    try {
+      setLoading(true);
+      const fetchedMates = await fetchCurrentUserMates();
+      setMates(fetchedMates);
+      setError(null);
+    } catch (err) {
+      console.error("Error fetching mates:", err);
+      setError(err instanceof Error ? err.message : "Failed to fetch mates");
+      setMates([]);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const addMate = async (mate: Omit<Mate, "id">) => {
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  const addMate = async (mate: Omit<Mate, "id"> & { mateUserId: string }) => {
     try {
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user) throw new Error("Not authenticated");
-
-      const { data, error: insertError } = await supabase
-        .from("mates")
-        .insert({
-          user_id: userData.user.id,
-          name: mate.name,
-          initials: mate.initials,
-          last_checkin: mate.lastCheckin,
-          days_since_checkin: mate.daysSinceCheckin,
-        })
-        .select()
-        .single();
-
-      if (insertError) throw insertError;
+      const newMateRow = await addCurrentUserMate({
+        mateUserId: mate.mateUserId,
+        name: mate.name,
+        initials: mate.initials,
+      });
 
       const newMate: Mate = {
-        id: data.id,
-        name: data.name,
-        initials: data.initials,
-        lastCheckin: data.last_checkin,
-        daysSinceCheckin: data.days_since_checkin,
+        id: newMateRow.id,
+        name: newMateRow.name,
+        initials: newMateRow.initials,
+        lastCheckin: newMateRow.last_checkin ?? "few-days",
+        daysSinceCheckin: newMateRow.days_since_checkin ?? undefined,
       };
 
       setMates((prev) => [...prev, newMate]);
@@ -131,9 +99,6 @@ export const useMatesSupabase = () => {
     addMate,
     removeMate,
     updateMate,
-    refresh: () => {
-      setLoading(true);
-      setError(null);
-    },
+    refresh,
   };
 };

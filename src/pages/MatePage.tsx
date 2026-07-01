@@ -96,7 +96,7 @@ const MatePage = () => {
           <div>
             <h1 className="text-2xl font-bold tracking-tight">{mate.name}</h1>
             <p className="text-muted-foreground text-sm mt-1">
-              Last checked in: {presenceLabel(mate.lastCheckin, mate.daysSinceCheckin)}
+              Last checked in: {presenceLabel(mate.lastCheckin, mate.daysSinceCheckin, mate.lastCheckinAt)}
               {mate.group ? ` · ${mate.group}` : ""}
             </p>
           </div>

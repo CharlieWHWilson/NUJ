@@ -1,6 +1,7 @@
-import { Share2, MessageSquare, Mail, Link, UserSearch, ClipboardCopy, Phone } from "lucide-react";
+import { Share2, MessageSquare, Mail, ClipboardCopy, Phone } from "lucide-react";
 import { useState } from "react";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { addCurrentUserMate, buildMateInitials, searchProfileById } from "@/lib/supabaseData";
 import { supabase } from "@/lib/supabase";
 
 interface AddMateSheetProps {
@@ -31,21 +32,7 @@ export const AddMateSheet = ({ open, onClose, onMateAdded }: AddMateSheetProps) 
     setIsSearching(true);
 
     try {
-      // Search for user by ID in profiles table
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, username')
-        .eq('id', searchId.trim())
-        .maybeSingle();
-
-      if (error) {
-        const message = error.status === 403
-          ? 'Profile lookup blocked by Supabase RLS. Please allow public SELECT on profiles.'
-          : error.message || 'No user found with that ID.';
-        setSearchError(message);
-        setIsSearching(false);
-        return;
-      }
+      const data = await searchProfileById(searchId.trim());
 
       if (!data) {
         setSearchError('No user found with that ID.');
@@ -55,51 +42,56 @@ export const AddMateSheet = ({ open, onClose, onMateAdded }: AddMateSheetProps) 
 
       setSearchResult({ name: data.username, id: data.id });
     } catch (err) {
-      setSearchError('Search failed. Please try again.');
+      const message = err instanceof Error && err.message.includes('permission')
+        ? 'Profile lookup blocked by Supabase RLS. Please allow public SELECT on profiles.'
+        : 'Search failed. Please try again.';
+      setSearchError(message);
     } finally {
       setIsSearching(false);
     }
   };
 
-  const handleAddMate = () => {
+  const handleAddMate = async () => {
     setAddSuccess(false);
     if (!searchResult) return;
 
-    // Load mates from storage
-    let matesArr = [];
-    try {
-      const raw = window.localStorage.getItem("nuj.mates.v1");
-      matesArr = raw ? JSON.parse(raw) : [];
-    } catch { 
-      matesArr = []; 
-    }
-
-    // Prevent duplicates
-    if (matesArr.some((m: any) => m.id === searchResult.id)) {
-      setAddSuccess(false);
-      setSearchError("Mate already added.");
+    if (user?.id && searchResult.id === user.id) {
+      setSearchError('You cannot add yourself as a mate.');
       return;
     }
 
-    // Add new mate
-    const initials = searchResult.name.split(" ").map((n) => n[0]).join("").toUpperCase();
-    const newMate = { 
-      id: searchResult.id, 
-      name: searchResult.name, 
-      initials, 
-      lastCheckin: "few-days" 
-    };
-    matesArr.push(newMate);
-    window.localStorage.setItem("nuj.mates.v1", JSON.stringify(matesArr));
-    setAddSuccess(true);
-    setSearchError("");
-    onMateAdded?.();
-    setTimeout(() => {
-      setSearchResult(null);
-      setSearchId("");
-      setAddSuccess(false);
-      onClose();
-    }, 1000);
+    try {
+      const { data: existingMate } = await supabase
+        .from('mates')
+        .select('id')
+        .eq('user_id', user?.id)
+        .eq('mate_user_id', searchResult.id)
+        .maybeSingle();
+
+      if (existingMate) {
+        setSearchError('Mate already added.');
+        return;
+      }
+
+      await addCurrentUserMate({
+        mateUserId: searchResult.id,
+        name: searchResult.name,
+        initials: buildMateInitials(searchResult.name),
+      });
+
+      setAddSuccess(true);
+      setSearchError('');
+      onMateAdded?.();
+      setTimeout(() => {
+        setSearchResult(null);
+        setSearchId('');
+        setAddSuccess(false);
+        onClose();
+      }, 1000);
+    } catch (err) {
+      console.error('Error adding mate:', err);
+      setSearchError(err instanceof Error ? err.message : 'Unable to add mate right now.');
+    }
   };
 
   return (

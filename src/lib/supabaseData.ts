@@ -171,6 +171,7 @@ export const addCurrentUserMate = async (params: {
   const { data, error } = await supabase
     .from("mates")
     .insert({
+      id: crypto.randomUUID(),
       user_id: userId,
       mate_user_id: params.mateUserId,
       name: params.name,

@@ -5,6 +5,16 @@
 alter table if exists public.mates
   drop constraint if exists mates_mate_id_fkey;
 
+-- Drop mates policies temporarily so type changes are allowed.
+drop policy if exists "Users can view their own mates" on public.mates;
+drop policy if exists "Users can create mates" on public.mates;
+drop policy if exists "Users can update their own mates" on public.mates;
+drop policy if exists "Users can delete their own mates" on public.mates;
+drop policy if exists mates_select_own on public.mates;
+drop policy if exists mates_insert_own on public.mates;
+drop policy if exists mates_update_own on public.mates;
+drop policy if exists mates_delete_own on public.mates;
+
 -- Drop any FK currently attached to column id on public.mates.
 do $$
 declare
@@ -62,3 +72,17 @@ begin
       on delete cascade;
   end if;
 end $$;
+
+alter table public.mates enable row level security;
+
+create policy "Users can view their own mates" on public.mates
+  for select using (auth.uid() = user_id);
+
+create policy "Users can create mates" on public.mates
+  for insert with check (auth.uid() = user_id);
+
+create policy "Users can update their own mates" on public.mates
+  for update using (auth.uid() = user_id);
+
+create policy "Users can delete their own mates" on public.mates
+  for delete using (auth.uid() = user_id);

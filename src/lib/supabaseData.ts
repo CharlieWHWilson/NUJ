@@ -148,6 +148,7 @@ export const fetchCurrentUserMates = async (): Promise<Mate[]> => {
 
     return {
       id: row.id,
+      mateUserId: row.mate_user_id ?? undefined,
       name: row.name,
       initials: row.initials,
       lastCheckin: presenceStatus,

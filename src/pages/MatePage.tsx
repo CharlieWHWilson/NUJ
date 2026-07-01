@@ -1,34 +1,22 @@
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, MessageSquare, Mail, Phone, Trash2 } from "lucide-react";
-import { loadMatesFromStorage, Mate, removeMateFromData, presenceLabel } from "@/data/mockData";
-import { addNujSent } from "@/data/nujsSent";
+import { presenceLabel } from "@/data/mockData";
 import { MateAvatar } from "@/components/MateComponents";
+import { useMatesSupabase } from "@/hooks/useMatesSupabase";
+import { useNujsSupabase } from "@/hooks/useNujsSupabase";
 
 const MatePage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [showRemovePrompt, setShowRemovePrompt] = useState(false);
-  const [mate, setMate] = useState<Mate | null>(null);
+  const { mates, removeMate } = useMatesSupabase();
+  const { sendNuj } = useNujsSupabase();
 
-  useEffect(() => {
-    if (!id) {
-      setMate(null);
-      return;
-    }
-    setMate(loadMatesFromStorage().find((m) => m.id === id) ?? null);
-  }, [id]);
-
-  useEffect(() => {
-    const onStorageChange = (event: StorageEvent) => {
-      if (!event.key || event.key === "nuj.mates.v1") {
-        setMate(loadMatesFromStorage().find((m) => m.id === id) ?? null);
-      }
-    };
-
-    window.addEventListener("storage", onStorageChange);
-    return () => window.removeEventListener("storage", onStorageChange);
-  }, [id]);
+  const mate = useMemo(
+    () => mates.find((item) => item.id === id) ?? null,
+    [mates, id]
+  );
 
   if (!mate) return null;
 
@@ -38,14 +26,13 @@ const MatePage = () => {
       icon: <span className="text-lg leading-none">👉</span>,
       description: "A silent signal. No words needed.",
       primary: true,
-      onClick: () => {
-        addNujSent({
-          id: `s${Date.now()}`,
-          toMateId: mate.id,
-          toMateName: mate.name,
-          toMateInitials: mate.initials,
-          sentAt: new Date().toISOString(),
-        });
+      onClick: async () => {
+        if (!mate.mateUserId) {
+          alert(`Unable to send NUJ to ${mate.name}. Please remove and re-add this mate by User ID.`);
+          return;
+        }
+
+        await sendNuj(mate.mateUserId);
         alert(`NUJ sent to ${mate.name}`);
       },
     },
@@ -72,11 +59,9 @@ const MatePage = () => {
     },
   ];
 
-  const handleRemoveMate = () => {
-    const removed = removeMateFromData(mate.id);
-    if (removed) {
-      navigate("/mates");
-    }
+  const handleRemoveMate = async () => {
+    await removeMate(mate.id);
+    navigate("/mates");
   };
 
   return (

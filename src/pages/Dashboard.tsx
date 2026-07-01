@@ -11,13 +11,13 @@ import {
 } from "@/components/ui/dialog";
 import { TopNav } from "@/components/TopNav";
 import { MateRow, MateAvatar } from "@/components/MateComponents";
-import { groups, nujsReceived, meetUps, saveGroupsToStorage, formatNujTimestamp } from "@/data/mockData";
-import { getNujsSent } from "@/data/nujsSent";
+import { groups, meetUps, saveGroupsToStorage, formatNujTimestamp } from "@/data/mockData";
 import { AddMateSheet } from "@/components/AddMateSheet";
 import { NujActionSheet } from "@/components/NujActionSheet";
 import { useCheckin } from "@/hooks/useCheckin";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useMatesSupabase } from "@/hooks/useMatesSupabase";
+import { useNujsSupabase } from "@/hooks/useNujsSupabase";
 import { useJoinedMeetups } from "@/hooks/useJoinedMeetups";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
@@ -47,24 +47,14 @@ const Dashboard = () => {
   const { checkedIn } = useCheckin(currentUser?.id);
   const { hasJoinedMeetup } = useJoinedMeetups();
   const { mates, refresh: refreshMates } = useMatesSupabase();
+  const {
+    nujsReceived,
+    nujsSent,
+    removeReceivedNuj,
+  } = useNujsSupabase();
   const [addMateOpen, setAddMateOpen] = useState(false);
   const [selectedNuj, setSelectedNuj] = useState<string | null>(null);
-  const [nujCards, setNujCards] = useState(nujsReceived);
   const [groupsList, setGroupsList] = useState(groups);
-  const [nujSentCards, setNujSentCards] = useState(getNujsSent());
-
-  // Keep sent NUJs in sync with localStorage
-  // (in case user sends a NUJ from MatePage and returns here)
-  // This will update on tab focus or navigation
-  React.useEffect(() => {
-    const syncNujs = () => setNujSentCards(getNujsSent());
-    window.addEventListener("focus", syncNujs);
-    window.addEventListener("storage", syncNujs);
-    return () => {
-      window.removeEventListener("focus", syncNujs);
-      window.removeEventListener("storage", syncNujs);
-    };
-  }, []);
 
   const [isAddingGroup, setIsAddingGroup] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
@@ -95,12 +85,12 @@ const Dashboard = () => {
     setOpenSections((current) => ({ ...current, [section]: open }));
   };
 
-  const completeNujAction = (nujId: string) => {
-    setNujCards((currentCards) => currentCards.filter((card) => card.id !== nujId));
+  const completeNujAction = async (nujId: string) => {
+    await removeReceivedNuj(nujId);
     setSelectedNuj(null);
   };
 
-  const selectedNujCard = nujCards.find((nuj) => nuj.id === selectedNuj);
+  const selectedNujCard = nujsReceived.find((nuj) => nuj.id === selectedNuj);
   const selectedNujMate = selectedNujCard
     ? mates.find((mate) => mate.id === selectedNujCard.fromMateId)
     : undefined;
@@ -230,7 +220,7 @@ const Dashboard = () => {
 
       <div className="px-5 pb-24 space-y-4">
         {/* Side-by-side NUJ boxes */}
-        {(nujCards.length > 0 || nujSentCards.length > 0) && (
+        {(nujsReceived.length > 0 || nujsSent.length > 0) && (
           <div className="flex gap-4">
             {/* You have x NUJs box */}
             <div className={`transition-all duration-300 w-1/2 min-w-[120px]`}> 
@@ -243,7 +233,7 @@ const Dashboard = () => {
                     <button className="w-full flex items-center justify-between text-left px-4 py-3 hover:bg-muted/40 focus:outline-none">
                       <div className="flex items-center gap-2">
                         <span className="text-sm" aria-hidden="true">👉</span>
-                        <h2 className="font-semibold text-sm tracking-tight">You have {nujCards.length} NUJs</h2>
+                        <h2 className="font-semibold text-sm tracking-tight">You have {nujsReceived.length} NUJs</h2>
                       </div>
                       <div className="flex items-center gap-2">
                         <ChevronDown
@@ -256,7 +246,7 @@ const Dashboard = () => {
                   {openSections.nuj && (
                     <CollapsibleContent className="pt-3 px-4 pb-4">
                       <div className="flex gap-2 overflow-x-auto pb-1">
-                        {nujCards.length > 0 ? nujCards.map((nuj) => {
+                        {nujsReceived.length > 0 ? nujsReceived.map((nuj) => {
                           const nujMate = mates.find((mate) => mate.id === nuj.fromMateId);
                           return (
                             <button
@@ -307,7 +297,7 @@ const Dashboard = () => {
                   {openSections.nujSent && (
                     <CollapsibleContent className="pt-3 px-4 pb-4">
                       <div className="flex gap-2 overflow-x-auto pb-1">
-                        {nujSentCards.length > 0 ? nujSentCards.map((nuj) => {
+                        {nujsSent.length > 0 ? nujsSent.map((nuj) => {
                           const nujMate = mates.find((mate) => mate.id === nuj.toMateId);
                           return (
                             <div

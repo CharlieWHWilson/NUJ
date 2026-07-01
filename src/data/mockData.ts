@@ -49,6 +49,7 @@ export type PresenceStatus = "today" | "yesterday" | "few-days";
 
 export interface Mate {
   id: string;
+  mateUserId?: string;
   name: string;
   initials: string;
   lastCheckin: PresenceStatus;

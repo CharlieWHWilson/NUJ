@@ -37,6 +37,7 @@ export const useMatesSupabase = () => {
 
       const newMate: Mate = {
         id: newMateRow.id,
+        mateUserId: newMateRow.mate_user_id ?? undefined,
         name: newMateRow.name,
         initials: newMateRow.initials,
         lastCheckin: newMateRow.last_checkin ?? "few-days",

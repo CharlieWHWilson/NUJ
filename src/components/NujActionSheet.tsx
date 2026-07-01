@@ -6,14 +6,14 @@ interface NujActionSheetProps {
   nuj: NujReceived;
   mate: Mate;
   onClose: () => void;
-  onActionComplete: (nujId: string) => void;
+  onActionComplete: (nujId: string) => void | Promise<void>;
 }
 
 export const NujActionSheet = ({ nuj, mate, onClose, onActionComplete }: NujActionSheetProps) => {
   if (!nuj || !mate) return null;
 
-  const completeAction = () => {
-    onActionComplete(nuj.id);
+  const completeAction = async () => {
+    await onActionComplete(nuj.id);
     onClose();
   };
 
@@ -21,33 +21,33 @@ export const NujActionSheet = ({ nuj, mate, onClose, onActionComplete }: NujActi
     {
       label: "Acknowledge NUJ",
       icon: <span className="text-base leading-none">👉</span>,
-      onClick: () => {
+      onClick: async () => {
         alert(`NUJ sent back to ${mate.name}`);
-        completeAction();
+        await completeAction();
       },
     },
     {
       label: "WhatsApp",
       icon: <MessageSquare size={18} />,
-      onClick: () => {
+      onClick: async () => {
         window.open(`https://wa.me/`, "_blank");
-        completeAction();
+        await completeAction();
       },
     },
     {
       label: "SMS",
       icon: <Phone size={18} />,
-      onClick: () => {
+      onClick: async () => {
         window.open(`sms:`, "_blank");
-        completeAction();
+        await completeAction();
       },
     },
     {
       label: "Email",
       icon: <Mail size={18} />,
-      onClick: () => {
+      onClick: async () => {
         window.open(`mailto:`, "_blank");
-        completeAction();
+        await completeAction();
       },
     },
   ];

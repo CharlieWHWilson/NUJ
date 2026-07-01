@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { Group } from "@/data/mockData";
 
@@ -7,57 +7,55 @@ export const useGroupsSupabase = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchGroups = async () => {
-      try {
-        setLoading(true);
-        const { data: userData } = await supabase.auth.getUser();
-        if (!userData.user) {
-          setGroups([]);
-          setLoading(false);
-          return;
-        }
-
-        // Fetch groups
-        const { data: groupsData, error: groupsError } = await supabase
-          .from("groups")
-          .select("*")
-          .eq("user_id", userData.user.id)
-          .order("name");
-
-        if (groupsError) throw groupsError;
-
-        // For each group, fetch its mates
-        const groupsWithMates: Group[] = await Promise.all(
-          (groupsData || []).map(async (group: any) => {
-            const { data: mateIds, error: matesError } = await supabase
-              .from("group_mates")
-              .select("mate_id")
-              .eq("group_id", group.id);
-
-            if (matesError) throw matesError;
-
-            return {
-              id: group.id,
-              name: group.name,
-              mates: (mateIds || []).map((m: any) => m.mate_id),
-            };
-          })
-        );
-
-        setGroups(groupsWithMates);
-        setError(null);
-      } catch (err) {
-        console.error("Error fetching groups:", err);
-        setError(err instanceof Error ? err.message : "Failed to fetch groups");
+  const refresh = useCallback(async () => {
+    try {
+      setLoading(true);
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) {
         setGroups([]);
-      } finally {
         setLoading(false);
+        return;
       }
-    };
 
-    fetchGroups();
+      const { data: groupsData, error: groupsError } = await supabase
+        .from("groups")
+        .select("*")
+        .eq("user_id", userData.user.id)
+        .order("name");
+
+      if (groupsError) throw groupsError;
+
+      const groupsWithMates: Group[] = await Promise.all(
+        (groupsData || []).map(async (group: any) => {
+          const { data: mateIds, error: matesError } = await supabase
+            .from("group_mates")
+            .select("mate_id")
+            .eq("group_id", group.id);
+
+          if (matesError) throw matesError;
+
+          return {
+            id: group.id,
+            name: group.name,
+            mates: (mateIds || []).map((m: any) => m.mate_id),
+          };
+        })
+      );
+
+      setGroups(groupsWithMates);
+      setError(null);
+    } catch (err) {
+      console.error("Error fetching groups:", err);
+      setError(err instanceof Error ? err.message : "Failed to fetch groups");
+      setGroups([]);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
 
   const addGroup = async (groupName: string, mateIds: string[]) => {
     try {
@@ -153,6 +151,34 @@ export const useGroupsSupabase = () => {
     }
   };
 
+  const updateGroup = async (groupId: string, updates: { name?: string; mateIds?: string[] }) => {
+    try {
+      if (updates.name !== undefined) {
+        const { error: nameError } = await supabase
+          .from("groups")
+          .update({ name: updates.name })
+          .eq("id", groupId);
+
+        if (nameError) throw nameError;
+      }
+
+      if (updates.mateIds !== undefined) {
+        await updateGroupMates(groupId, updates.mateIds);
+      } else {
+        setGroups((prev) =>
+          prev.map((group) =>
+            group.id === groupId
+              ? { ...group, ...(updates.name !== undefined ? { name: updates.name } : {}) }
+              : group
+          )
+        );
+      }
+    } catch (err) {
+      console.error("Error updating group:", err);
+      throw err;
+    }
+  };
+
   return {
     groups,
     loading,
@@ -160,9 +186,7 @@ export const useGroupsSupabase = () => {
     addGroup,
     removeGroup,
     updateGroupMates,
-    refresh: () => {
-      setLoading(true);
-      setError(null);
-    },
+    updateGroup,
+    refresh,
   };
 };

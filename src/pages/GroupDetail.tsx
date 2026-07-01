@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Plus, X } from "lucide-react";
-import { mates, groups, saveGroupsToStorage } from "@/data/mockData";
 import { MateAvatar, MateRow } from "@/components/MateComponents";
 import { useParams } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
+import { useMatesSupabase } from "@/hooks/useMatesSupabase";
+import { useGroupsSupabase } from "@/hooks/useGroupsSupabase";
 
 const getDaysSinceCheckin = (mate: { lastCheckin: "today" | "yesterday" | "few-days"; daysSinceCheckin?: number }) => {
   if (typeof mate.daysSinceCheckin === "number") return mate.daysSinceCheckin;
@@ -17,6 +18,8 @@ const getDaysSinceCheckin = (mate: { lastCheckin: "today" | "yesterday" | "few-d
 const GroupDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { mates } = useMatesSupabase();
+  const { groups, updateGroup, removeGroup } = useGroupsSupabase();
   const group = groups.find((g) => g.id === id);
   const [isEditing, setIsEditing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -66,29 +69,26 @@ const GroupDetail = () => {
     });
   };
 
-  const persistGroupEdits = () => {
+  const persistGroupEdits = async () => {
     if (!group) return;
 
     const normalizedName = groupName.trim();
     const nextGroupName = normalizedName || group.name;
 
-    group.name = nextGroupName;
-    group.mates = groupMateIds;
-    saveGroupsToStorage(groups);
+    await updateGroup(group.id, {
+      name: nextGroupName,
+      mateIds: groupMateIds,
+    });
     setGroupName(nextGroupName);
   };
 
-  const deleteGroup = () => {
+  const deleteGroup = async () => {
     if (!group) return;
 
     const confirmed = window.confirm(`Delete ${group.name}?`);
     if (!confirmed) return;
 
-    const groupIndex = groups.findIndex((candidate) => candidate.id === group.id);
-    if (groupIndex === -1) return;
-
-    groups.splice(groupIndex, 1);
-    saveGroupsToStorage(groups);
+    await removeGroup(group.id);
     navigate("/dashboard");
   };
 
@@ -117,9 +117,9 @@ const GroupDetail = () => {
             <h1 className="text-2xl font-bold tracking-tight">{groupName}</h1>
           )}
           <button
-            onClick={() => {
+            onClick={async () => {
               if (isEditing) {
-                persistGroupEdits();
+                await persistGroupEdits();
               }
               setIsEditing((editing) => !editing);
               setSearchQuery("");

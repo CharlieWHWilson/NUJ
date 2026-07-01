@@ -11,13 +11,14 @@ import {
 } from "@/components/ui/dialog";
 import { TopNav } from "@/components/TopNav";
 import { MateRow, MateAvatar } from "@/components/MateComponents";
-import { groups, meetUps, saveGroupsToStorage, formatNujTimestamp } from "@/data/mockData";
+import { meetUps, formatNujTimestamp } from "@/data/mockData";
 import { AddMateSheet } from "@/components/AddMateSheet";
 import { NujActionSheet } from "@/components/NujActionSheet";
 import { useCheckin } from "@/hooks/useCheckin";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useMatesSupabase } from "@/hooks/useMatesSupabase";
 import { useNujsSupabase } from "@/hooks/useNujsSupabase";
+import { useGroupsSupabase } from "@/hooks/useGroupsSupabase";
 import { useJoinedMeetups } from "@/hooks/useJoinedMeetups";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
@@ -47,6 +48,7 @@ const Dashboard = () => {
   const { checkedIn } = useCheckin(currentUser?.id);
   const { hasJoinedMeetup } = useJoinedMeetups();
   const { mates, refresh: refreshMates } = useMatesSupabase();
+  const { groups: groupsList, addGroup } = useGroupsSupabase();
   const {
     nujsReceived,
     nujsSent,
@@ -54,7 +56,6 @@ const Dashboard = () => {
   } = useNujsSupabase();
   const [addMateOpen, setAddMateOpen] = useState(false);
   const [selectedNuj, setSelectedNuj] = useState<string | null>(null);
-  const [groupsList, setGroupsList] = useState(groups);
 
   const [isAddingGroup, setIsAddingGroup] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
@@ -92,7 +93,7 @@ const Dashboard = () => {
 
   const selectedNujCard = nujsReceived.find((nuj) => nuj.id === selectedNuj);
   const selectedNujMate = selectedNujCard
-    ? mates.find((mate) => mate.id === selectedNujCard.fromMateId)
+    ? mates.find((mate) => mate.id === selectedNujCard.fromMateId || mate.mateUserId === selectedNujCard.fromMateId)
     : undefined;
 
   const filteredMatesForNewGroup = sortedMates.filter((mate) => {
@@ -110,20 +111,11 @@ const Dashboard = () => {
     });
   };
 
-  const handleCreateGroup = () => {
+  const handleCreateGroup = async () => {
     const normalizedName = newGroupName.trim();
     if (!normalizedName || newGroupMateIds.length === 0) return;
 
-    const newGroup = {
-      id: `g${Date.now()}`,
-      name: normalizedName,
-      mates: newGroupMateIds,
-    };
-
-    const nextGroups = [...groupsList, newGroup];
-    groups.splice(0, groups.length, ...nextGroups);
-    saveGroupsToStorage(nextGroups);
-    setGroupsList(nextGroups);
+    await addGroup(normalizedName, newGroupMateIds);
 
     setNewGroupName("");
     setGroupMateSearch("");

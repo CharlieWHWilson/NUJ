@@ -23,8 +23,8 @@ export const AddMateSheet = ({ open, onClose, onMateAdded }: AddMateSheetProps) 
 
   // Share logic (same as Profile page)
   const shareMsg = user
-    ? `Join me on NUJ - an easy way to stay connected.\n\nSign up at https://charliewhwilson.github.io/NUJ\n\nThen add me by using the ID: ${user.id}`
-    : `Join me on NUJ - an easy way to stay connected.\n\nSign up at https://charliewhwilson.github.io/NUJ\n\nThen add me by using my User ID!`;
+    ? `Join me on NUJ - an easy way to stay connected.\n\nSign up at https://nuj-omega.vercel.app/auth\n\nAdd me as a 'mate' by using my ID: ${user.id}`
+    : `Join me on NUJ - an easy way to stay connected.\n\nSign up at https://nuj-omega.vercel.app/auth\n\nAdd me as a 'mate' by using my User ID!`;
 
   const handleSearch = async () => {
     setSearchError('');

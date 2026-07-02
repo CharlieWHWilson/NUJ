@@ -122,7 +122,9 @@ export const useNujsSupabase = () => {
         };
       });
 
-      const formattedSent: NujSent[] = sentRows.map((row) => {
+      const formattedSent: NujSent[] = sentRows
+        .filter((row) => !row.acknowledged_at)
+        .map((row) => {
         const mate = matesByUserId.get(row.recipient_user_id);
         const profile = profilesById.get(row.recipient_user_id);
         const resolvedName = mate?.name ?? profile?.username ?? "Unknown mate";

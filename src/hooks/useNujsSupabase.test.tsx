@@ -287,4 +287,26 @@ describe("useNujsSupabase", () => {
     expect(result.current.nujsReceived).toHaveLength(0);
     expect(state.nujs).toHaveLength(1);
   });
+
+  it("hides acknowledged NUJs from the active outbox while retaining them in storage", async () => {
+    state.nujs = [
+      {
+        id: "n-1",
+        sender_user_id: "user-a",
+        recipient_user_id: "user-b",
+        created_at: "2026-07-01T10:00:00.000Z",
+        acknowledged_at: "2026-07-01T11:00:00.000Z",
+      },
+    ];
+    state.currentUserId = "user-a";
+
+    const { result } = renderHook(() => useNujsSupabase());
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    expect(result.current.nujsSent).toHaveLength(0);
+    expect(state.nujs).toHaveLength(1);
+  });
 });

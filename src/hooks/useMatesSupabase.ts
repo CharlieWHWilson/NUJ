@@ -27,6 +27,43 @@ export const useMatesSupabase = () => {
     void refresh();
   }, [refresh]);
 
+  useEffect(() => {
+    const handleCheckinUpdated = () => {
+      void refresh();
+    };
+
+    window.addEventListener("nuj:checkin-updated", handleCheckinUpdated);
+
+    return () => {
+      window.removeEventListener("nuj:checkin-updated", handleCheckinUpdated);
+    };
+  }, [refresh]);
+
+  useEffect(() => {
+    const handleFocus = () => {
+      void refresh();
+    };
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        void refresh();
+      }
+    };
+
+    const intervalId = window.setInterval(() => {
+      void refresh();
+    }, 60_000);
+
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [refresh]);
+
   const addMate = async (mate: Omit<Mate, "id"> & { mateUserId: string }) => {
     try {
       const newMateRow = await addCurrentUserMate({

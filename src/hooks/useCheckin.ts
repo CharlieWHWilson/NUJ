@@ -87,6 +87,7 @@ export const useCheckin = (currentUserId?: string) => {
       setError(null);
       await upsertCurrentUserCheckin();
       setCheckedIn(true);
+      window.dispatchEvent(new Event("nuj:checkin-updated"));
       return true;
     } catch (err) {
       setCheckedIn(false);

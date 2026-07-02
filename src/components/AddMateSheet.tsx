@@ -22,9 +22,7 @@ export const AddMateSheet = ({ open, onClose, onMateAdded }: AddMateSheetProps) 
   if (!open) return null;
 
   // Share logic (same as Profile page)
-  const shareMsg = user
-    ? `Join me on NUJ - an easy way to stay connected.\n\nSign up at nuj.social\n\nAdd me as a 'mate' by using my ID: ${user.id}`
-    : `Join me on NUJ - an easy way to stay connected.\n\nSign up at nuj.social\n\nAdd me as a 'mate' by using my User ID!`;
+  const shareMsg = user?.id ?? "";
 
   const handleSearch = async () => {
     setSearchError('');

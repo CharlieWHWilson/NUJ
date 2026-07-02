@@ -5,7 +5,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
@@ -152,7 +151,6 @@ const Profile = () => {
           {/* Share Dialog */}
           <Dialog open={shareOpen} onOpenChange={setShareOpen}>
             <DialogContent className="max-w-sm">
-              <DialogDescription>This dialog allows you to send your User ID to others.</DialogDescription>
               <DialogHeader>
                 <DialogTitle>Send your User ID</DialogTitle>
               </DialogHeader>

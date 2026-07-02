@@ -158,7 +158,7 @@ const Profile = () => {
                 {/* Share message removed from card, only in share options */}
                 <button
                   onClick={() => {
-                    navigator.clipboard.writeText(`Join me on NUJ - an easy way to stay connected.\n\nSign up at https://nuj-omega.vercel.app/auth\n\nAdd me as a 'mate' by using my ID: ${user.id}`);
+                    navigator.clipboard.writeText(`Join me on NUJ - an easy way to stay connected.\n\nSign up at nuj.social\n\nAdd me as a 'mate' by using my ID: ${user.id}`);
                   }}
                   className="w-full flex items-center gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors text-left"
                 >
@@ -166,21 +166,21 @@ const Profile = () => {
                   <span className="text-sm font-medium">Copy message</span>
                 </button>
                 <button
-                  onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(`Join me on NUJ - an easy way to stay connected.\n\nSign up at https://nuj-omega.vercel.app/auth\n\nAdd me as a 'mate' by using my ID: ${user.id}`)}`, "_blank")}
+                  onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(`Join me on NUJ - an easy way to stay connected.\n\nSign up at nuj.social\n\nAdd me as a 'mate' by using my ID: ${user.id}`)}`, "_blank")}
                   className="w-full flex items-center gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors text-left"
                 >
                   <MessageSquare size={17} className="text-muted-foreground" />
                   <span className="text-sm font-medium">WhatsApp</span>
                 </button>
                 <button
-                  onClick={() => window.open(`sms:?&body=${encodeURIComponent(`Join me on NUJ - an easy way to stay connected.\n\nSign up at https://nuj-omega.vercel.app/auth\n\nAdd me as a 'mate' by using my ID: ${user.id}`)}`, "_blank")}
+                  onClick={() => window.open(`sms:?&body=${encodeURIComponent(`Join me on NUJ - an easy way to stay connected.\n\nSign up at nuj.social\n\nAdd me as a 'mate' by using my ID: ${user.id}`)}`, "_blank")}
                   className="w-full flex items-center gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors text-left"
                 >
                   <Phone size={17} className="text-muted-foreground" />
                   <span className="text-sm font-medium">SMS</span>
                 </button>
                 <button
-                  onClick={() => window.open(`mailto:?subject=${encodeURIComponent("Join me on NUJ!")}&body=${encodeURIComponent(`Join me on NUJ - an easy way to stay connected.\n\nSign up at https://nuj-omega.vercel.app/auth\n\nAdd me as a 'mate' by using my ID: ${user.id}`)}`, "_blank")}
+                  onClick={() => window.open(`mailto:?subject=${encodeURIComponent("Join me on NUJ!")}&body=${encodeURIComponent(`Join me on NUJ - an easy way to stay connected.\n\nSign up at nuj.social\n\nAdd me as a 'mate' by using my ID: ${user.id}`)}`, "_blank")}
                   className="w-full flex items-center gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors text-left"
                 >
                   <Mail size={17} className="text-muted-foreground" />

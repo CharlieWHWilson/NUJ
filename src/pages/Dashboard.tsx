@@ -195,8 +195,8 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <div className="flex items-center justify-between px-2 pt-2 pb-2">
-        <span className="font-bold text-xl text-black select-none" style={{ minWidth: 32 }}>
+      <div className="flex items-center justify-between px-4 pt-2 pb-2">
+        <span className="font-bold text-[27px] leading-none text-black select-none" style={{ minWidth: 42 }}>
           NUJ
         </span>
         <div className="flex items-center gap-2">
@@ -204,10 +204,10 @@ const Dashboard = () => {
           <Dialog>
           <DialogTrigger asChild>
             <button
-              className="w-7 h-7 flex items-center justify-center rounded-full bg-muted text-foreground hover:bg-secondary transition-colors"
+              className="w-9 h-9 flex items-center justify-center rounded-full bg-muted text-foreground hover:bg-secondary transition-colors"
               aria-label="What is NUJ?"
             >
-              <HelpCircle size={16} />
+              <HelpCircle size={21} />
             </button>
           </DialogTrigger>
           <DialogContent className="max-w-md">

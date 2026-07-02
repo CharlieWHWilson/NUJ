@@ -27,10 +27,10 @@ export const TopNav = ({ onAddMate, showButtonsOnly }: TopNavProps) => {
         )}
         <button
           onClick={() => navigate("/profile")}
-          className="w-7 h-7 flex items-center justify-center rounded-full bg-muted text-foreground hover:bg-secondary transition-colors"
+          className="w-9 h-9 flex items-center justify-center rounded-full bg-muted text-foreground hover:bg-secondary transition-colors"
           aria-label="Profile"
         >
-          <UserCircle size={14} strokeWidth={1.8} />
+          <UserCircle size={19} strokeWidth={1.8} />
         </button>
       </div>
     );

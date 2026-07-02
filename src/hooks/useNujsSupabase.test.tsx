@@ -218,6 +218,31 @@ describe("useNujsSupabase", () => {
     expect(result.current.nujsSent[0].toMateName).toBe("User B");
   });
 
+  it("blocks sending a second active NUJ to the same recipient", async () => {
+    state.nujs = [
+      {
+        id: "n-1",
+        sender_user_id: "user-a",
+        recipient_user_id: "user-b",
+        created_at: "2026-07-01T10:00:00.000Z",
+        acknowledged_at: null,
+      },
+    ];
+
+    const { result } = renderHook(() => useNujsSupabase());
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    await expect(result.current.sendNuj("user-b")).rejects.toThrow(
+      "An active NUJ is already waiting for acknowledgement."
+    );
+
+    expect(state.nujs).toHaveLength(1);
+    expect(result.current.nujsSent).toHaveLength(1);
+  });
+
   it("recipient sees NUJ in inbox after login", async () => {
     state.nujs = [
       {

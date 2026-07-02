@@ -11,18 +11,20 @@ interface TopNavProps {
 export const TopNav = ({ onAddMate, showButtonsOnly }: TopNavProps) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const isCheckin = location.pathname === "/";
+  const isCheckin = location.pathname === "/" || location.pathname === "/check-in";
 
   if (showButtonsOnly) {
     return (
       <div className="flex items-center gap-2">
-        <button
-          onClick={onAddMate}
-          className="w-7 h-7 flex items-center justify-center rounded-full bg-muted text-foreground hover:bg-secondary transition-colors"
-          aria-label="Add mate"
-        >
-          <Plus size={14} strokeWidth={2.2} />
-        </button>
+        {onAddMate && (
+          <button
+            onClick={onAddMate}
+            className="w-7 h-7 flex items-center justify-center rounded-full bg-muted text-foreground hover:bg-secondary transition-colors"
+            aria-label="Add mate"
+          >
+            <Plus size={14} strokeWidth={2.2} />
+          </button>
+        )}
         <button
           onClick={() => navigate("/profile")}
           className="w-7 h-7 flex items-center justify-center rounded-full bg-muted text-foreground hover:bg-secondary transition-colors"

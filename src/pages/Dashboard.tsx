@@ -200,7 +200,7 @@ const Dashboard = () => {
           NUJ
         </span>
         <div className="flex items-center gap-2">
-          <TopNav onAddMate={() => setAddMateOpen(true)} showButtonsOnly />
+          <TopNav showButtonsOnly />
           <Dialog>
           <DialogTrigger asChild>
             <button

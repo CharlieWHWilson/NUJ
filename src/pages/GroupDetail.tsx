@@ -35,7 +35,7 @@ const GroupDetail = () => {
 
   const groupMates = useMemo(
     () => mates.filter((mate) => groupMateIds.includes(mate.id)),
-    [groupMateIds],
+    [groupMateIds, mates],
   );
 
   const filteredGroupMates = useMemo(() => {
@@ -161,7 +161,12 @@ const GroupDetail = () => {
 
           <div className="mt-3">
             <div className="flex justify-start mb-2">
-              <span className="text-xs text-muted-foreground">{filteredGroupMates.length} not checked in for {matesDayRange[0]} days</span>
+              <span className="text-xs text-muted-foreground">
+                Showing {filteredGroupMates.length} of {groupMates.length} mates
+                {matesDayRange[0] === 0 && matesDayRange[1] === 31
+                  ? ""
+                  : ` with last check-in ${matesDayRange[0]}-${matesDayRange[1]} days ago`}
+              </span>
             </div>
             <Slider
               value={matesDayRange}

@@ -3,6 +3,8 @@ import { supabase } from "@/lib/supabase";
 import { NujReceived } from "@/data/mockData";
 import { NujSent } from "@/data/nujsSent";
 
+export const ACTIVE_NUJ_EXISTS_ERROR = "An active NUJ is already waiting for acknowledgement.";
+
 type NujRow = {
   id: string;
   sender_user_id: string;
@@ -161,6 +163,21 @@ export const useNujsSupabase = () => {
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) throw new Error("Not authenticated");
 
+      const { data: existingNujs, error: existingNujsError } = await supabase
+        .from("nujs")
+        .select("id, acknowledged_at")
+        .eq("sender_user_id", userData.user.id)
+        .eq("recipient_user_id", recipientUserId);
+
+      if (existingNujsError) throw existingNujsError;
+
+      const hasPendingNuj = ((existingNujs as Pick<NujRow, "id" | "acknowledged_at">[] | null) || [])
+        .some((row) => !row.acknowledged_at);
+
+      if (hasPendingNuj) {
+        throw new Error(ACTIVE_NUJ_EXISTS_ERROR);
+      }
+
       const { data, error: insertError } = await supabase
         .from("nujs")
         .insert({
@@ -176,6 +193,9 @@ export const useNujsSupabase = () => {
       return data;
     } catch (err) {
       console.error("Error sending NUJ:", err);
+      if (typeof err === "object" && err !== null && "code" in err && err.code === "23505") {
+        throw new Error(ACTIVE_NUJ_EXISTS_ERROR);
+      }
       throw err;
     }
   };

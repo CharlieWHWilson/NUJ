@@ -4,7 +4,8 @@ import { ArrowLeft, MessageSquare, Mail, Phone, Trash2 } from "lucide-react";
 import { presenceLabel } from "@/data/mockData";
 import { MateAvatar } from "@/components/MateComponents";
 import { useMatesSupabase } from "@/hooks/useMatesSupabase";
-import { useNujsSupabase } from "@/hooks/useNujsSupabase";
+import { toast } from "@/components/ui/sonner";
+import { ACTIVE_NUJ_EXISTS_ERROR, useNujsSupabase } from "@/hooks/useNujsSupabase";
 
 const MatePage = () => {
   const { id } = useParams();
@@ -28,12 +29,27 @@ const MatePage = () => {
       primary: true,
       onClick: async () => {
         if (!mate.mateUserId) {
-          alert(`Unable to send NUJ to ${mate.name}. Please remove and re-add this mate by User ID.`);
+          toast(`Unable to send NUJ to ${mate.name}`, {
+            description: "Please remove and re-add this mate by User ID.",
+          });
           return;
         }
 
-        await sendNuj(mate.mateUserId);
-        alert(`NUJ sent to ${mate.name}`);
+        try {
+          await sendNuj(mate.mateUserId);
+          toast(`NUJ sent to ${mate.name}`);
+        } catch (err) {
+          if (err instanceof Error && err.message === ACTIVE_NUJ_EXISTS_ERROR) {
+            toast(`NUJ already pending for ${mate.name}`, {
+              description: "You can send another NUJ once they acknowledge the current one.",
+            });
+            return;
+          }
+
+          toast(`Unable to send NUJ to ${mate.name}`, {
+            description: "Please try again in a moment.",
+          });
+        }
       },
     },
     {

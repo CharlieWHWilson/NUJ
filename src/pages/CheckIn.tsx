@@ -16,7 +16,7 @@ const CheckIn = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col max-w-md mx-auto">
+    <div className="relative min-h-screen bg-background flex flex-col max-w-md mx-auto">
       <TopNav />
 
       <div className="flex-1 flex flex-col items-center justify-center px-6 pb-20">
@@ -64,9 +64,18 @@ const CheckIn = () => {
           )}
 
           {checkedIn && (
-            <p className="text-muted-foreground text-sm mt-12 max-w-xs mx-auto leading-relaxed">
-              Your mates will see you've checked in
-            </p>
+            <div className="mt-12">
+              <p className="text-muted-foreground text-sm max-w-xs mx-auto leading-relaxed">
+                Your mates will see you've checked in
+              </p>
+
+              <button
+                onClick={() => navigate("/dashboard")}
+                className="mt-[12vh] inline-flex items-center justify-center rounded-full border border-muted-foreground/40 px-5 py-3 text-base font-medium text-muted-foreground shadow-sm transition-colors hover:border-foreground/30 hover:text-foreground"
+              >
+                See who's around →
+              </button>
+            </div>
           )}
 
           {error && (
@@ -77,16 +86,6 @@ const CheckIn = () => {
         </div>
       </div>
 
-      <div className="pb-10 text-center">
-        {checkedIn && (
-          <button
-            onClick={() => navigate("/dashboard")}
-            className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground transition-colors"
-          >
-            See who's around →
-          </button>
-        )}
-      </div>
     </div>
   );
 };

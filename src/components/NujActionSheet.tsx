@@ -22,7 +22,7 @@ export const NujActionSheet = ({ nuj, mate, onClose, onActionComplete }: NujActi
       label: "Acknowledge NUJ",
       icon: <span className="text-base leading-none">👉</span>,
       onClick: async () => {
-        alert(`NUJ sent back to ${mate.name}`);
+        alert(`Acknowledged NUJ from ${mate.name}`);
         await completeAction();
       },
     },

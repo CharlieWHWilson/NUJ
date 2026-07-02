@@ -7,7 +7,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
   DialogTrigger,
 } from "@/components/ui/dialog";
 
@@ -193,7 +192,6 @@ const Auth = () => {
             </button>
           </DialogTrigger>
           <DialogContent className="max-w-md">
-            <DialogDescription>This dialog allows you to send your User ID to others.</DialogDescription>
             <DialogHeader>
               <DialogTitle>What is NUJ?</DialogTitle>
             </DialogHeader>

@@ -2,6 +2,23 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { Group } from "@/data/mockData";
 
+const isMissingGroupMatesTableError = (error: unknown) => {
+  if (!error || typeof error !== "object") return false;
+
+  const maybeError = error as { code?: unknown; message?: unknown };
+  const message = typeof maybeError.message === "string" ? maybeError.message : "";
+
+  return maybeError.code === "PGRST205" && message.includes("public.group_mates");
+};
+
+const toGroupError = (error: unknown) => {
+  if (isMissingGroupMatesTableError(error)) {
+    return new Error("Database schema is missing public.group_mates. Run migration 015_ensure_group_mates_table.sql and retry.");
+  }
+
+  return error instanceof Error ? error : new Error("Group operation failed");
+};
+
 export const useGroupsSupabase = () => {
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,7 +49,16 @@ export const useGroupsSupabase = () => {
             .select("mate_id")
             .eq("group_id", group.id);
 
-          if (matesError) throw matesError;
+          if (matesError) {
+            if (isMissingGroupMatesTableError(matesError)) {
+              return {
+                id: group.id,
+                name: group.name,
+                mates: [],
+              };
+            }
+            throw matesError;
+          }
 
           return {
             id: group.id,
@@ -45,8 +71,9 @@ export const useGroupsSupabase = () => {
       setGroups(groupsWithMates);
       setError(null);
     } catch (err) {
-      console.error("Error fetching groups:", err);
-      setError(err instanceof Error ? err.message : "Failed to fetch groups");
+      const normalizedError = toGroupError(err);
+      console.error("Error fetching groups:", normalizedError);
+      setError(normalizedError.message);
       setGroups([]);
     } finally {
       setLoading(false);
@@ -85,7 +112,7 @@ export const useGroupsSupabase = () => {
             }))
           );
 
-        if (linkError) throw linkError;
+        if (linkError) throw toGroupError(linkError);
       }
 
       const newGroup: Group = {
@@ -97,8 +124,9 @@ export const useGroupsSupabase = () => {
       setGroups((prev) => [...prev, newGroup]);
       return newGroup;
     } catch (err) {
-      console.error("Error adding group:", err);
-      throw err;
+      const normalizedError = toGroupError(err);
+      console.error("Error adding group:", normalizedError);
+      throw normalizedError;
     }
   };
 
@@ -139,15 +167,16 @@ export const useGroupsSupabase = () => {
             }))
           );
 
-        if (insertError) throw insertError;
+        if (insertError) throw toGroupError(insertError);
       }
 
       setGroups((prev) =>
         prev.map((g) => (g.id === groupId ? { ...g, mates: mateIds } : g))
       );
     } catch (err) {
-      console.error("Error updating group mates:", err);
-      throw err;
+      const normalizedError = toGroupError(err);
+      console.error("Error updating group mates:", normalizedError);
+      throw normalizedError;
     }
   };
 

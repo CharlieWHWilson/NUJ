@@ -58,6 +58,8 @@ const Dashboard = () => {
   const [selectedNuj, setSelectedNuj] = useState<string | null>(null);
 
   const [isAddingGroup, setIsAddingGroup] = useState(false);
+  const [isCreatingGroup, setIsCreatingGroup] = useState(false);
+  const [createGroupError, setCreateGroupError] = useState<string | null>(null);
   const [newGroupName, setNewGroupName] = useState("");
   const [groupMateSearch, setGroupMateSearch] = useState("");
   const [newGroupMateIds, setNewGroupMateIds] = useState<string[]>([]);
@@ -111,16 +113,39 @@ const Dashboard = () => {
     });
   };
 
+  const setNewGroupMateChecked = (mateId: string, checked: boolean) => {
+    setNewGroupMateIds((currentIds) => {
+      const alreadySelected = currentIds.includes(mateId);
+      if (checked && !alreadySelected) {
+        return [...currentIds, mateId];
+      }
+      if (!checked && alreadySelected) {
+        return currentIds.filter((id) => id !== mateId);
+      }
+      return currentIds;
+    });
+  };
+
   const handleCreateGroup = async () => {
     const normalizedName = newGroupName.trim();
     if (!normalizedName || newGroupMateIds.length === 0) return;
 
-    await addGroup(normalizedName, newGroupMateIds);
+    try {
+      setCreateGroupError(null);
+      setIsCreatingGroup(true);
+      await addGroup(normalizedName, newGroupMateIds);
 
-    setNewGroupName("");
-    setGroupMateSearch("");
-    setNewGroupMateIds([]);
-    setIsAddingGroup(false);
+      setNewGroupName("");
+      setGroupMateSearch("");
+      setNewGroupMateIds([]);
+      setIsAddingGroup(false);
+      setSectionOpen("groups", true);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to create group right now.";
+      setCreateGroupError(message);
+    } finally {
+      setIsCreatingGroup(false);
+    }
   };
 
   return (
@@ -365,6 +390,12 @@ const Dashboard = () => {
                     </button>
                   );
                 })}
+
+                {groupsList.length === 0 && (
+                  <p className="text-xs text-muted-foreground px-1 py-1">
+                    No groups yet. Tap "New group" below to create one.
+                  </p>
+                )}
               </div>
 
               {isAddingGroup && (
@@ -383,36 +414,52 @@ const Dashboard = () => {
                   />
 
                   <div className="max-h-36 overflow-y-auto space-y-2 pr-1">
-                    {filteredMatesForNewGroup.map((mate) => (
-                      <div
-                        key={mate.id}
-                        onClick={() => toggleNewGroupMate(mate.id)}
-                        className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-muted transition-colors cursor-pointer"
-                      >
-                        <Checkbox
-                          checked={newGroupMateIds.includes(mate.id)}
-                          aria-label={`Select ${mate.name}`}
-                          onCheckedChange={() => toggleNewGroupMate(mate.id)}
-                        />
-                        <MateAvatar initials={mate.initials} size="sm" status={mate.lastCheckin} daysSinceCheckin={mate.daysSinceCheckin} />
-                        <span className="text-sm font-medium">{mate.name}</span>
-                      </div>
-                    ))}
+                    {filteredMatesForNewGroup.length > 0 ? (
+                      filteredMatesForNewGroup.map((mate) => (
+                        <button
+                          type="button"
+                          key={mate.id}
+                          onClick={() => toggleNewGroupMate(mate.id)}
+                          className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-muted transition-colors cursor-pointer"
+                        >
+                          <Checkbox
+                            checked={newGroupMateIds.includes(mate.id)}
+                            aria-label={`Select ${mate.name}`}
+                            onClick={(event) => event.stopPropagation()}
+                            onCheckedChange={(checked) => setNewGroupMateChecked(mate.id, checked === true)}
+                          />
+                          <MateAvatar initials={mate.initials} size="sm" status={mate.lastCheckin} daysSinceCheckin={mate.daysSinceCheckin} />
+                          <span className="text-sm font-medium">{mate.name}</span>
+                        </button>
+                      ))
+                    ) : (
+                      <p className="text-xs text-muted-foreground px-1 py-2">
+                        {mates.length === 0 ? "Add a mate first to create a group." : "No mates match your search."}
+                      </p>
+                    )}
                   </div>
+
+                  {createGroupError && (
+                    <p className="text-xs text-destructive">{createGroupError}</p>
+                  )}
 
                   <button
                     onClick={handleCreateGroup}
-                    disabled={!newGroupName.trim() || newGroupMateIds.length === 0}
+                    disabled={isCreatingGroup || !newGroupName.trim() || newGroupMateIds.length === 0}
                     className="w-full nuj-btn-primary h-10 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Done
+                    {isCreatingGroup ? "Creating..." : "Done"}
                   </button>
                 </div>
               )}
 
               <div className="flex justify-end mt-3">
                 <button
-                  onClick={() => setIsAddingGroup((current) => !current)}
+                  onClick={() => {
+                    setSectionOpen("groups", true);
+                    setCreateGroupError(null);
+                    setIsAddingGroup((current) => !current);
+                  }}
                   className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
                 >
                   <Plus size={13} />
@@ -483,7 +530,7 @@ const Dashboard = () => {
         </div>
 
         {/* Meet-Ups */}
-        <div className="nuj-card p-4">
+        <div className="nuj-card p-4 grayscale opacity-70">
           <Collapsible
             open={openSections.meetups}
             onOpenChange={(open) => setSectionOpen("meetups", open)}
@@ -492,7 +539,7 @@ const Dashboard = () => {
               <button className="w-full flex items-center justify-between text-left">
                 <div className="flex items-center gap-2">
                   <MapPin size={15} className="text-muted-foreground" />
-                  <h2 className="font-semibold text-sm tracking-tight">Meet-Ups</h2>
+                  <h2 className="font-semibold text-sm tracking-tight">Meet-Ups (demo only)</h2>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-muted-foreground">{joinedMeetups.length} joined</span>

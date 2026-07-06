@@ -13,7 +13,7 @@ interface AddMateSheetProps {
 export const AddMateSheet = ({ open, onClose, onMateAdded }: AddMateSheetProps) => {
   const [tab, setTab] = useState<'share' | 'find'>('share');
   const [searchId, setSearchId] = useState('');
-  const [searchResult, setSearchResult] = useState<null | { name: string; id: string }>(null);
+  const [searchResult, setSearchResult] = useState<null | { name: string; id: string; userCode?: string }>(null);
   const [addSuccess, setAddSuccess] = useState(false);
   const [searchError, setSearchError] = useState('');
   const [isSearching, setIsSearching] = useState(false);
@@ -22,7 +22,7 @@ export const AddMateSheet = ({ open, onClose, onMateAdded }: AddMateSheetProps) 
   if (!open) return null;
 
   // Share logic (same as Profile page)
-  const shareMsg = user?.id ?? "";
+  const shareMsg = user?.userCode ?? user?.id ?? "";
 
   const handleSearch = async () => {
     setSearchError('');
@@ -33,12 +33,12 @@ export const AddMateSheet = ({ open, onClose, onMateAdded }: AddMateSheetProps) 
       const data = await searchProfileById(searchId.trim());
 
       if (!data) {
-        setSearchError('No user found with that ID.');
+        setSearchError('No user found with that code.');
         setIsSearching(false);
         return;
       }
 
-      setSearchResult({ name: data.username, id: data.id });
+      setSearchResult({ name: data.username, id: data.id, userCode: data.user_code ?? undefined });
     } catch (err) {
       const message = err instanceof Error && err.message.includes('permission')
         ? 'Profile lookup blocked by Supabase RLS. Please allow public SELECT on profiles.'
@@ -152,12 +152,12 @@ export const AddMateSheet = ({ open, onClose, onMateAdded }: AddMateSheetProps) 
         )}
         {tab === 'find' && (
           <div>
-            <label className="block text-sm font-medium mb-2">Enter User ID</label>
+            <label className="block text-sm font-medium mb-2">Enter NUJ code</label>
             <div className="flex gap-2 mb-2">
               <input
                 type="text"
                 className="flex-1 rounded-lg border px-3 py-2 text-sm"
-                placeholder="Paste User ID here"
+                placeholder="Paste NUJ code here"
                 value={searchId}
                 onChange={e => setSearchId(e.target.value)}
                 disabled={isSearching}
@@ -173,6 +173,9 @@ export const AddMateSheet = ({ open, onClose, onMateAdded }: AddMateSheetProps) 
             {searchResult && (
               <div className="mt-2 p-3 rounded-lg bg-muted/50 border border-primary/30">
                 <p className="font-medium mb-3">{searchResult.name}</p>
+                {searchResult.userCode && (
+                  <p className="text-xs text-muted-foreground mb-3">Code: {searchResult.userCode}</p>
+                )}
                 <button
                   onClick={handleAddMate}
                   className="w-full nuj-btn-primary px-4 py-2 rounded-lg text-sm"

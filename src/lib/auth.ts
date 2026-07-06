@@ -4,6 +4,7 @@ export interface AuthUser {
   id: string;
   username: string;
   email?: string;
+  userCode?: string;
 }
 
 export const registerUser = async (input: {
@@ -86,11 +87,21 @@ export const getCurrentUser = async (): Promise<AuthUser | null> => {
     const authUser = data.user;
     const fallbackUsername = authUser.user_metadata?.name ?? authUser.email ?? "Unknown user";
 
-    const { data: profile, error: profileError } = await supabase
-      .from("profiles")
-      .select("username")
-      .eq("id", authUser.id)
-      .maybeSingle();
+    const fetchProfile = async (selection: string) => (
+      supabase
+        .from("profiles")
+        .select(selection)
+        .eq("id", authUser.id)
+        .maybeSingle()
+    );
+
+    let { data: profile, error: profileError } = await fetchProfile("username, user_code");
+
+    if (profileError && profileError.message.toLowerCase().includes("user_code")) {
+      const legacy = await fetchProfile("username");
+      profile = legacy.data;
+      profileError = legacy.error;
+    }
 
     if (profileError) {
       return null;
@@ -110,6 +121,7 @@ export const getCurrentUser = async (): Promise<AuthUser | null> => {
       id: authUser.id,
       username: profile?.username ?? fallbackUsername,
       email: authUser.email ?? undefined,
+      userCode: profile?.user_code ?? authUser.id,
     };
   } catch {
     return null;

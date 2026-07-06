@@ -67,17 +67,34 @@ export const getCurrentUserId = async (): Promise<string | null> => {
 };
 
 export const searchProfileById = async (userId: string) => {
-  const { data, error } = await supabase
+  const normalizedLookup = userId.trim().toUpperCase();
+
+  const byCode = await supabase
+    .from("profiles")
+    .select("id, username, user_code")
+    .eq("user_code", normalizedLookup)
+    .maybeSingle();
+
+  if (!byCode.error && byCode.data) {
+    return byCode.data;
+  }
+
+  // Compatibility fallback for older environments before user_code migration.
+  if (byCode.error && !byCode.error.message.toLowerCase().includes("user_code")) {
+    throw byCode.error;
+  }
+
+  const byId = await supabase
     .from("profiles")
     .select("id, username")
     .eq("id", userId)
     .maybeSingle();
 
-  if (error) {
-    throw error;
+  if (byId.error) {
+    throw byId.error;
   }
 
-  return data;
+  return byId.data;
 };
 
 const resolveProfileIdByUsername = async (username: string): Promise<string | null> => {

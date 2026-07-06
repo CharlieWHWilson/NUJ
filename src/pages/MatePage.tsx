@@ -30,7 +30,7 @@ const MatePage = () => {
       onClick: async () => {
         if (!mate.mateUserId) {
           toast(`Unable to send NUJ to ${mate.name}`, {
-            description: "Please remove and re-add this mate by User ID.",
+            description: "Please remove and re-add this mate by NUJ code.",
           });
           return;
         }

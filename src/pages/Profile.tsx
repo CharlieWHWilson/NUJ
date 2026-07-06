@@ -28,7 +28,7 @@ const Profile = () => {
 
   const [dailyReminderEnabled, setDailyReminderEnabled] = useState(initialReminderSettings.enabled);
   const [reminderTime, setReminderTime] = useState(initialReminderSettings.time);
-  const shareUserId = user?.id ?? "";
+  const shareUserCode = user?.userCode ?? user?.id ?? "";
 
   const persistReminderSettings = (nextEnabled: boolean, nextTime: string) => {
     saveDailyReminderSettings({
@@ -128,14 +128,14 @@ const Profile = () => {
             </div>
           )}
           <div className="flex items-center gap-2">
-            <Label>User ID:</Label>
-            <span className="text-sm text-muted-foreground">{user.id}</span>
+            <Label>NUJ code:</Label>
+            <span className="text-sm text-muted-foreground">{shareUserCode}</span>
             <button
               type="button"
               className="ml-2 p-1 rounded hover:bg-accent transition-colors"
-              title="Copy User ID"
+              title="Copy NUJ code"
               onClick={() => {
-                navigator.clipboard.writeText(user.id);
+                navigator.clipboard.writeText(shareUserCode);
               }}
             >
               <ClipboardCopy size={16} />
@@ -153,13 +153,13 @@ const Profile = () => {
           <Dialog open={shareOpen} onOpenChange={setShareOpen}>
             <DialogContent className="max-w-sm">
               <DialogHeader>
-                <DialogTitle>Send your User ID</DialogTitle>
+                <DialogTitle>Send your NUJ code</DialogTitle>
               </DialogHeader>
               <div className="space-y-2">
                 {/* Share message removed from card, only in share options */}
                 <button
                   onClick={() => {
-                    navigator.clipboard.writeText(shareUserId);
+                    navigator.clipboard.writeText(shareUserCode);
                   }}
                   className="w-full flex items-center gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors text-left"
                 >
@@ -167,21 +167,21 @@ const Profile = () => {
                   <span className="text-sm font-medium">Copy message</span>
                 </button>
                 <button
-                  onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(shareUserId)}`, "_blank")}
+                  onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(shareUserCode)}`, "_blank")}
                   className="w-full flex items-center gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors text-left"
                 >
                   <MessageSquare size={17} className="text-muted-foreground" />
                   <span className="text-sm font-medium">WhatsApp</span>
                 </button>
                 <button
-                  onClick={() => window.open(`sms:?&body=${encodeURIComponent(shareUserId)}`, "_blank")}
+                  onClick={() => window.open(`sms:?&body=${encodeURIComponent(shareUserCode)}`, "_blank")}
                   className="w-full flex items-center gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors text-left"
                 >
                   <Phone size={17} className="text-muted-foreground" />
                   <span className="text-sm font-medium">SMS</span>
                 </button>
                 <button
-                  onClick={() => window.open(`mailto:?subject=${encodeURIComponent("NUJ User ID")}&body=${encodeURIComponent(shareUserId)}`, "_blank")}
+                  onClick={() => window.open(`mailto:?subject=${encodeURIComponent("Your NUJ code")}&body=${encodeURIComponent(shareUserCode)}`, "_blank")}
                   className="w-full flex items-center gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors text-left"
                 >
                   <Mail size={17} className="text-muted-foreground" />

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { ChevronDown, ChevronRight, Plus, MapPin, HelpCircle } from "lucide-react";
+import { ChevronDown, ChevronRight, Plus, MapPin, HelpCircle, MessageCircle } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -224,13 +224,32 @@ const Dashboard = () => {
                   <p><strong>Check in</strong> – Tap once to say “you’re around.” No typing, no explanation, it takes a second. Nothing more needed, you’re ‘around’.</p>
                   <p><strong>See who’s around</strong> – Your mates’ last check-ins are visible: today, yesterday, or a few days ago. Quiet awareness, nothing more.</p>
                   <p><strong>Gentle nudges</strong> – If someone’s been quiet, send a small NUJ to show you’re thinking of them.</p>
-                  <p className="text-muted-foreground/75"><strong>Meet-ups (coming soon)</strong> – Check in together regularly enough and you can unlock deals for real-world activities. A chance to catch up and spend time together (win/win).</p>
+                  <p className="text-muted-foreground/60"><strong>Meet-ups (coming soon)</strong> – Check in together regularly enough and you can unlock deals for real-world activities. A chance to catch up and spend time together (win/win).</p>
                 </div>
               </div>
               <p className="text-foreground text-center">Just a simple way to stay connected.</p>
-              <p className="text-center">Connect with us - charlie@nuj.social</p>
             </div>
           </DialogContent>
+          </Dialog>
+
+          <Dialog>
+            <DialogTrigger asChild>
+              <button
+                className="w-9 h-9 flex items-center justify-center rounded-full bg-muted text-foreground hover:bg-secondary transition-colors"
+                aria-label="Get in touch"
+              >
+                <MessageCircle size={19} />
+              </button>
+            </DialogTrigger>
+            <DialogContent className="max-w-sm">
+              <DialogHeader className="text-center">
+                <DialogTitle className="text-center">Get in touch</DialogTitle>
+                <DialogDescription className="text-sm text-muted-foreground pt-1 text-center">
+                  If you have any questions or would like to share feedback I'd love to hear from you
+                </DialogDescription>
+              </DialogHeader>
+              <p className="text-sm font-medium text-foreground text-center">charlie@nuj.social</p>
+            </DialogContent>
           </Dialog>
         </div>
       </div>

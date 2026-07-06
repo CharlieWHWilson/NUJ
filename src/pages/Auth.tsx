@@ -1,10 +1,12 @@
 import { FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { MessageCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { registerUser, loginUser } from "@/lib/auth";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -192,6 +194,26 @@ const Auth = () => {
             </button>
           </DialogTrigger>
           <DialogContent className="max-w-md">
+            <Dialog>
+              <DialogTrigger asChild>
+                <button
+                  className="absolute left-4 top-4 inline-flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  aria-label="Get in touch"
+                >
+                  <MessageCircle size={16} />
+                </button>
+              </DialogTrigger>
+              <DialogContent className="max-w-sm">
+                <DialogHeader className="text-center">
+                  <DialogTitle className="text-center">Get in touch</DialogTitle>
+                  <DialogDescription className="text-sm text-muted-foreground pt-1 text-center">
+                    If you have any questions or would like to share feedback I'd love to hear from you
+                  </DialogDescription>
+                </DialogHeader>
+                <p className="text-sm font-medium text-foreground text-center">charlie@nuj.social</p>
+              </DialogContent>
+            </Dialog>
+
             <DialogHeader>
               <DialogTitle>What is NUJ?</DialogTitle>
             </DialogHeader>
@@ -207,12 +229,11 @@ const Auth = () => {
                   <p><strong>Check in</strong> – Tap once to say “you’re around.” No typing, no explanation, it takes a second. Nothing more needed, you’re ‘around’.</p>
                   <p><strong>See who’s around</strong> – Your mates’ last check-ins are visible: today, yesterday, or a few days ago. Quiet awareness, nothing more.</p>
                   <p><strong>Gentle nudges</strong> – If someone’s been quiet, send a small NUJ to show you’re thinking of them.</p>
-                  <p className="text-muted-foreground/75"><strong>Meet-ups (coming soon)</strong> – Check in together regularly enough and you can unlock deals for real-world activities. A chance to catch up and spend time together (win/win).</p>
+                  <p className="text-muted-foreground/60"><strong>Meet-ups (coming soon)</strong> – Check in together regularly enough and you can unlock deals for real-world activities. A chance to catch up and spend time together (win/win).</p>
                 </div>
               </div>
 
               <p className="text-foreground text-center">Just a simple way to stay connected.</p>
-              <p className="text-center">Connect with us - charlie@nuj.social</p>
             </div>
           </DialogContent>
         </Dialog>

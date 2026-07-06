@@ -516,6 +516,16 @@ const Dashboard = () => {
               </button>
             </CollapsibleTrigger>
             <CollapsibleContent className="pt-3">
+              <div className="flex justify-end mb-2">
+                <button
+                  onClick={() => setAddMateOpen(true)}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                >
+                  <Plus size={13} />
+                  Add mate
+                </button>
+              </div>
+
               <div className="divide-y divide-border/50 max-h-[190px] overflow-y-auto pr-1">
                 {filteredMates.map((mate) => (
                   <MateRow

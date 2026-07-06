@@ -215,7 +215,7 @@ const Auth = () => {
             </Dialog>
 
             <DialogHeader>
-              <DialogTitle>What is NUJ?</DialogTitle>
+              <DialogTitle className="text-center">What is NUJ?</DialogTitle>
             </DialogHeader>
 
             <div className="text-sm text-muted-foreground space-y-4 max-h-[70vh] overflow-y-auto pr-1">

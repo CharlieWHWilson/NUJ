@@ -62,6 +62,11 @@ const supabaseMock = vi.hoisted(() => {
         return this;
       },
 
+      is(field: string, value: any) {
+        this._filters.push({ op: "is", field, value });
+        return this;
+      },
+
       in(field: string, values: any[]) {
         this._filters.push({ op: "in", field, value: values });
         return this;
@@ -132,8 +137,15 @@ const supabaseMock = vi.hoisted(() => {
 
     if (query._delete && table === "nujs") {
       const idFilter = query._filters.find((f: any) => f.field === "id");
+      const senderFilter = query._filters.find((f: any) => f.field === "sender_user_id");
+      const acknowledgedFilter = query._filters.find((f: any) => f.field === "acknowledged_at" && f.op === "is");
       if (idFilter) {
-        state.nujs = state.nujs.filter((row) => row.id !== idFilter.value);
+        state.nujs = state.nujs.filter((row) => {
+          if (row.id !== idFilter.value) return true;
+          if (senderFilter && row.sender_user_id !== senderFilter.value) return true;
+          if (acknowledgedFilter && row.acknowledged_at !== acknowledgedFilter.value) return true;
+          return false;
+        });
       }
       return makeResult(null);
     }
@@ -241,6 +253,38 @@ describe("useNujsSupabase", () => {
 
     expect(state.nujs).toHaveLength(1);
     expect(result.current.nujsSent).toHaveLength(1);
+  });
+
+  it("allows cancelling a sent NUJ and sending another one to the same recipient", async () => {
+    state.nujs = [
+      {
+        id: "n-1",
+        sender_user_id: "user-a",
+        recipient_user_id: "user-b",
+        created_at: "2026-07-01T10:00:00.000Z",
+        acknowledged_at: null,
+      },
+    ];
+
+    const { result } = renderHook(() => useNujsSupabase());
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    await act(async () => {
+      await result.current.cancelSentNuj("n-1");
+    });
+
+    expect(result.current.nujsSent).toHaveLength(0);
+
+    await act(async () => {
+      await result.current.sendNuj("user-b");
+    });
+
+    expect(result.current.nujsSent).toHaveLength(1);
+    expect(state.nujs).toHaveLength(1);
+    expect(state.nujs[0].id).toBe("n-1");
   });
 
   it("recipient sees NUJ in inbox after login", async () => {

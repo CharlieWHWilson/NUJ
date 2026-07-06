@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { ChevronDown, ChevronRight, Plus, MapPin, HelpCircle, MessageCircle } from "lucide-react";
+import { ChevronDown, ChevronRight, Plus, MapPin, HelpCircle, MessageCircle, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -51,6 +51,7 @@ const Dashboard = () => {
     nujsReceived,
     nujsSent,
     acknowledgeReceivedNuj,
+    cancelSentNuj,
   } = useNujsSupabase();
   const [addMateOpen, setAddMateOpen] = useState(false);
   const [selectedNuj, setSelectedNuj] = useState<string | null>(null);
@@ -335,8 +336,16 @@ const Dashboard = () => {
                           return (
                             <div
                               key={nuj.id}
-                              className="shrink-0 w-32 p-2 bg-muted/40 rounded-xl transition-colors text-left"
+                              className="relative shrink-0 w-32 p-2 bg-muted/40 rounded-xl transition-colors text-left"
                             >
+                              <button
+                                type="button"
+                                aria-label={`Cancel NUJ to ${nuj.toMateName}`}
+                                onClick={() => void cancelSentNuj(nuj.id)}
+                                className="absolute top-1 right-1 w-5 h-5 rounded-full bg-background/90 border border-border text-muted-foreground hover:text-foreground hover:bg-background flex items-center justify-center"
+                              >
+                                <X size={12} />
+                              </button>
                               <div className="flex items-center gap-1.5">
                                 <MateAvatar
                                   initials={nuj.toMateInitials}

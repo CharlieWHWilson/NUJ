@@ -216,6 +216,27 @@ export const useNujsSupabase = () => {
     }
   };
 
+  const cancelSentNuj = async (nujId: string) => {
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) throw new Error("Not authenticated");
+
+      const { error: deleteError } = await supabase
+        .from("nujs")
+        .delete()
+        .eq("id", nujId)
+        .eq("sender_user_id", userData.user.id)
+        .is("acknowledged_at", null);
+
+      if (deleteError) throw deleteError;
+
+      setNujsSent((prev) => prev.filter((n) => n.id !== nujId));
+    } catch (err) {
+      console.error("Error cancelling sent NUJ:", err);
+      throw err;
+    }
+  };
+
   return {
     nujsReceived,
     nujsSent,
@@ -223,6 +244,7 @@ export const useNujsSupabase = () => {
     error,
     sendNuj,
     acknowledgeReceivedNuj,
+    cancelSentNuj,
     refresh,
   };
 };

@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { TopNav } from "@/components/TopNav";
 import { MateRow, MateAvatar } from "@/components/MateComponents";
-import { meetUps, formatNujTimestamp } from "@/data/mockData";
+import { formatNujTimestamp } from "@/data/mockData";
 import { AddMateSheet } from "@/components/AddMateSheet";
 import { NujActionSheet } from "@/components/NujActionSheet";
 import { useCheckin } from "@/hooks/useCheckin";
@@ -19,7 +19,6 @@ import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useMatesSupabase } from "@/hooks/useMatesSupabase";
 import { useNujsSupabase } from "@/hooks/useNujsSupabase";
 import { useGroupsSupabase } from "@/hooks/useGroupsSupabase";
-import { useJoinedMeetups } from "@/hooks/useJoinedMeetups";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -46,7 +45,6 @@ const Dashboard = () => {
   const shouldExpandNuj = Boolean((location.state as { expandNuj?: boolean } | null)?.expandNuj);
   const currentUser = useCurrentUser();
   const { checkedIn } = useCheckin(currentUser?.id);
-  const { hasJoinedMeetup } = useJoinedMeetups();
   const { mates, refresh: refreshMates } = useMatesSupabase();
   const { groups: groupsList, addGroup } = useGroupsSupabase();
   const {
@@ -81,8 +79,6 @@ const Dashboard = () => {
     const [minDays, maxDays] = matesDayRange;
     return daysSinceCheckin >= minDays && daysSinceCheckin <= maxDays;
   });
-
-  const joinedMeetups = meetUps.filter((meetup) => hasJoinedMeetup(meetup.id));
 
   const setSectionOpen = (section: SectionKey | "nujSent", open: boolean) => {
     setOpenSections((current) => ({ ...current, [section]: open }));
@@ -559,81 +555,26 @@ const Dashboard = () => {
               <button className="w-full flex items-center justify-between text-left">
                 <div className="flex items-center gap-2">
                   <MapPin size={15} className="text-muted-foreground" />
-                  <h2 className="font-semibold text-sm tracking-tight">Meet-Ups (demo only)</h2>
+                  <h2 className="font-semibold text-sm tracking-tight">Meet-ups (coming soon..)</h2>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">{joinedMeetups.length} joined</span>
-                  <ChevronDown
-                    size={16}
-                    className={`text-muted-foreground transition-transform ${openSections.meetups ? "rotate-180" : ""}`}
-                  />
-                </div>
+                <ChevronDown
+                  size={16}
+                  className={`text-muted-foreground transition-transform ${openSections.meetups ? "rotate-180" : ""}`}
+                />
               </button>
             </CollapsibleTrigger>
             <CollapsibleContent className="pt-3">
               <div className="rounded-xl bg-muted/40 p-3">
-                <p className="text-xs text-muted-foreground mb-2">Joined meet-ups</p>
-                {joinedMeetups.length > 0 ? (
-                  <div className="relative">
-                    <div className="pointer-events-none absolute inset-y-0 left-0 w-6 bg-gradient-to-r from-muted/70 to-transparent rounded-l-xl" />
-                    <div className="pointer-events-none absolute inset-y-0 right-0 w-6 bg-gradient-to-l from-muted/70 to-transparent rounded-r-xl" />
-                    <div className="flex gap-2 overflow-x-auto pb-1">
-                      {joinedMeetups.map((meetup) => {
-                      const participatingMatesData = mates.filter((m) => meetup.participatingMates.includes(m.id));
-                      const totalJoined = Math.min(meetup.participantsRequired, participatingMatesData.length + 1);
-                      const progress = totalJoined / meetup.participantsRequired;
-
-                      return (
-                        <button
-                          key={meetup.id}
-                          onClick={() => navigate(`/meetup/${meetup.id}`)}
-                          className="shrink-0 w-60 text-left p-4 bg-card hover:bg-muted rounded-xl transition-colors"
-                        >
-                          <p className="font-medium text-sm">{meetup.title}</p>
-                          <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{meetup.description}</p>
-
-                          <div className="h-1.5 bg-muted rounded-full overflow-hidden mt-3 mb-2">
-                            <div
-                              className="h-full rounded-full"
-                              style={{
-                                width: `${progress * 100}%`,
-                                background: "hsl(var(--accent))",
-                              }}
-                            />
-                          </div>
-
-                          <p className="text-xs text-muted-foreground">
-                            {totalJoined}/{meetup.participantsRequired} joined
-                          </p>
-
-                          <div className="flex -space-x-1.5 mt-3">
-                            {participatingMatesData.map((m) => (
-                              <MateAvatar key={m.id} initials={m.initials} size="sm" status={m.lastCheckin} daysSinceCheckin={m.daysSinceCheckin} />
-                            ))}
-                          </div>
-
-                          <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
-                            {participatingMatesData.length > 0
-                              ? `Also joined: ${participatingMatesData.map((m) => m.name).join(", ")}`
-                              : "No mates joined yet"}
-                          </p>
-                        </button>
-                      );
-                    })}
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-xs text-muted-foreground py-2 px-1">
-                    You haven't joined any meet-ups yet.
-                  </p>
-                )}
+                <p className="text-sm text-muted-foreground">
+                  Sign-up and check-in with mates to unlock deals for real-world activities.
+                </p>
+                <p className="text-sm text-muted-foreground mt-3">
+                  A chance to catch up and spend time together.
+                </p>
+                <p className="text-sm text-muted-foreground text-center mt-3">
+                  win-win
+                </p>
               </div>
-              <button
-                onClick={() => navigate("/meetups")}
-                className="w-full mt-3 text-sm text-muted-foreground flex items-center justify-center gap-1 hover:text-foreground transition-colors py-1"
-              >
-                See all meet-ups <ChevronRight size={14} />
-              </button>
             </CollapsibleContent>
           </Collapsible>
         </div>

@@ -132,8 +132,18 @@ const Profile = () => {
     setIsDeletingAccount(true);
 
     try {
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+
+      if (sessionError || !accessToken) {
+        throw new Error("You must be logged in to delete your account.");
+      }
+
       const { error } = await supabase.functions.invoke("delete-account", {
         method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
       });
 
       if (error) {

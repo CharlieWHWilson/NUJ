@@ -132,10 +132,10 @@ const Profile = () => {
     setIsDeletingAccount(true);
 
     try {
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      const accessToken = sessionData.session?.access_token;
+      const { data: refreshedData, error: refreshError } = await supabase.auth.refreshSession();
+      const accessToken = refreshedData.session?.access_token;
 
-      if (sessionError || !accessToken) {
+      if (refreshError || !accessToken) {
         throw new Error("You must be logged in to delete your account.");
       }
 
@@ -154,7 +154,10 @@ const Profile = () => {
       }
 
       clearAppStorage();
-      await supabase.auth.signOut();
+      const { error: signOutError } = await supabase.auth.signOut({ scope: "local" });
+      if (signOutError) {
+        console.warn("Local sign-out warning after account deletion:", signOutError);
+      }
       navigate("/auth", { replace: true });
     } catch (error) {
       console.error("Unexpected delete account error:", error);

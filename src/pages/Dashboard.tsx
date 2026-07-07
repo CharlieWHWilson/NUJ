@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ChevronDown, ChevronRight, Plus, MapPin, HelpCircle, MessageCircle, X } from "lucide-react";
 import {
   Dialog,
@@ -246,6 +246,11 @@ const Dashboard = () => {
                 </DialogDescription>
               </DialogHeader>
               <p className="text-sm font-medium text-foreground text-center">charlie@nuj.social</p>
+              <div className="pt-3 border-t border-border/60 text-xs text-muted-foreground flex items-center justify-center gap-3">
+                <Link to="/support" className="underline underline-offset-2">Support</Link>
+                <Link to="/privacy" className="underline underline-offset-2">Privacy Policy</Link>
+                <Link to="/terms" className="underline underline-offset-2">Terms of Use</Link>
+              </div>
             </DialogContent>
           </Dialog>
         </div>

@@ -1,5 +1,5 @@
 import { FormEvent, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { MessageCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { registerUser, loginUser } from "@/lib/auth";
@@ -182,6 +182,12 @@ const Auth = () => {
             <button type="submit" className="w-full h-11 nuj-btn-primary">
               Create account
             </button>
+            <p className="text-xs text-muted-foreground pt-1 text-center">
+              By creating an account, you agree to our{" "}
+              <Link to="/terms" className="underline">Terms of Use</Link>{" "}
+              and{" "}
+              <Link to="/privacy" className="underline">Privacy Policy</Link>.
+            </p>
           </form>
         )}
       </div>
@@ -211,6 +217,11 @@ const Auth = () => {
                   </DialogDescription>
                 </DialogHeader>
                 <p className="text-sm font-medium text-foreground text-center">charlie@nuj.social</p>
+                <div className="pt-3 border-t border-border/60 text-xs text-muted-foreground flex items-center justify-center gap-3">
+                  <Link to="/support" className="underline underline-offset-2">Support</Link>
+                  <Link to="/privacy" className="underline underline-offset-2">Privacy Policy</Link>
+                  <Link to="/terms" className="underline underline-offset-2">Terms of Use</Link>
+                </div>
               </DialogContent>
             </Dialog>
 

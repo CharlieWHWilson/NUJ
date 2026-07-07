@@ -16,6 +16,9 @@ import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import UpdatePassword from "./pages/UpdatePassword";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfUse from "./pages/TermsOfUse";
+import Support from "./pages/Support";
 import { scheduleDailyReminderNotification } from "./lib/dailyReminder";
 import { isAuthenticated } from "./lib/auth";
 
@@ -84,6 +87,9 @@ const App = () => {
         <Sonner />
         <BrowserRouter basename={import.meta.env.BASE_URL} future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <Routes>
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<TermsOfUse />} />
+            <Route path="/support" element={<Support />} />
             <Route path="/account/update-password" element={<UpdatePassword />} />
             <Route
               path="/auth"

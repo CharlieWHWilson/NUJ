@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ClipboardCopy, MessageSquare, Mail, Phone, Share2 } from "lucide-react";
+import { ClipboardCopy, MessageSquare, Mail, Phone, Share2, Trash2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -177,7 +177,7 @@ const Profile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background max-w-md mx-auto">
+    <div className="min-h-screen bg-background max-w-md mx-auto relative">
       <div className="px-5 pt-12 pb-6">
         <button
           onClick={() => navigate(-1)}
@@ -309,15 +309,17 @@ const Profile = () => {
         >
           Log out
         </button>
-
-        <button
-          onClick={handleDeleteAccount}
-          disabled={isDeletingAccount}
-          className="w-full h-11 rounded-md border border-destructive/60 text-destructive bg-background hover:bg-destructive/10 transition-colors text-sm font-medium disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {isDeletingAccount ? "Deleting account..." : "Delete account"}
-        </button>
       </div>
+
+      <button
+        onClick={handleDeleteAccount}
+        disabled={isDeletingAccount}
+        aria-label="Delete account"
+        title="Delete account"
+        className="absolute bottom-5 right-5 h-9 w-9 rounded-full border border-destructive/50 text-destructive bg-background/90 backdrop-blur-sm flex items-center justify-center hover:bg-destructive/10 transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        <Trash2 size={16} />
+      </button>
     </div>
   );
 };

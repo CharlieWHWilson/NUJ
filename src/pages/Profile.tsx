@@ -29,9 +29,9 @@ const Profile = () => {
 
   const [dailyReminderEnabled, setDailyReminderEnabled] = useState(initialReminderSettings.enabled);
   const [reminderTime, setReminderTime] = useState(initialReminderSettings.time);
-  const [resetStatus, setResetStatus] = useState("");
   const [resetRequested, setResetRequested] = useState(false);
-  const [resetLoading, setResetLoading] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const shareUserCode = user?.userCode ?? user?.id ?? "";
 
   const persistReminderSettings = (nextEnabled: boolean, nextTime: string) => {
@@ -83,26 +83,26 @@ const Profile = () => {
   };
 
   const handleResetPassword = async () => {
-    if (resetRequested || resetLoading) {
+    if (resetRequested || isSending) {
       return;
     }
 
-    setResetLoading(true);
-    setResetStatus("");
+    setResetRequested(true);
+    setIsSending(true);
 
     const { data, error: userError } = await supabase.auth.getUser();
 
     if (userError) {
-      setResetStatus(userError.message);
-      setResetLoading(false);
+      console.error(userError.message);
+      setIsSending(false);
       return;
     }
 
     const email = data.user?.email;
 
     if (!email) {
-      setResetStatus("No email found for this account.");
-      setResetLoading(false);
+      console.error("No email found for this account.");
+      setIsSending(false);
       return;
     }
 
@@ -111,14 +111,47 @@ const Profile = () => {
     });
 
     if (error) {
-      setResetStatus("Unable to send reset email right now.");
-      setResetLoading(false);
+      console.error(error.message);
+      setIsSending(false);
       return;
     }
 
-    setResetRequested(true);
-    setResetLoading(false);
-    setResetStatus("Check your email for the password reset link.");
+    setIsSending(false);
+  };
+
+  const handleDeleteAccount = async () => {
+    if (isDeletingAccount) {
+      return;
+    }
+
+    const confirmed = window.confirm("This will permanently delete your account. Are you sure?");
+    if (!confirmed) {
+      return;
+    }
+
+    setIsDeletingAccount(true);
+
+    try {
+      const { error } = await supabase.functions.invoke("delete-account", {
+        method: "POST",
+      });
+
+      if (error) {
+        console.error("Delete account function error:", error);
+        alert(error.message || "Failed to delete account.");
+        setIsDeletingAccount(false);
+        return;
+      }
+
+      clearAppStorage();
+      await supabase.auth.signOut();
+      navigate("/auth", { replace: true });
+    } catch (error) {
+      console.error("Unexpected delete account error:", error);
+      const message = error instanceof Error ? error.message : "Failed to delete account.";
+      alert(message);
+      setIsDeletingAccount(false);
+    }
   };
 
   if (user === undefined) {
@@ -195,13 +228,11 @@ const Profile = () => {
           <button
             type="button"
             onClick={handleResetPassword}
-            disabled={resetRequested || resetLoading}
+            disabled={resetRequested || isSending}
             className="text-xs font-medium lowercase text-muted-foreground underline underline-offset-4 hover:text-foreground transition-colors disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {resetRequested ? "check your email" : resetLoading ? "sending..." : "reset password"}
+            {isSending ? "sending..." : "reset password"}
           </button>
-          {resetRequested && <span className="ml-2 text-xs text-muted-foreground">(reset email sent)</span>}
-          {resetStatus && <p className="text-sm text-muted-foreground">{resetStatus}</p>}
           {/* Share Dialog */}
           <Dialog open={shareOpen} onOpenChange={setShareOpen}>
             <DialogContent className="max-w-sm">
@@ -273,9 +304,18 @@ const Profile = () => {
 
         <button
           onClick={handleLogout}
-          className="w-full h-11 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors text-sm font-medium"
+          disabled={isDeletingAccount}
+          className="w-full h-11 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors text-sm font-medium disabled:cursor-not-allowed disabled:opacity-60"
         >
           Log out
+        </button>
+
+        <button
+          onClick={handleDeleteAccount}
+          disabled={isDeletingAccount}
+          className="w-full h-11 rounded-md border border-destructive/60 text-destructive bg-background hover:bg-destructive/10 transition-colors text-sm font-medium disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {isDeletingAccount ? "Deleting account..." : "Delete account"}
         </button>
       </div>
     </div>

@@ -10,37 +10,39 @@ const UpdatePassword = () => {
   const [status, setStatus] = useState("Follow the reset link from your email first.");
   const [loading, setLoading] = useState(false);
 
+  const resolveRecoverySession = async () => {
+    const { data: userData, error } = await supabase.auth.getUser();
+
+    if (error || !userData.user) {
+      return false;
+    }
+
+    setCanUpdate(true);
+    setStatus("Token verified. Set your new password below.");
+    return true;
+  };
+
   useEffect(() => {
     const { data } = supabase.auth.onAuthStateChange(async (event) => {
-      if (event !== "PASSWORD_RECOVERY") {
+      if (event !== "PASSWORD_RECOVERY" && event !== "SIGNED_IN") {
         return;
       }
 
-      const { data: userData, error } = await supabase.auth.getUser();
-
-      if (error || !userData.user) {
-        setCanUpdate(false);
-        setStatus("Recovery link opened, but no active user session is available. Request a new password reset email.");
-        return;
-      }
-
-      setCanUpdate(true);
-      setStatus("Token verified. Set your new password below.");
+      await resolveRecoverySession();
     });
 
-    const timeout = window.setTimeout(() => {
-      setCanUpdate((currentCanUpdate) => {
-        if (currentCanUpdate) {
-          return currentCanUpdate;
-        }
+    void (async () => {
+      const isRecoveryLink = window.location.hash.includes("type=recovery")
+        || window.location.search.includes("type=recovery");
 
+      const hasSession = await resolveRecoverySession();
+
+      if (!hasSession && isRecoveryLink) {
         setStatus("This reset link is missing, invalid, or expired. Request a new password reset email.");
-        return currentCanUpdate;
-      });
-    }, 5000);
+      }
+    })();
 
     return () => {
-      window.clearTimeout(timeout);
       data.subscription.unsubscribe();
     };
   }, []);

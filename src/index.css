@@ -145,7 +145,7 @@
   }
 
   .nuj-safe-top-dashboard {
-    padding-top: calc(var(--nuj-safe-top) + 2.75rem);
+    padding-top: max(calc(var(--nuj-safe-top) + 2.75rem), 5.75rem);
   }
 
   .nuj-safe-bottom {

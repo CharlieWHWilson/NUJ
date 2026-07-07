@@ -149,7 +149,6 @@ const Profile = () => {
       if (error) {
         console.error("Delete account function error:", error);
         alert(error.message || "Failed to delete account.");
-        setIsDeletingAccount(false);
         return;
       }
 
@@ -163,6 +162,7 @@ const Profile = () => {
       console.error("Unexpected delete account error:", error);
       const message = error instanceof Error ? error.message : "Failed to delete account.";
       alert(message);
+    } finally {
       setIsDeletingAccount(false);
     }
   };

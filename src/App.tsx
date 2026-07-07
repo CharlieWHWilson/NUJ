@@ -15,6 +15,7 @@ import GroupDetail from "./pages/GroupDetail";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
+import UpdatePassword from "./pages/UpdatePassword";
 import { scheduleDailyReminderNotification } from "./lib/dailyReminder";
 import { isAuthenticated } from "./lib/auth";
 
@@ -83,6 +84,7 @@ const App = () => {
         <Sonner />
         <BrowserRouter basename={import.meta.env.BASE_URL} future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <Routes>
+            <Route path="/account/update-password" element={<UpdatePassword />} />
             <Route
               path="/auth"
               element={authState === "authenticated" ? <Navigate to="/check-in" replace /> : <Auth />}

@@ -20,6 +20,7 @@ import { logoutUser } from "@/lib/auth";
 import { clearAppStorage } from "@/lib/utils";
 import { CHECKIN_STORAGE_KEY } from "@/hooks/useCheckin";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { supabase } from "@/lib/supabase";
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -28,6 +29,9 @@ const Profile = () => {
 
   const [dailyReminderEnabled, setDailyReminderEnabled] = useState(initialReminderSettings.enabled);
   const [reminderTime, setReminderTime] = useState(initialReminderSettings.time);
+  const [resetStatus, setResetStatus] = useState("");
+  const [resetRequested, setResetRequested] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
   const shareUserCode = user?.userCode ?? user?.id ?? "";
 
   const persistReminderSettings = (nextEnabled: boolean, nextTime: string) => {
@@ -76,6 +80,45 @@ const Profile = () => {
     clearAppStorage();
     await logoutUser();
     navigate("/auth");
+  };
+
+  const handleResetPassword = async () => {
+    if (resetRequested || resetLoading) {
+      return;
+    }
+
+    setResetLoading(true);
+    setResetStatus("");
+
+    const { data, error: userError } = await supabase.auth.getUser();
+
+    if (userError) {
+      setResetStatus(userError.message);
+      setResetLoading(false);
+      return;
+    }
+
+    const email = data.user?.email;
+
+    if (!email) {
+      setResetStatus("No email found for this account.");
+      setResetLoading(false);
+      return;
+    }
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/account/update-password`,
+    });
+
+    if (error) {
+      setResetStatus("Unable to send reset email right now.");
+      setResetLoading(false);
+      return;
+    }
+
+    setResetRequested(true);
+    setResetLoading(false);
+    setResetStatus("Check your email for the password reset link.");
   };
 
   if (user === undefined) {
@@ -149,6 +192,16 @@ const Profile = () => {
               <Share2 size={16} />
             </button>
           </div>
+          <button
+            type="button"
+            onClick={handleResetPassword}
+            disabled={resetRequested || resetLoading}
+            className="text-xs font-medium lowercase text-muted-foreground underline underline-offset-4 hover:text-foreground transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {resetRequested ? "check your email" : resetLoading ? "sending..." : "reset password"}
+          </button>
+          {resetRequested && <span className="ml-2 text-xs text-muted-foreground">(reset email sent)</span>}
+          {resetStatus && <p className="text-sm text-muted-foreground">{resetStatus}</p>}
           {/* Share Dialog */}
           <Dialog open={shareOpen} onOpenChange={setShareOpen}>
             <DialogContent className="max-w-sm">

@@ -147,7 +147,7 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-md mx-auto">
-      <div className="px-5 pt-5">
+      <div className="px-5 pt-11">
         <div
           className={`nuj-card p-4 ${checkedIn ? "cursor-pointer bg-emerald-50/60 border-emerald-200/70" : ""}`}
           onClick={checkedIn ? () => navigate("/") : undefined}

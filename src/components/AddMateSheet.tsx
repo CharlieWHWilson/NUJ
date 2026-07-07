@@ -95,7 +95,7 @@ export const AddMateSheet = ({ open, onClose, onMateAdded }: AddMateSheetProps) 
   return (
     <>
       <div className="fixed inset-0 bg-foreground/20 z-40" onClick={onClose} />
-      <div className="fixed bottom-0 left-0 right-0 z-50 max-w-md mx-auto bg-card rounded-t-3xl p-6 pb-10 border border-border" style={{ boxShadow: "0 -4px 40px hsl(215 28% 13% / 0.12)" }}>
+      <div className="fixed bottom-0 left-0 right-0 z-50 max-w-md mx-auto bg-card rounded-t-3xl p-6 nuj-safe-bottom-sheet border border-border" style={{ boxShadow: "0 -4px 40px hsl(215 28% 13% / 0.12)" }}>
         <div className="w-10 h-1 bg-border rounded-full mx-auto mb-6" />
         <div className="flex items-center gap-2 mb-6">
           <Share2 size={16} className="text-muted-foreground" />

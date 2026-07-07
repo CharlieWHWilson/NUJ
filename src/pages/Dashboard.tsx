@@ -147,7 +147,7 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-md mx-auto">
-      <div className="px-5 pt-11">
+      <div className="px-5 nuj-safe-top-dashboard">
         <div
           className={`nuj-card p-4 ${checkedIn ? "cursor-pointer bg-emerald-50/60 border-emerald-200/70" : ""}`}
           onClick={checkedIn ? () => navigate("/") : undefined}
@@ -257,7 +257,7 @@ const Dashboard = () => {
       </div>
 
 
-      <div className="px-5 pb-24 space-y-4">
+      <div className="px-5 space-y-4 nuj-safe-bottom-page">
         {/* Side-by-side NUJ boxes */}
         {(nujsReceived.length > 0 || nujsSent.length > 0) && (
           <div className="flex gap-4">

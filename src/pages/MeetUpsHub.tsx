@@ -33,7 +33,7 @@ const MeetUpsHub = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-md mx-auto">
-      <div className="px-5 pt-12 pb-6">
+      <div className="px-5 pb-6 nuj-safe-top-section">
         <button
           onClick={() => navigate(-1)}
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-8"
@@ -86,7 +86,7 @@ const MeetUpsHub = () => {
         </p>
       </div>
 
-      <div className="px-5 space-y-4 pb-16">
+      <div className="px-5 space-y-4 nuj-safe-bottom-page">
         <div className="nuj-card p-4">
           <Collapsible open={joinedOpen} onOpenChange={setJoinedOpen}>
             <CollapsibleTrigger asChild>

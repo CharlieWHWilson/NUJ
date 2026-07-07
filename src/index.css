@@ -58,6 +58,10 @@
     --nuj-amber-light: 36 100% 93%;
     --nuj-card-shadow: 0 2px 16px 0 hsl(215 28% 13% / 0.06);
     --nuj-card-shadow-hover: 0 4px 24px 0 hsl(215 28% 13% / 0.11);
+
+    /* Device safe areas */
+    --nuj-safe-top: env(safe-area-inset-top, 0px);
+    --nuj-safe-bottom: env(safe-area-inset-bottom, 0px);
   }
 }
 
@@ -124,6 +128,36 @@
 
   .nuj-presence-few-days {
     background-color: hsl(215 15% 85%);
+  }
+}
+
+@layer utilities {
+  .nuj-safe-top-nav {
+    padding-top: calc(var(--nuj-safe-top) + 4.5rem);
+  }
+
+  .nuj-safe-top-auth {
+    padding-top: calc(var(--nuj-safe-top) + 4rem);
+  }
+
+  .nuj-safe-top-section {
+    padding-top: calc(var(--nuj-safe-top) + 3rem);
+  }
+
+  .nuj-safe-top-dashboard {
+    padding-top: calc(var(--nuj-safe-top) + 2.75rem);
+  }
+
+  .nuj-safe-bottom {
+    padding-bottom: var(--nuj-safe-bottom);
+  }
+
+  .nuj-safe-bottom-page {
+    padding-bottom: calc(var(--nuj-safe-bottom) + 4rem);
+  }
+
+  .nuj-safe-bottom-sheet {
+    padding-bottom: calc(var(--nuj-safe-bottom) + 2.5rem);
   }
 }
 

@@ -19,7 +19,7 @@ const CheckIn = () => {
     <div className="relative min-h-screen bg-background flex flex-col max-w-md mx-auto">
       <TopNav />
 
-      <div className="flex-1 flex flex-col items-center justify-center px-6 pb-20">
+      <div className="flex-1 flex flex-col items-center justify-center px-6 pb-16 nuj-safe-bottom">
         {/* Ambient subtle circle */}
         <div
           className="absolute inset-0 pointer-events-none"

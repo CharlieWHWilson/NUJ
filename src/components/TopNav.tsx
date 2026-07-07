@@ -37,10 +37,7 @@ export const TopNav = ({ onAddMate, showButtonsOnly }: TopNavProps) => {
   }
 
   return (
-    <div
-      className={`flex items-center px-6 pb-4 ${isCheckin ? "justify-center" : "justify-between"}`}
-      style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 4.5rem)" }}
-    >
+    <div className={`flex items-center px-6 pb-4 nuj-safe-top-nav ${isCheckin ? "justify-center" : "justify-between"}`}>
       <button
         onClick={() => navigate("/")}
         className={`${isCheckin ? "text-3xl" : "text-2xl"} font-bold tracking-tight text-foreground select-none`}

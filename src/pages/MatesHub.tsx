@@ -28,7 +28,7 @@ const MatesHub = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-md mx-auto">
-      <div className="px-2 pt-12 pb-2">
+      <div className="px-2 pb-2 nuj-safe-top-section">
         <button
           onClick={() => navigate(-1)}
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-4"
@@ -48,7 +48,7 @@ const MatesHub = () => {
         </div>
       </div>
 
-      <div className="px-5 pb-16">
+      <div className="px-5 nuj-safe-bottom-page">
         <div className="mb-3">
           <div className="flex justify-start mb-2">
             <span className="text-xs text-muted-foreground">{filteredMates.length} not checked in for {matesDayRange[0]} days</span>

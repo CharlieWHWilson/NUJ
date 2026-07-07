@@ -191,7 +191,7 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-md mx-auto relative">
-      <div className="px-5 pt-12 pb-6">
+      <div className="px-5 pb-6 nuj-safe-top-section">
         <button
           onClick={() => navigate(-1)}
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-8"
@@ -204,7 +204,7 @@ const Profile = () => {
         <p className="text-muted-foreground text-sm mt-1">Your account and reminders</p>
       </div>
 
-      <div className="px-5 pb-16 space-y-4">
+      <div className="px-5 space-y-4 nuj-safe-bottom-page">
         <div className="nuj-card p-4 space-y-4">
           <div>
             <Label>Username</Label>

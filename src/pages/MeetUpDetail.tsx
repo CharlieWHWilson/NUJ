@@ -53,7 +53,7 @@ const MeetUpDetail = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-md mx-auto">
-      <div className="px-5 pt-12 pb-6">
+      <div className="px-5 pb-6 nuj-safe-top-section">
         <button
           onClick={() => navigate(-1)}
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-8"
@@ -68,7 +68,7 @@ const MeetUpDetail = () => {
         <h1 className="text-2xl font-bold tracking-tight mt-2">{meetup.title}</h1>
       </div>
 
-      <div className="px-5 space-y-5 pb-16">
+      <div className="px-5 space-y-5 nuj-safe-bottom-page">
         {/* Description */}
         <div className="nuj-card p-5">
           <p className="text-foreground leading-relaxed">{meetup.description}</p>

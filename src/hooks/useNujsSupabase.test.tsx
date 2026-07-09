@@ -376,7 +376,7 @@ describe("useNujsSupabase", () => {
       body: expect.objectContaining({
         recipientUserId: "user-a",
         title: "NUJ acknowledged",
-        body: "Your NUJ has been acknowledged.",
+        body: "User B acknowledged your NUJ.",
       }),
     });
   });

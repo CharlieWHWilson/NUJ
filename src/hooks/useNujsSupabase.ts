@@ -260,11 +260,28 @@ export const useNujsSupabase = () => {
 
       const acknowledgedRow = acknowledgedNuj as Pick<NujRow, "id" | "sender_user_id" | "recipient_user_id"> | null;
       if (acknowledgedRow?.sender_user_id && acknowledgedRow.sender_user_id !== acknowledgedRow.recipient_user_id) {
+        let acknowledgerDisplayName = "Someone";
+        const { data: userData } = await supabase.auth.getUser();
+        const metadataUsername = userData.user?.user_metadata?.username;
+        if (typeof metadataUsername === "string" && metadataUsername.trim().length > 0) {
+          acknowledgerDisplayName = metadataUsername.trim();
+        } else {
+          const { data: acknowledgerProfileRows } = await supabase
+            .from("profiles")
+            .select("id, username")
+            .in("id", [acknowledgedRow.recipient_user_id]);
+
+          const acknowledgerProfile = ((acknowledgerProfileRows as ProfileLookupRow[] | null) || [])[0];
+          if (acknowledgerProfile?.username?.trim()) {
+            acknowledgerDisplayName = acknowledgerProfile.username.trim();
+          }
+        }
+
         const { error: pushError } = await supabase.functions.invoke("send-nuj-push", {
           body: {
             recipientUserId: acknowledgedRow.sender_user_id,
             title: "NUJ acknowledged",
-            body: "Your NUJ has been acknowledged.",
+            body: `${acknowledgerDisplayName} acknowledged your NUJ.`,
             data: {
               type: "nuj_acknowledged",
               nujId: acknowledgedRow.id,

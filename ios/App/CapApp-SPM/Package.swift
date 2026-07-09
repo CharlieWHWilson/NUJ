@@ -12,8 +12,8 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", exact: "8.4.1"),
-        .package(name: "CapacitorLocalNotifications", path: "../../../node_modules/@capacitor/local-notifications"),
-        .package(name: "CapacitorPushNotifications", path: "../../../node_modules/@capacitor/push-notifications")
+        .package(name: "CapacitorLocalNotifications", path: "../../CapacitorPlugins/local-notifications"),
+        .package(name: "CapacitorPushNotifications", path: "../../CapacitorPlugins/push-notifications")
     ],
     targets: [
         .target(

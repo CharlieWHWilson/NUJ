@@ -21,6 +21,7 @@ import TermsOfUse from "./pages/TermsOfUse";
 import Support from "./pages/Support";
 import { scheduleDailyReminderNotification } from "./lib/dailyReminder";
 import { isAuthenticated } from "./lib/auth";
+import { registerForPushNotifications } from "./lib/pushNotifications";
 
 const queryClient = new QueryClient();
 
@@ -79,6 +80,14 @@ const App = () => {
   useEffect(() => {
     scheduleDailyReminderNotification();
   }, []);
+
+  useEffect(() => {
+    if (authState !== "authenticated") {
+      return;
+    }
+
+    void registerForPushNotifications();
+  }, [authState]);
 
   return (
     <QueryClientProvider client={queryClient}>

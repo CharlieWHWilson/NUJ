@@ -189,6 +189,25 @@ export const useNujsSupabase = () => {
 
       if (insertError) throw insertError;
 
+      const insertedNuj = data as Pick<NujRow, "id"> | null;
+      const { error: pushError } = await supabase.functions.invoke("send-nuj-push", {
+        body: {
+          recipientUserId,
+          title: "New NUJ",
+          body: "You received a new NUJ.",
+          data: {
+            type: "new_nuj",
+            nujId: insertedNuj?.id,
+            senderUserId: userData.user.id,
+          },
+        },
+      });
+
+      // Keep send NUJ successful even if push delivery fails.
+      if (pushError) {
+        console.warn("Failed to send NUJ push", pushError.message);
+      }
+
       await refresh();
       return data;
     } catch (err) {
@@ -202,12 +221,36 @@ export const useNujsSupabase = () => {
 
   const acknowledgeReceivedNuj = async (nujId: string) => {
     try {
-      const { error: updateError } = await supabase
+      const acknowledgedAt = new Date().toISOString();
+      const { data: acknowledgedNuj, error: updateError } = await supabase
         .from("nujs")
-        .update({ acknowledged_at: new Date().toISOString() })
-        .eq("id", nujId);
+        .update({ acknowledged_at: acknowledgedAt })
+        .eq("id", nujId)
+        .select("id, sender_user_id, recipient_user_id")
+        .single();
 
       if (updateError) throw updateError;
+
+      const acknowledgedRow = acknowledgedNuj as Pick<NujRow, "id" | "sender_user_id" | "recipient_user_id"> | null;
+      if (acknowledgedRow?.sender_user_id && acknowledgedRow.sender_user_id !== acknowledgedRow.recipient_user_id) {
+        const { error: pushError } = await supabase.functions.invoke("send-nuj-push", {
+          body: {
+            recipientUserId: acknowledgedRow.sender_user_id,
+            title: "NUJ acknowledged",
+            body: "Your NUJ has been acknowledged.",
+            data: {
+              type: "nuj_acknowledged",
+              nujId: acknowledgedRow.id,
+              acknowledgedAt,
+            },
+          },
+        });
+
+        // Keep acknowledge UX successful even if notification delivery fails.
+        if (pushError) {
+          console.warn("Failed to send acknowledgement push", pushError.message);
+        }
+      }
 
       setNujsReceived((prev) => prev.filter((n) => n.id !== nujId));
     } catch (err) {

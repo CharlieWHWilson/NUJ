@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { removeCurrentPushToken } from "./pushNotifications";
 
 export interface AuthUser {
   id: string;
@@ -139,5 +140,6 @@ export const isAuthenticated = async (): Promise<boolean> => {
 };
 
 export const logoutUser = async () => {
+  await removeCurrentPushToken();
   await supabase.auth.signOut();
 };

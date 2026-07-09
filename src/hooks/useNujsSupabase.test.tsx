@@ -42,6 +42,10 @@ const supabaseMock = vi.hoisted(() => {
     getUser: vi.fn(async () => makeResult({ user: { id: state.currentUserId } })),
   };
 
+  const functions = {
+    invoke: vi.fn(async () => makeResult(null)),
+  };
+
   const from = vi.fn((table: string) => {
     const query: any = {
       _table: table,
@@ -110,6 +114,13 @@ const supabaseMock = vi.hoisted(() => {
         if (table === "nujs" && this._insertPayload) {
           return makeResult(state.nujs[0]);
         }
+        if (table === "nujs" && this._updatePayload) {
+          const result = await executeQuery(this);
+          const rows = Array.isArray(result.data)
+            ? result.data
+            : (result.data ? [result.data] : []);
+          return makeResult(rows[0] ?? null, result.error);
+        }
         return makeResult(null);
       }),
 
@@ -127,12 +138,17 @@ const supabaseMock = vi.hoisted(() => {
 
     if (query._updatePayload && table === "nujs") {
       const idFilter = query._filters.find((f: any) => f.field === "id");
+      const updatedRows: SupabaseState["nujs"] = [];
       if (idFilter) {
         state.nujs = state.nujs.map((row) =>
-          row.id === idFilter.value ? { ...row, ...query._updatePayload } : row
+          row.id === idFilter.value ? (() => {
+            const updated = { ...row, ...query._updatePayload };
+            updatedRows.push(updated);
+            return updated;
+          })() : row
         );
       }
-      return makeResult(null);
+      return makeResult(updatedRows);
     }
 
     if (query._delete && table === "nujs") {
@@ -189,7 +205,7 @@ const supabaseMock = vi.hoisted(() => {
     return makeResult([]);
   };
 
-  return { auth, from };
+  return { auth, from, functions };
 });
 
 vi.mock("@/lib/supabase", () => ({
@@ -228,6 +244,29 @@ describe("useNujsSupabase", () => {
 
     expect(result.current.nujsSent).toHaveLength(1);
     expect(result.current.nujsSent[0].toMateName).toBe("User B");
+    expect(supabaseMock.functions.invoke).toHaveBeenCalledWith("send-nuj-push", {
+      body: expect.objectContaining({
+        recipientUserId: "user-b",
+        title: "New NUJ",
+        body: "You received a new NUJ.",
+      }),
+    });
+  });
+
+  it("does not fail NUJ send when push invoke fails", async () => {
+    supabaseMock.functions.invoke.mockResolvedValueOnce(makeResult(null, { message: "invoke failed" }));
+
+    const { result } = renderHook(() => useNujsSupabase());
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    await act(async () => {
+      await result.current.sendNuj("user-b");
+    });
+
+    expect(result.current.nujsSent).toHaveLength(1);
   });
 
   it("blocks sending a second active NUJ to the same recipient", async () => {
@@ -333,6 +372,13 @@ describe("useNujsSupabase", () => {
 
     expect(result.current.nujsReceived).toHaveLength(0);
     expect(state.nujs[0].acknowledged_at).not.toBeNull();
+    expect(supabaseMock.functions.invoke).toHaveBeenCalledWith("send-nuj-push", {
+      body: expect.objectContaining({
+        recipientUserId: "user-a",
+        title: "NUJ acknowledged",
+        body: "Your NUJ has been acknowledged.",
+      }),
+    });
   });
 
   it("hides acknowledged NUJs from the active inbox while retaining them in storage", async () => {

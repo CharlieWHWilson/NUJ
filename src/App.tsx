@@ -3,7 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import { supabase } from "./lib/supabase";
 import CheckIn from "./pages/CheckIn";
 import Dashboard from "./pages/Dashboard";
@@ -26,6 +26,46 @@ import { registerForPushNotifications, syncPendingPushToken } from "./lib/pushNo
 const queryClient = new QueryClient();
 
 export type AuthState = "loading" | "authenticated" | "unauthenticated";
+
+const PUSH_OPEN_DASHBOARD_KEY = "nuj.push.open_dashboard";
+const PUSH_OPEN_DASHBOARD_EVENT = "nuj:open-dashboard";
+
+const PushDashboardRedirectHandler = ({ authState }: { authState: AuthState }) => {
+  const navigate = useNavigate();
+
+  const openDashboardIfRequested = () => {
+    if (authState !== "authenticated" || typeof window === "undefined") {
+      return;
+    }
+
+    const shouldOpenDashboard = window.sessionStorage.getItem(PUSH_OPEN_DASHBOARD_KEY) === "1";
+    if (!shouldOpenDashboard) {
+      return;
+    }
+
+    window.sessionStorage.removeItem(PUSH_OPEN_DASHBOARD_KEY);
+    navigate("/dashboard");
+  };
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const onPushDashboardRequest = () => {
+      openDashboardIfRequested();
+    };
+
+    window.addEventListener(PUSH_OPEN_DASHBOARD_EVENT, onPushDashboardRequest);
+    return () => {
+      window.removeEventListener(PUSH_OPEN_DASHBOARD_EVENT, onPushDashboardRequest);
+    };
+  }, [authState]);
+
+  useEffect(() => {
+    openDashboardIfRequested();
+  }, [authState]);
+
+  return null;
+};
 
 const ProtectedRoute = ({ children, authState }: { children: JSX.Element; authState: AuthState }) => {
   if (authState === "loading") {
@@ -96,6 +136,7 @@ const App = () => {
         <Toaster />
         <Sonner />
         <BrowserRouter basename={import.meta.env.BASE_URL} future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          <PushDashboardRedirectHandler authState={authState} />
           <Routes>
             <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/terms" element={<TermsOfUse />} />

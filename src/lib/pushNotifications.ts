@@ -8,6 +8,8 @@ import { supabase } from "@/lib/supabase";
 
 const PUSH_TOKEN_STORAGE_KEY = "nuj.push_token.current";
 const PENDING_PUSH_TOKEN_STORAGE_KEY = "nuj.push_token.pending";
+const PUSH_OPEN_DASHBOARD_KEY = "nuj.push.open_dashboard";
+const PUSH_OPEN_DASHBOARD_EVENT = "nuj:open-dashboard";
 
 let listenersRegistered = false;
 let registrationPromise: Promise<void> | null = null;
@@ -42,6 +44,13 @@ const setPendingPushToken = (token: string) => {
 const clearPendingPushToken = () => {
   if (typeof window === "undefined") return;
   window.localStorage.removeItem(PENDING_PUSH_TOKEN_STORAGE_KEY);
+};
+
+const requestDashboardOpenFromPush = () => {
+  if (typeof window === "undefined") return;
+
+  window.sessionStorage.setItem(PUSH_OPEN_DASHBOARD_KEY, "1");
+  window.dispatchEvent(new CustomEvent(PUSH_OPEN_DASHBOARD_EVENT));
 };
 
 const deletePushToken = async (userId: string, token: string) => {
@@ -128,6 +137,10 @@ const ensurePushListeners = () => {
 
   PushNotifications.addListener("registrationError", (error) => {
     console.error("Push registration failed", error);
+  });
+
+  PushNotifications.addListener("pushNotificationActionPerformed", () => {
+    requestDashboardOpenFromPush();
   });
 
   listenersRegistered = true;

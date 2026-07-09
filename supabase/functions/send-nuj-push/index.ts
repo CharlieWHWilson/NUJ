@@ -186,7 +186,16 @@ Deno.serve(async (req) => {
     } catch (err) {
       const details = err instanceof Error ? err.message : 'Unknown APNs JWT error'
       console.error('APNs JWT generation failed', details)
-      return jsonResponse({ success: false, error: 'APNSAuthError', details }, 500)
+      return jsonResponse({
+        success: false,
+        error: 'APNSAuthError',
+        details,
+        sent: 0,
+        failed: tokens.length,
+        removedInvalidTokens: 0,
+        attemptedTokens: tokens.length,
+        apnsFailuresByReason: { APNSAuthError: tokens.length },
+      })
     }
 
     // APNs endpoint expects a single token per request.

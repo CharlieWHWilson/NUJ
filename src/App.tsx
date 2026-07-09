@@ -21,7 +21,7 @@ import TermsOfUse from "./pages/TermsOfUse";
 import Support from "./pages/Support";
 import { scheduleDailyReminderNotification } from "./lib/dailyReminder";
 import { isAuthenticated } from "./lib/auth";
-import { registerForPushNotifications } from "./lib/pushNotifications";
+import { registerForPushNotifications, syncPendingPushToken } from "./lib/pushNotifications";
 
 const queryClient = new QueryClient();
 
@@ -87,6 +87,7 @@ const App = () => {
     }
 
     void registerForPushNotifications();
+    void syncPendingPushToken();
   }, [authState]);
 
   return (

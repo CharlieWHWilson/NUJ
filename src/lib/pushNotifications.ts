@@ -7,6 +7,7 @@ import {
 import { supabase } from "@/lib/supabase";
 
 const PUSH_TOKEN_STORAGE_KEY = "nuj.push_token.current";
+const PENDING_PUSH_TOKEN_STORAGE_KEY = "nuj.push_token.pending";
 
 let listenersRegistered = false;
 let registrationPromise: Promise<void> | null = null;
@@ -28,6 +29,21 @@ const clearStoredPushToken = () => {
   window.localStorage.removeItem(PUSH_TOKEN_STORAGE_KEY);
 };
 
+const getPendingPushToken = () => {
+  if (typeof window === "undefined") return null;
+  return window.localStorage.getItem(PENDING_PUSH_TOKEN_STORAGE_KEY);
+};
+
+const setPendingPushToken = (token: string) => {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(PENDING_PUSH_TOKEN_STORAGE_KEY, token);
+};
+
+const clearPendingPushToken = () => {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem(PENDING_PUSH_TOKEN_STORAGE_KEY);
+};
+
 const deletePushToken = async (userId: string, token: string) => {
   const { error } = await supabase
     .from("push_tokens")
@@ -40,19 +56,18 @@ const deletePushToken = async (userId: string, token: string) => {
   }
 };
 
-const persistPushToken = async (token: Token) => {
+const persistPushTokenValueForCurrentUser = async (tokenValue: string) => {
   const {
     data: { user },
     error: userError,
   } = await supabase.auth.getUser();
 
   if (userError || !user) {
-    console.error("Unable to resolve authenticated user for push token", userError?.message);
-    return;
+    return { ok: false as const, reason: "no_user" as const, message: userError?.message };
   }
 
   const previousToken = getStoredPushToken();
-  if (previousToken && previousToken !== token.value) {
+  if (previousToken && previousToken !== tokenValue) {
     await deletePushToken(user.id, previousToken);
   }
 
@@ -60,7 +75,7 @@ const persistPushToken = async (token: Token) => {
   const { error } = await supabase.from("push_tokens").upsert(
     {
       user_id: user.id,
-      token: token.value,
+      token: tokenValue,
       platform: Capacitor.getPlatform(),
       updated_at: timestamp,
       last_seen: timestamp,
@@ -71,11 +86,36 @@ const persistPushToken = async (token: Token) => {
   );
 
   if (error) {
-    console.error("Failed to save push token", error.message);
-    return;
+    return { ok: false as const, reason: "db_error" as const, message: error.message };
   }
 
-  setStoredPushToken(token.value);
+  setStoredPushToken(tokenValue);
+  clearPendingPushToken();
+
+  return { ok: true as const };
+};
+
+const persistPushToken = async (token: Token) => {
+  const result = await persistPushTokenValueForCurrentUser(token.value);
+
+  if (!result.ok) {
+    // Registration can complete before auth session hydration on app launch.
+    // Keep the token and retry once authenticated.
+    setPendingPushToken(token.value);
+    console.warn("Push token deferred for later sync", result.message ?? result.reason);
+  }
+};
+
+export const syncPendingPushToken = async () => {
+  if (!isNativePushEnvironment()) return;
+
+  const pendingToken = getPendingPushToken();
+  if (!pendingToken) return;
+
+  const result = await persistPushTokenValueForCurrentUser(pendingToken);
+  if (!result.ok) {
+    console.warn("Pending push token sync failed", result.message ?? result.reason);
+  }
 };
 
 const ensurePushListeners = () => {
@@ -124,6 +164,7 @@ export const registerForPushNotifications = async () => {
 
   try {
     await registrationPromise;
+    await syncPendingPushToken();
   } finally {
     registrationPromise = null;
   }

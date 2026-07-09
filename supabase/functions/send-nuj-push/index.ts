@@ -1,5 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2'
-import { SignJWT } from 'npm:jose@5'
+import { SignJWT, importPKCS8 } from 'npm:jose@5'
 
 // Expected secrets (configure in Dashboard > Edge Functions > Secrets)
 // APNS_TEAM_ID (string)
@@ -9,25 +9,12 @@ import { SignJWT } from 'npm:jose@5'
 // APNS_ENV (string) - 'development' or 'production'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
-const SUPABASE_SECRET_KEYS_RAW = Deno.env.get('SUPABASE_SECRET_KEYS')
-if (!SUPABASE_URL) throw new Error('Missing SUPABASE_URL')
-if (!SUPABASE_SECRET_KEYS_RAW) throw new Error('Missing SUPABASE_SECRET_KEYS')
-
-const SUPABASE_SECRET_KEYS = JSON.parse(SUPABASE_SECRET_KEYS_RAW)
-const ADMIN_KEY = SUPABASE_SECRET_KEYS['default']
-if (!ADMIN_KEY) throw new Error('Missing SUPABASE_SECRET_KEYS["default"]')
 
 const apnsTeamId = Deno.env.get('APNS_TEAM_ID')
 const apnsKeyId = Deno.env.get('APNS_KEY_ID')
 const apnsPrivateKey = Deno.env.get('APNS_PRIVATE_KEY')
 const apnsTopic = Deno.env.get('APNS_TOPIC')
 const apnsEnv = Deno.env.get('APNS_ENV')
-
-if (!apnsTeamId) throw new Error('Missing APNS_TEAM_ID')
-if (!apnsKeyId) throw new Error('Missing APNS_KEY_ID')
-if (!apnsPrivateKey) throw new Error('Missing APNS_PRIVATE_KEY')
-if (!apnsTopic) throw new Error('Missing APNS_TOPIC')
-if (!apnsEnv) throw new Error('Missing APNS_ENV')
 
 const APNS_HOST = apnsEnv === 'production' ? 'api.push.apple.com' : 'api.sandbox.push.apple.com'
 const APNS_AUDIENCE = 'https://api.push.apple.com'
@@ -50,7 +37,12 @@ function jsonResponse(body: unknown, status = 200) {
 
 function buildApnsPrivateKey(p8: string) {
   // Accept either full PEM (with BEGIN/END), escaped newlines, or raw base64 body.
-  const normalized = p8.replace(/\\n/g, '\n').trim()
+  const normalized = p8
+    .replace(/\\n/g, '\n')
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    .trim()
+    .replace(/^"|"$/g, '')
   const trimmed = normalized
   if (trimmed.includes('BEGIN PRIVATE KEY')) return trimmed
   return `-----BEGIN PRIVATE KEY-----\n${trimmed}\n-----END PRIVATE KEY-----\n`
@@ -58,10 +50,15 @@ function buildApnsPrivateKey(p8: string) {
 
 async function getApnsJwt() {
   // APNs auth uses a short-lived token (max 60 minutes; typical 20-30 min).
+  if (!apnsPrivateKey) throw new Error('Missing APNS_PRIVATE_KEY')
+  if (!apnsKeyId) throw new Error('Missing APNS_KEY_ID')
+  if (!apnsTeamId) throw new Error('Missing APNS_TEAM_ID')
+
   const pem = buildApnsPrivateKey(apnsPrivateKey)
 
   const now = Math.floor(Date.now() / 1000)
   const exp = now + 25 * 60
+  const signingKey = await importPKCS8(pem, 'ES256')
 
   const token = await new SignJWT({})
     .setProtectedHeader({ alg: 'ES256', kid: apnsKeyId })
@@ -69,25 +66,31 @@ async function getApnsJwt() {
     .setExpirationTime(exp)
     .setAudience(APNS_AUDIENCE)
     .setIssuer(apnsTeamId)
-    .sign(pem)
+    .sign(signingKey)
 
   return token
 }
 
-const supabaseAdmin = createClient(SUPABASE_URL, ADMIN_KEY)
+function getSupabaseAdminKey() {
+  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+  if (serviceRoleKey) return serviceRoleKey
+
+  const secretKeysRaw = Deno.env.get('SUPABASE_SECRET_KEYS')
+  if (!secretKeysRaw) return null
+
+  try {
+    const parsed = JSON.parse(secretKeysRaw) as Record<string, string>
+    return parsed['default'] ?? null
+  } catch {
+    return null
+  }
+}
 
 interface PushRequestBody {
   recipientUserId: string
   title: string
   body: string
   data?: Record<string, unknown>
-}
-
-type ApnsSendResult = {
-  token: string
-  success: boolean
-  removed?: boolean
-  apnsReason?: string
 }
 
 function apnsErrorToRemoved(reason: string | undefined) {
@@ -111,6 +114,31 @@ Deno.serve(async (req) => {
     if (req.method !== 'POST') {
       return jsonResponse({ success: false, error: 'MethodNotAllowed' }, 405)
     }
+
+    const adminKey = getSupabaseAdminKey()
+    if (!SUPABASE_URL || !adminKey) {
+      return jsonResponse(
+        {
+          success: false,
+          error: 'ConfigError',
+          details: 'Missing SUPABASE_URL or admin key (SUPABASE_SERVICE_ROLE_KEY / SUPABASE_SECRET_KEYS).',
+        },
+        500,
+      )
+    }
+
+    if (!apnsTopic || !apnsEnv) {
+      return jsonResponse(
+        {
+          success: false,
+          error: 'ConfigError',
+          details: 'Missing APNS_TOPIC or APNS_ENV.',
+        },
+        500,
+      )
+    }
+
+    const supabaseAdmin = createClient(SUPABASE_URL, adminKey)
 
     let payload: PushRequestBody
     try {
@@ -142,7 +170,14 @@ Deno.serve(async (req) => {
 
     const tokens = (tokensRows ?? [])
     if (tokens.length === 0) {
-      return jsonResponse({ success: true, sent: 0, failed: 0, removedInvalidTokens: 0 })
+      return jsonResponse({
+        success: true,
+        sent: 0,
+        failed: 0,
+        removedInvalidTokens: 0,
+        attemptedTokens: 0,
+        apnsFailuresByReason: {},
+      })
     }
 
     let apnsJwt: string
@@ -159,6 +194,7 @@ Deno.serve(async (req) => {
     let sent = 0
     let failed = 0
     let removedInvalidTokens = 0
+    const apnsFailuresByReason: Record<string, number> = {}
 
     const removedIds: string[] = []
 
@@ -204,6 +240,8 @@ Deno.serve(async (req) => {
       }
 
       const shouldRemove = apnsErrorToRemoved(reason)
+      const reasonKey = reason ?? 'Unknown'
+      apnsFailuresByReason[reasonKey] = (apnsFailuresByReason[reasonKey] ?? 0) + 1
       if (shouldRemove) {
         removedIds.push(row.id)
         removedInvalidTokens += 1
@@ -228,6 +266,8 @@ Deno.serve(async (req) => {
       sent,
       failed,
       removedInvalidTokens,
+      attemptedTokens: tokens.length,
+      apnsFailuresByReason,
     })
   } catch (err) {
     const details = err instanceof Error ? err.message : 'Unhandled send-nuj-push error'

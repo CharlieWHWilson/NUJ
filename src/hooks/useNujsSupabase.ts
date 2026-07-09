@@ -206,7 +206,7 @@ export const useNujsSupabase = () => {
       }
 
       const insertedNuj = data as Pick<NujRow, "id"> | null;
-      const { error: pushError } = await supabase.functions.invoke("send-nuj-push", {
+      const { data: pushResult, error: pushError } = await supabase.functions.invoke("send-nuj-push", {
         body: {
           recipientUserId,
           title: `${senderDisplayName} sent a NUJ`,
@@ -222,6 +222,17 @@ export const useNujsSupabase = () => {
       // Keep send NUJ successful even if push delivery fails.
       if (pushError) {
         console.warn("Failed to send NUJ push", pushError.message);
+      } else if (pushResult && typeof pushResult === "object") {
+        const result = pushResult as {
+          sent?: number;
+          failed?: number;
+          attemptedTokens?: number;
+          apnsFailuresByReason?: Record<string, number>;
+        };
+
+        if ((result.sent ?? 0) === 0) {
+          console.warn("NUJ push was invoked but no notifications were delivered", result);
+        }
       }
 
       await refresh();

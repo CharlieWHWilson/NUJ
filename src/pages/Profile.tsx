@@ -13,6 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import {
   loadDailyReminderSettings,
+  requestDailyReminderPermission,
   saveDailyReminderSettings,
   scheduleDailyReminderNotification,
 } from "@/lib/dailyReminder";
@@ -49,16 +50,8 @@ const Profile = () => {
       return;
     }
 
-    if (!("Notification" in window)) {
-      alert("Push notifications are not supported in this browser.");
-      return;
-    }
-
-    const permission = Notification.permission === "granted"
-      ? "granted"
-      : await Notification.requestPermission();
-
-    if (permission !== "granted") {
+    const hasPermission = await requestDailyReminderPermission();
+    if (!hasPermission) {
       alert("Allow notifications to enable daily check-in reminders.");
       setDailyReminderEnabled(false);
       persistReminderSettings(false, reminderTime);
@@ -310,7 +303,7 @@ const Profile = () => {
               value={reminderTime}
               onChange={(event) => handleChangeReminderTime(event.target.value)}
               disabled={!dailyReminderEnabled}
-              className="mt-2"
+              className="mt-2 w-full sm:w-1/2"
             />
           </div>
         </div>

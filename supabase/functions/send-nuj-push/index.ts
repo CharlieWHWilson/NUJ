@@ -30,11 +30,28 @@ if (!apnsTopic) throw new Error('Missing APNS_TOPIC')
 if (!apnsEnv) throw new Error('Missing APNS_ENV')
 
 const APNS_HOST = apnsEnv === 'production' ? 'api.push.apple.com' : 'api.sandbox.push.apple.com'
-const APNS_AUDIENCE = `https://${APNS_HOST}`
+const APNS_AUDIENCE = 'https://api.push.apple.com'
+
+const corsHeaders: HeadersInit = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+}
+
+function jsonResponse(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: {
+      'content-type': 'application/json',
+      ...corsHeaders,
+    },
+  })
+}
 
 function buildApnsPrivateKey(p8: string) {
-  // Accept either full PEM (with BEGIN/END) or the raw base64 body.
-  const trimmed = p8.trim()
+  // Accept either full PEM (with BEGIN/END), escaped newlines, or raw base64 body.
+  const normalized = p8.replace(/\\n/g, '\n').trim()
+  const trimmed = normalized
   if (trimmed.includes('BEGIN PRIVATE KEY')) return trimmed
   return `-----BEGIN PRIVATE KEY-----\n${trimmed}\n-----END PRIVATE KEY-----\n`
 }
@@ -86,118 +103,135 @@ function apnsErrorToRemoved(reason: string | undefined) {
 }
 
 Deno.serve(async (req) => {
-  if (req.method !== 'POST') {
-    return Response.json({ success: false, error: 'MethodNotAllowed' }, { status: 405 })
-  }
-
-  let payload: PushRequestBody
   try {
-    payload = await req.json()
-  } catch {
-    return Response.json({ success: false, error: 'InvalidJSON' }, { status: 400 })
-  }
-
-  const { recipientUserId, title, body, data } = payload ?? {}
-  if (!recipientUserId || typeof recipientUserId !== 'string') {
-    return Response.json({ success: false, error: 'recipientUserId is required' }, { status: 400 })
-  }
-  if (!title || typeof title !== 'string') {
-    return Response.json({ success: false, error: 'title is required' }, { status: 400 })
-  }
-  if (!body || typeof body !== 'string') {
-    return Response.json({ success: false, error: 'body is required' }, { status: 400 })
-  }
-
-  const { data: tokensRows, error } = await supabaseAdmin
-    .from('push_tokens')
-    .select('id, token, platform')
-    .eq('user_id', recipientUserId)
-    .eq('platform', 'ios')
-
-  if (error) {
-    return Response.json({ success: false, error: 'DBError', details: error.message }, { status: 500 })
-  }
-
-  const tokens = (tokensRows ?? [])
-  if (tokens.length === 0) {
-    return Response.json({ success: true, sent: 0, failed: 0, removedInvalidTokens: 0 })
-  }
-
-  const apnsJwt = await getApnsJwt()
-
-  // APNs endpoint expects a single token per request.
-  // We keep it simple + reliable; you can batch later if needed.
-  let sent = 0
-  let failed = 0
-  let removedInvalidTokens = 0
-
-  const removedIds: string[] = []
-
-  for (const row of tokens) {
-    const deviceToken = row.token
-    if (!deviceToken) continue
-
-    const apnsBody = {
-      aps: {
-        alert: {
-          title,
-          body,
-        },
-        sound: 'default',
-      },
-      ...(data ? { data } : {}),
+    if (req.method === 'OPTIONS') {
+      return new Response('ok', { headers: corsHeaders })
     }
 
-    const url = `https://${APNS_HOST}/3/device/${deviceToken}`
-
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apnsJwt}`,
-        'apns-topic': apnsTopic,
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify(apnsBody),
-    })
-
-    if (res.ok) {
-      sent += 1
-      continue
+    if (req.method !== 'POST') {
+      return jsonResponse({ success: false, error: 'MethodNotAllowed' }, 405)
     }
 
-    // Attempt to parse APNs error.
-    let reason: string | undefined
+    let payload: PushRequestBody
     try {
-      const errJson = await res.json()
-      reason = errJson?.reason
+      payload = await req.json()
     } catch {
-      // ignore
+      return jsonResponse({ success: false, error: 'InvalidJSON' }, 400)
     }
 
-    const shouldRemove = apnsErrorToRemoved(reason)
-    if (shouldRemove) {
-      removedIds.push(row.id)
-      removedInvalidTokens += 1
+    const { recipientUserId, title, body, data } = payload ?? {}
+    if (!recipientUserId || typeof recipientUserId !== 'string') {
+      return jsonResponse({ success: false, error: 'recipientUserId is required' }, 400)
     }
-    failed += 1
-  }
+    if (!title || typeof title !== 'string') {
+      return jsonResponse({ success: false, error: 'title is required' }, 400)
+    }
+    if (!body || typeof body !== 'string') {
+      return jsonResponse({ success: false, error: 'body is required' }, 400)
+    }
 
-  if (removedIds.length > 0) {
-    const { error: delErr } = await supabaseAdmin
+    const { data: tokensRows, error } = await supabaseAdmin
       .from('push_tokens')
-      .delete()
-      .in('id', removedIds)
+      .select('id, token, platform')
+      .eq('user_id', recipientUserId)
+      .eq('platform', 'ios')
 
-    // If cleanup fails, still return success so caller can proceed.
-    if (delErr) {
-      console.warn('Failed removing invalid tokens', delErr.message)
+    if (error) {
+      return jsonResponse({ success: false, error: 'DBError', details: error.message }, 500)
     }
-  }
 
-  return Response.json({
-    success: true,
-    sent,
-    failed,
-    removedInvalidTokens,
-  })
+    const tokens = (tokensRows ?? [])
+    if (tokens.length === 0) {
+      return jsonResponse({ success: true, sent: 0, failed: 0, removedInvalidTokens: 0 })
+    }
+
+    let apnsJwt: string
+    try {
+      apnsJwt = await getApnsJwt()
+    } catch (err) {
+      const details = err instanceof Error ? err.message : 'Unknown APNs JWT error'
+      console.error('APNs JWT generation failed', details)
+      return jsonResponse({ success: false, error: 'APNSAuthError', details }, 500)
+    }
+
+    // APNs endpoint expects a single token per request.
+    // We keep it simple + reliable; you can batch later if needed.
+    let sent = 0
+    let failed = 0
+    let removedInvalidTokens = 0
+
+    const removedIds: string[] = []
+
+    for (const row of tokens) {
+      const deviceToken = row.token
+      if (!deviceToken) continue
+
+      const apnsBody = {
+        aps: {
+          alert: {
+            title,
+            body,
+          },
+          sound: 'default',
+        },
+        ...(data ? { data } : {}),
+      }
+
+      const url = `https://${APNS_HOST}/3/device/${deviceToken}`
+
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${apnsJwt}`,
+          'apns-topic': apnsTopic,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify(apnsBody),
+      })
+
+      if (res.ok) {
+        sent += 1
+        continue
+      }
+
+      // Attempt to parse APNs error.
+      let reason: string | undefined
+      try {
+        const errJson = await res.json()
+        reason = errJson?.reason
+      } catch {
+        // ignore
+      }
+
+      const shouldRemove = apnsErrorToRemoved(reason)
+      if (shouldRemove) {
+        removedIds.push(row.id)
+        removedInvalidTokens += 1
+      }
+      failed += 1
+    }
+
+    if (removedIds.length > 0) {
+      const { error: delErr } = await supabaseAdmin
+        .from('push_tokens')
+        .delete()
+        .in('id', removedIds)
+
+      // If cleanup fails, still return success so caller can proceed.
+      if (delErr) {
+        console.warn('Failed removing invalid tokens', delErr.message)
+      }
+    }
+
+    return jsonResponse({
+      success: true,
+      sent,
+      failed,
+      removedInvalidTokens,
+    })
+  } catch (err) {
+    const details = err instanceof Error ? err.message : 'Unhandled send-nuj-push error'
+    console.error('Unhandled send-nuj-push error', details)
+    return jsonResponse({ success: false, error: 'InternalError', details }, 500)
+  }
 })

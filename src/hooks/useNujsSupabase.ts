@@ -189,12 +189,28 @@ export const useNujsSupabase = () => {
 
       if (insertError) throw insertError;
 
+      let senderDisplayName = "Someone";
+      const metadataUsername = userData.user.user_metadata?.username;
+      if (typeof metadataUsername === "string" && metadataUsername.trim().length > 0) {
+        senderDisplayName = metadataUsername.trim();
+      } else {
+        const { data: senderProfileRows } = await supabase
+          .from("profiles")
+          .select("id, username")
+          .in("id", [userData.user.id]);
+
+        const senderProfile = ((senderProfileRows as ProfileLookupRow[] | null) || [])[0];
+        if (senderProfile?.username?.trim()) {
+          senderDisplayName = senderProfile.username.trim();
+        }
+      }
+
       const insertedNuj = data as Pick<NujRow, "id"> | null;
       const { error: pushError } = await supabase.functions.invoke("send-nuj-push", {
         body: {
           recipientUserId,
-          title: "New NUJ",
-          body: "You received a new NUJ.",
+          title: `${senderDisplayName} sent a NUJ`,
+          body: "Open NUJ to view it.",
           data: {
             type: "new_nuj",
             nujId: insertedNuj?.id,

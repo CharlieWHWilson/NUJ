@@ -247,8 +247,8 @@ describe("useNujsSupabase", () => {
     expect(supabaseMock.functions.invoke).toHaveBeenCalledWith("send-nuj-push", {
       body: expect.objectContaining({
         recipientUserId: "user-b",
-        title: "New NUJ",
-        body: "You received a new NUJ.",
+        title: "User A sent a NUJ",
+        body: "Open NUJ to view it.",
       }),
     });
   });

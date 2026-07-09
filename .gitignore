@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local release/debug artifacts
+NUJ logo.png
+routing-app-coverage.geojson
+supabase/.temp/

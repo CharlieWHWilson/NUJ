@@ -17,6 +17,7 @@ const apnsTopic = Deno.env.get('APNS_TOPIC')
 const apnsEnv = Deno.env.get('APNS_ENV')
 
 const APNS_HOST = apnsEnv === 'production' ? 'api.push.apple.com' : 'api.sandbox.push.apple.com'
+const APNS_FALLBACK_HOST = APNS_HOST === 'api.push.apple.com' ? 'api.sandbox.push.apple.com' : 'api.push.apple.com'
 const APNS_AUDIENCE = 'https://api.push.apple.com'
 
 const corsHeaders: HeadersInit = {
@@ -94,15 +95,19 @@ interface PushRequestBody {
 }
 
 function apnsErrorToRemoved(reason: string | undefined) {
-  // Reason codes indicating token is no longer valid.
+  // Remove only when APNs indicates this specific device token is invalid/stale.
+  // Do not remove for provider/config issues (e.g. InvalidProviderToken, TopicDisallowed).
   if (!reason) return false
   return [
     'BadDeviceToken',
     'Unregistered',
     'DeviceTokenNotForTopic',
-    'InvalidProviderToken',
-    'TopicDisallowed',
   ].includes(reason)
+}
+
+const apnsShouldRetryOnFallbackHost = (reason: string | undefined) => {
+  if (!reason) return false
+  return ['BadDeviceToken', 'DeviceTokenNotForTopic'].includes(reason)
 }
 
 Deno.serve(async (req) => {
@@ -222,17 +227,20 @@ Deno.serve(async (req) => {
         ...(data ? { data } : {}),
       }
 
-      const url = `https://${APNS_HOST}/3/device/${deviceToken}`
+      const sendToHost = async (host: string) => {
+        const url = `https://${host}/3/device/${deviceToken}`
+        return fetch(url, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${apnsJwt}`,
+            'apns-topic': apnsTopic,
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify(apnsBody),
+        })
+      }
 
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${apnsJwt}`,
-          'apns-topic': apnsTopic,
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify(apnsBody),
-      })
+      let res = await sendToHost(APNS_HOST)
 
       if (res.ok) {
         sent += 1
@@ -247,6 +255,25 @@ Deno.serve(async (req) => {
       } catch {
         // ignore
       }
+
+      // If APNS_ENV is wrong for this token, retry against the opposite host once.
+      if (apnsShouldRetryOnFallbackHost(reason)) {
+        const fallbackRes = await sendToHost(APNS_FALLBACK_HOST)
+        if (fallbackRes.ok) {
+          console.warn(`APNs fallback host succeeded for token ${row.id}; check APNS_ENV setting.`)
+          sent += 1
+          continue
+        }
+
+        try {
+          const fallbackErrJson = await fallbackRes.json()
+          reason = fallbackErrJson?.reason ?? reason
+        } catch {
+          // keep original reason if fallback body isn't json
+        }
+      }
+
+      console.warn(`APNs send failed for token ${row.id}: ${reason ?? 'Unknown'}`)
 
       const shouldRemove = apnsErrorToRemoved(reason)
       const reasonKey = reason ?? 'Unknown'

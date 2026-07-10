@@ -38,6 +38,12 @@ export const AddMateSheet = ({ open, onClose, onMateAdded }: AddMateSheetProps) 
         return;
       }
 
+      if (user?.id && data.id === user.id) {
+        setSearchError('You cannot add yourself as a mate.');
+        setIsSearching(false);
+        return;
+      }
+
       setSearchResult({ name: data.username, id: data.id, userCode: data.user_code ?? undefined });
     } catch (err) {
       const message = err instanceof Error && err.message.includes('permission')

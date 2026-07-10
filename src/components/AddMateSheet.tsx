@@ -95,21 +95,21 @@ export const AddMateSheet = ({ open, onClose, onMateAdded }: AddMateSheetProps) 
   return (
     <>
       <div className="fixed inset-0 bg-foreground/20 z-40" onClick={onClose} />
-      <div className="fixed bottom-0 left-0 right-0 z-50 w-full max-w-md mx-auto bg-card rounded-t-3xl p-6 nuj-safe-bottom-sheet border border-border max-h-[calc(100dvh-1rem)] overflow-y-auto overscroll-contain" style={{ boxShadow: "0 -4px 40px hsl(215 28% 13% / 0.12)" }}>
-        <div className="w-10 h-1 bg-border rounded-full mx-auto mb-6" />
-        <div className="flex items-center gap-2 mb-6">
+      <div className="fixed bottom-0 left-0 right-0 z-50 w-full max-w-sm mx-auto bg-card rounded-t-3xl p-4 nuj-safe-bottom-sheet border border-border max-h-[72dvh] overflow-y-auto overscroll-contain" style={{ boxShadow: "0 -4px 40px hsl(215 28% 13% / 0.12)" }}>
+        <div className="w-10 h-1 bg-border rounded-full mx-auto mb-4" />
+        <div className="flex items-center gap-2 mb-4">
           <Share2 size={16} className="text-muted-foreground" />
           <h2 className="font-semibold">Add a mate</h2>
         </div>
-        <div className="flex gap-2 mb-6">
+        <div className="flex gap-2 mb-4">
           <button
-            className={`flex-1 py-2 rounded-lg font-medium ${tab === 'share' ? 'bg-muted text-foreground' : 'bg-background text-muted-foreground border'}`}
+            className={`flex-1 py-2 rounded-lg font-medium text-sm ${tab === 'share' ? 'bg-muted text-foreground' : 'bg-background text-muted-foreground border'}`}
             onClick={() => setTab('share')}
           >
             Invite mate
           </button>
           <button
-            className={`flex-1 py-2 rounded-lg font-medium ${tab === 'find' ? 'bg-muted text-foreground' : 'bg-background text-muted-foreground border'}`}
+            className={`flex-1 py-2 rounded-lg font-medium text-sm ${tab === 'find' ? 'bg-muted text-foreground' : 'bg-background text-muted-foreground border'}`}
             onClick={() => setTab('find')}
           >
             Find mate
@@ -153,7 +153,7 @@ export const AddMateSheet = ({ open, onClose, onMateAdded }: AddMateSheetProps) 
         {tab === 'find' && (
           <div>
             <label className="block text-sm font-medium mb-2">Enter NUJ code</label>
-            <div className="flex gap-2 mb-2">
+            <div className="flex gap-2 mb-3">
               <input
                 type="text"
                 className="flex-1 rounded-lg border px-3 py-2 text-base"
@@ -163,7 +163,7 @@ export const AddMateSheet = ({ open, onClose, onMateAdded }: AddMateSheetProps) 
                 disabled={isSearching}
               />
               <button
-                className="nuj-btn-primary px-4 rounded-lg disabled:opacity-50"
+                className="nuj-btn-primary px-3 rounded-lg disabled:opacity-50 text-sm"
                 onClick={handleSearch}
                 disabled={isSearching}
               >

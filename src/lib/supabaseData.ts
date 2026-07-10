@@ -29,6 +29,9 @@ const normalizePersonName = (value: string) =>
     .replace(/[^a-z0-9\s]/g, "")
     .replace(/\s+/g, " ");
 
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 export const getDaysSinceCheckinFromTimestamp = (
   checkedInAt?: string | null,
   now = new Date()
@@ -77,6 +80,10 @@ export const searchProfileById = async (userId: string) => {
 
   if (!byCode.error && byCode.data) {
     return byCode.data;
+  }
+
+  if (!UUID_PATTERN.test(userId.trim())) {
+    return null;
   }
 
   // Compatibility fallback for older environments before user_code migration.

@@ -13,6 +13,7 @@ const supabaseState = vi.hoisted(() => ({
   }>>,
   profilesByUsername: [] as Array<{ id: string; username: string }>,
   profilesById: {} as Record<string, { id: string; username?: string; last_checkin_at?: string | null }>,
+  profileIdLookups: [] as Array<string>,
   checkinsByUserId: [] as Array<{ user_id: string; checked_in_at: string }>,
   mateUpdates: [] as Array<{ id?: string; user_id?: string; mate_user_id?: string }>,
 }));
@@ -69,6 +70,13 @@ const supabaseMock = vi.hoisted(() => {
       then(resolve: (result: { data: any; error: any }) => unknown) {
         return Promise.resolve(executeQuery(this)).then(resolve);
       },
+
+      maybeSingle() {
+        return Promise.resolve(executeQuery(this)).then((result) => ({
+          data: Array.isArray(result.data) ? result.data[0] ?? null : result.data ?? null,
+          error: result.error,
+        }));
+      },
     };
 
     return query;
@@ -88,7 +96,12 @@ const supabaseMock = vi.hoisted(() => {
     if (query._table === "profiles") {
       const inFilter = query._filters.find((filter: any) => filter.field === "id" && filter.op === "in");
       const eqFilter = query._filters.find((filter: any) => filter.field === "username" && filter.op === "eq");
+      const idEqFilter = query._filters.find((filter: any) => filter.field === "id" && filter.op === "eq");
       const ilikeFilter = query._filters.find((filter: any) => filter.field === "username" && filter.op === "ilike");
+
+      if (idEqFilter) {
+        supabaseState.profileIdLookups.push(String(idEqFilter.value));
+      }
 
       if (inFilter) {
         const ids = Array.isArray(inFilter.value) ? inFilter.value : [];
@@ -138,7 +151,7 @@ vi.mock("@/lib/supabase", () => ({
   supabase: supabaseMock,
 }));
 
-import { derivePresenceStatus, fetchCurrentUserMates } from "./supabaseData";
+import { derivePresenceStatus, fetchCurrentUserMates, searchProfileById } from "./supabaseData";
 
 describe("derivePresenceStatus", () => {
   it("returns today for a check-in from the current day", () => {
@@ -180,8 +193,18 @@ describe("fetchCurrentUserMates", () => {
     supabaseState.checkinsByUserId = [
       { user_id: "user-b", checked_in_at: new Date().toISOString() },
     ];
+    supabaseState.profileIdLookups = [];
     supabaseState.mateUpdates = [];
     vi.clearAllMocks();
+  });
+
+  it("does not fall back to a profiles.id lookup for a non-UUID NUJ code", async () => {
+    supabaseState.profilesByUsername = [];
+
+    const profile = await searchProfileById("AGGL0TS");
+
+    expect(profile).toBeNull();
+    expect(supabaseState.profileIdLookups).toHaveLength(0);
   });
 
   it("uses a case-insensitive profile match so a checked-in mate does not fall back to three days ago", async () => {

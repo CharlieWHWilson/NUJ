@@ -1,5 +1,5 @@
 import { Share2, MessageSquare, Mail, ClipboardCopy, Phone } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { addCurrentUserMate, buildMateInitials, searchProfileById } from "@/lib/supabaseData";
 import { supabase } from "@/lib/supabase";
@@ -18,6 +18,37 @@ export const AddMateSheet = ({ open, onClose, onMateAdded }: AddMateSheetProps) 
   const [searchError, setSearchError] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const user = useCurrentUser();
+  const originalViewportContent = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const isIOS = /iPad|iPhone|iPod/.test(window.navigator.userAgent)
+      || (window.navigator.platform === "MacIntel" && window.navigator.maxTouchPoints > 1);
+    if (!isIOS || !open || tab !== "find") return;
+
+    const viewportMeta = document.querySelector('meta[name="viewport"]');
+    if (!viewportMeta) return;
+
+    if (originalViewportContent.current === null) {
+      originalViewportContent.current = viewportMeta.getAttribute("content");
+    }
+
+    viewportMeta.setAttribute(
+      "content",
+      "width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover"
+    );
+
+    return () => {
+      if (!viewportMeta) return;
+
+      const nextContent = originalViewportContent.current
+        ?? "width=device-width, initial-scale=1.0, viewport-fit=cover";
+
+      viewportMeta.setAttribute("content", nextContent);
+      originalViewportContent.current = null;
+    };
+  }, [open, tab]);
 
   if (!open) return null;
 

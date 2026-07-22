@@ -10,7 +10,14 @@ describe("presenceLabel", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-07-01T12:00:00.000Z"));
 
-    expect(presenceLabel("today", 0, "2026-07-01T10:00:00.000Z")).toBe("2h ago");
+    expect(presenceLabel("today", 0, "2026-07-01T10:00:00.000Z")).toBe("2 hours ago");
+  });
+
+  it("returns minute-level label when under an hour", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-07-01T12:10:00.000Z"));
+
+    expect(presenceLabel("today", 0, "2026-07-01T12:00:00.000Z")).toBe("10 mins ago");
   });
 
   it("returns day-level label for older timestamp", () => {
@@ -21,6 +28,6 @@ describe("presenceLabel", () => {
   });
 
   it("falls back to day bucket when no timestamp is provided", () => {
-    expect(presenceLabel("yesterday", 1)).toBe("Yesterday");
+    expect(presenceLabel("yesterday", 1)).toBe("1 day ago");
   });
 });

@@ -307,23 +307,20 @@ export const presenceLabel = (status: PresenceStatus, daysSinceCheckin?: number,
     const checkedInTs = new Date(lastCheckinAt).getTime();
     if (!Number.isNaN(checkedInTs)) {
       const elapsedMs = Date.now() - checkedInTs;
-      if (elapsedMs < 60_000) return "Just now";
-
-      const elapsedMinutes = Math.floor(elapsedMs / 60_000);
-      if (elapsedMinutes < 60) return `${elapsedMinutes}m ago`;
+      const elapsedMinutes = Math.max(1, Math.floor(elapsedMs / 60_000));
+      if (elapsedMinutes < 60) return elapsedMinutes === 1 ? "1 min ago" : `${elapsedMinutes} mins ago`;
 
       const elapsedHours = Math.floor(elapsedMinutes / 60);
-      if (elapsedHours < 24) return `${elapsedHours}h ago`;
+      if (elapsedHours < 24) return elapsedHours === 1 ? "1 hour ago" : `${elapsedHours} hours ago`;
 
       const elapsedDays = Math.floor(elapsedHours / 24);
-      if (elapsedDays === 1) return "Yesterday";
-      return `${elapsedDays} days ago`;
+      return elapsedDays === 1 ? "1 day ago" : `${elapsedDays} days ago`;
     }
   }
 
   if (typeof daysSinceCheckin === "number") {
     if (daysSinceCheckin <= 0) return "Today";
-    if (daysSinceCheckin === 1) return "Yesterday";
+    if (daysSinceCheckin === 1) return "1 day ago";
     return `${daysSinceCheckin} days ago`;
   }
 

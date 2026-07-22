@@ -82,6 +82,61 @@ export const derivePresenceStatus = (
   return "few-days";
 };
 
+const getMostRecentTimestamp = (...timestamps: Array<string | null | undefined>): string | null => {
+  let latestTimestamp: string | null = null;
+  let latestTime = Number.NEGATIVE_INFINITY;
+
+  for (const timestamp of timestamps) {
+    if (!timestamp) continue;
+
+    const parsedTime = new Date(timestamp).getTime();
+    if (Number.isNaN(parsedTime)) continue;
+
+    if (parsedTime > latestTime) {
+      latestTime = parsedTime;
+      latestTimestamp = timestamp;
+    }
+  }
+
+  return latestTimestamp;
+};
+
+const isTimestampNewer = (candidate: string, baseline?: string): boolean => {
+  if (!baseline) return true;
+
+  const candidateTime = new Date(candidate).getTime();
+  const baselineTime = new Date(baseline).getTime();
+
+  if (!Number.isNaN(candidateTime) && !Number.isNaN(baselineTime)) {
+    return candidateTime > baselineTime;
+  }
+
+  return candidate > baseline;
+};
+
+const fetchMateCheckins = async (mateUserIds: string[]): Promise<CheckinRow[]> => {
+  if (mateUserIds.length === 0) return [];
+
+  const { data: rpcRows, error: rpcError } = await supabase.rpc("get_relevant_mate_checkins", {
+    p_mate_user_ids: mateUserIds,
+  });
+
+  if (!rpcError && Array.isArray(rpcRows)) {
+    return rpcRows as CheckinRow[];
+  }
+
+  const { data: fallbackRows, error: fallbackError } = await supabase
+    .from("checkins")
+    .select("user_id, checked_in_at")
+    .in("user_id", mateUserIds);
+
+  if (fallbackError) {
+    throw fallbackError;
+  }
+
+  return (fallbackRows || []) as CheckinRow[];
+};
+
 export const getCurrentUserId = async (): Promise<string | null> => {
   const { data } = await supabase.auth.getUser();
   return data.user?.id ?? null;
@@ -215,16 +270,7 @@ export const fetchCurrentUserMates = async (): Promise<Mate[]> => {
 
   let checkinRows: CheckinRow[] = [];
   if (mateUserIds.length > 0) {
-    const { data: fetchedCheckins, error: checkinError } = await supabase
-      .from("checkins")
-      .select("user_id, checked_in_at")
-      .in("user_id", mateUserIds);
-
-    if (checkinError) {
-      throw checkinError;
-    }
-
-    checkinRows = (fetchedCheckins || []) as CheckinRow[];
+    checkinRows = await fetchMateCheckins(mateUserIds);
 
     if (debugCheckins) {
       console.log("[nuj] checkins payload", {
@@ -258,7 +304,7 @@ export const fetchCurrentUserMates = async (): Promise<Mate[]> => {
   const latestCheckinsByUserId = new Map<string, string>();
   for (const row of checkinRows) {
     const existing = latestCheckinsByUserId.get(row.user_id);
-    if (!existing || row.checked_in_at > existing) {
+    if (isTimestampNewer(row.checked_in_at, existing)) {
       latestCheckinsByUserId.set(row.user_id, row.checked_in_at);
     }
   }
@@ -278,9 +324,10 @@ export const fetchCurrentUserMates = async (): Promise<Mate[]> => {
 
   return mateRows.map((row) => {
     const checkedInAt = row.mate_user_id
-      ? latestCheckinsByUserId.get(row.mate_user_id)
-        ?? profileLastCheckinByUserId.get(row.mate_user_id)
-        ?? null
+      ? getMostRecentTimestamp(
+        latestCheckinsByUserId.get(row.mate_user_id),
+        profileLastCheckinByUserId.get(row.mate_user_id)
+      )
       : null;
 
     if (debugCheckins) {

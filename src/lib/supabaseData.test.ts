@@ -23,6 +23,22 @@ const supabaseMock = vi.hoisted(() => {
     getUser: vi.fn(async () => ({ data: { user: { id: supabaseState.currentUserId } }, error: null })),
   };
 
+  const rpc = vi.fn(async (fnName: string, params: any) => {
+    if (fnName === "get_profile_by_user_code") {
+      return { data: null, error: null };
+    }
+
+    if (fnName === "get_relevant_mate_checkins") {
+      const userIds = Array.isArray(params?.p_mate_user_ids) ? params.p_mate_user_ids : [];
+      return {
+        data: supabaseState.checkinsByUserId.filter((row) => userIds.includes(row.user_id)),
+        error: null,
+      };
+    }
+
+    return { data: null, error: null };
+  });
+
   const from = vi.fn((table: string) => {
     const query: any = {
       _table: table,
@@ -144,7 +160,7 @@ const supabaseMock = vi.hoisted(() => {
     return { data: [], error: null };
   };
 
-  return { auth, from };
+  return { auth, from, rpc };
 });
 
 vi.mock("@/lib/supabase", () => ({
@@ -268,6 +284,65 @@ describe("fetchCurrentUserMates", () => {
     expect(mates[0].lastCheckin).toBe("today");
     expect(mates[0].daysSinceCheckin).toBe(0);
     expect(mates[0].lastCheckinAt).toBe(latest);
+  });
+
+  it("uses the newest timestamp when both checkins and profiles.last_checkin_at are present", async () => {
+    const older = "2026-07-01T09:00:00.000Z";
+    const newer = "2026-07-01T11:00:00.000Z";
+
+    supabaseState.matesByUserId = {
+      "user-a": [
+        {
+          id: "mate-lyra",
+          user_id: "user-a",
+          mate_user_id: "user-b",
+          name: "Lyra Wilson",
+          initials: "LW",
+          last_checkin: "few-days",
+          days_since_checkin: 3,
+        },
+      ],
+    };
+    supabaseState.checkinsByUserId = [
+      { user_id: "user-b", checked_in_at: older },
+    ];
+    supabaseState.profilesById = {
+      "user-b": { id: "user-b", username: "Lyra Wilson", last_checkin_at: newer },
+    };
+
+    const mates = await fetchCurrentUserMates();
+
+    expect(mates).toHaveLength(1);
+    expect(mates[0].lastCheckinAt).toBe(newer);
+    expect(mates[0].lastCheckin).toBe("few-days");
+  });
+
+  it("prefers chronologically newer check-in timestamps even when ISO string ordering differs", async () => {
+    supabaseState.matesByUserId = {
+      "user-a": [
+        {
+          id: "mate-lyra",
+          user_id: "user-a",
+          mate_user_id: "user-b",
+          name: "Lyra Wilson",
+          initials: "LW",
+          last_checkin: "few-days",
+          days_since_checkin: 3,
+        },
+      ],
+    };
+    supabaseState.checkinsByUserId = [
+      { user_id: "user-b", checked_in_at: "2026-07-01T09:30:00.000Z" },
+      { user_id: "user-b", checked_in_at: "2026-07-01T10:00:00+01:00" },
+    ];
+    supabaseState.profilesById = {
+      "user-b": { id: "user-b", username: "Lyra Wilson", last_checkin_at: null },
+    };
+
+    const mates = await fetchCurrentUserMates();
+
+    expect(mates).toHaveLength(1);
+    expect(mates[0].lastCheckinAt).toBe("2026-07-01T09:30:00.000Z");
   });
 
   it("resolves legacy mate names with inconsistent spacing to the correct profile", async () => {

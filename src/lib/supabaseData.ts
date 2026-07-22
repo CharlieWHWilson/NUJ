@@ -45,6 +45,8 @@ const normalizePersonName = (value: string) =>
     .replace(/[^a-z0-9\s]/g, "")
     .replace(/\s+/g, " ");
 
+const NUJ_CODE_PATTERN = /^[A-Z0-9]{7}$/;
+
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -89,6 +91,10 @@ export const searchProfileById = async (
   userId: string
 ): Promise<ProfileLookupResult | null> => {
   const normalizedLookup = userId.trim().toUpperCase();
+
+  if (!NUJ_CODE_PATTERN.test(normalizedLookup)) {
+    return null;
+  }
 
   const { data, error } = await supabase.rpc("get_profile_by_user_code", {
     p_user_code: normalizedLookup,

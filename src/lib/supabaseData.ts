@@ -22,6 +22,22 @@ interface ProfileCheckinRow {
   last_checkin_at?: string | null;
 }
 
+type ProfileLookupResult = {
+  id: string;
+  username: string;
+  user_code: string;
+  email: string | null;
+  phone: string | null;
+};
+
+type GetProfileByUserCodeRow = {
+  user_id: string;
+  username: string;
+  user_code: string;
+  email: string | null;
+  phone: string | null;
+};
+
 const normalizePersonName = (value: string) =>
   value
     .trim()
@@ -69,39 +85,31 @@ export const getCurrentUserId = async (): Promise<string | null> => {
   return data.user?.id ?? null;
 };
 
-export const searchProfileById = async (userId: string) => {
+export const searchProfileById = async (
+  userId: string
+): Promise<ProfileLookupResult | null> => {
   const normalizedLookup = userId.trim().toUpperCase();
 
-  const byCode = await supabase
-    .from("profiles")
-    .select("id, username, user_code")
-    .eq("user_code", normalizedLookup)
-    .maybeSingle();
+  const { data, error } = await supabase.rpc("get_profile_by_user_code", {
+    p_user_code: normalizedLookup,
+  });
 
-  if (!byCode.error && byCode.data) {
-    return byCode.data;
-  }
+  if (error) throw error;
 
-  if (!UUID_PATTERN.test(userId.trim())) {
-    return null;
-  }
+  const row = (Array.isArray(data) ? data[0] : data) as
+    | GetProfileByUserCodeRow
+    | null
+    | undefined;
 
-  // Compatibility fallback for older environments before user_code migration.
-  if (byCode.error && !byCode.error.message.toLowerCase().includes("user_code")) {
-    throw byCode.error;
-  }
+  if (!row) return null;
 
-  const byId = await supabase
-    .from("profiles")
-    .select("id, username")
-    .eq("id", userId)
-    .maybeSingle();
-
-  if (byId.error) {
-    throw byId.error;
-  }
-
-  return byId.data;
+  return {
+    id: row.user_id,
+    username: row.username,
+    user_code: row.user_code,
+    email: row.email ?? null,
+    phone: row.phone ?? null,
+  };
 };
 
 const resolveProfileIdByUsername = async (username: string): Promise<string | null> => {

@@ -101,7 +101,10 @@ export const AddMateSheet = ({ open, onClose, onMateAdded }: AddMateSheetProps) 
   return (
     <>
       <div className="fixed inset-0 bg-foreground/20 z-40" onClick={onClose} />
-      <div className="fixed bottom-0 left-0 right-0 z-50 w-full max-w-sm mx-auto bg-card rounded-t-3xl p-4 nuj-safe-bottom-sheet border border-border max-h-[72dvh] overflow-y-auto overscroll-contain" style={{ boxShadow: "0 -4px 40px hsl(215 28% 13% / 0.12)" }}>
+      <div
+        className="fixed inset-x-0 bottom-0 z-50 w-full max-w-sm mx-auto bg-card rounded-t-3xl p-4 nuj-safe-bottom-sheet border border-border max-h-[min(72dvh,calc(100dvh-1rem))] overflow-y-auto overflow-x-hidden overscroll-contain"
+        style={{ boxShadow: "0 -4px 40px hsl(215 28% 13% / 0.12)" }}
+      >
         <div className="w-10 h-1 bg-border rounded-full mx-auto mb-4" />
         <div className="flex items-center gap-2 mb-4">
           <Share2 size={16} className="text-muted-foreground" />
@@ -162,14 +165,18 @@ export const AddMateSheet = ({ open, onClose, onMateAdded }: AddMateSheetProps) 
             <div className="flex gap-2 mb-3">
               <input
                 type="text"
-                className="flex-1 rounded-lg border px-3 py-2 text-base"
+                className="flex-1 min-w-0 rounded-lg border px-3 py-2 text-[16px]"
                 placeholder="Paste NUJ code here"
                 value={searchId}
                 onChange={e => setSearchId(e.target.value)}
                 disabled={isSearching}
+                autoCapitalize="characters"
+                autoCorrect="off"
+                spellCheck={false}
+                inputMode="text"
               />
               <button
-                className="nuj-btn-primary px-3 rounded-lg disabled:opacity-50 text-sm"
+                className="nuj-btn-primary px-3 rounded-lg disabled:opacity-50 text-sm shrink-0"
                 onClick={handleSearch}
                 disabled={isSearching}
               >

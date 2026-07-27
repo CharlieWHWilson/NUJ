@@ -209,22 +209,24 @@ const Dashboard = () => {
           </DialogTrigger>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>What is NUJ?</DialogTitle>
+              <DialogTitle className="text-black">What is NUJ?</DialogTitle>
             </DialogHeader>
-            <div className="text-sm text-muted-foreground space-y-4 max-h-[70vh] overflow-y-auto pr-1">
+            <div className="text-sm text-black space-y-4 max-h-[70vh] overflow-y-auto pr-1">
               <p>NUJ is the easy way to stay connected with mates. No pressure, guilt or long messages.</p>
               <p>Life gets busy, contact drifts and keeping in touch can feel harder than it should.</p>
               <p>NUJ removes that barrier by making it easy to acknowledge each other regularly even when nothing specific is said.</p>
               <div>
-                <p className="font-medium text-foreground mb-2">How it works</p>
+                <p className="font-medium text-black mb-2">How it works</p>
                 <div className="space-y-3">
-                  <p><strong>Check in</strong> – Tap once to say “you’re around.” No typing, no explanation, it takes a second. Nothing more needed, you’re ‘around’.</p>
+                  <p><strong>Add mates</strong> - Share your NUJ code (in your profile) with friends to stay connected. Add them as mates by entering their NUJ code.</p>
+                  <p><strong>Groups</strong> - Create groups so you can keep track of mates</p>
+                  <p><strong>Check in</strong> – Tap once to say “you’re around.” No typing, no explanation, it takes a second. Nothing more needed, you’re ‘around’. Set up a daily reminder so you don’t forget.</p>
                   <p><strong>See who’s around</strong> – Your mates’ last check-ins are visible: today, yesterday, or a few days ago. Quiet awareness, nothing more.</p>
                   <p><strong>Gentle nudges</strong> – If someone’s been quiet, send a small NUJ to show you’re thinking of them.</p>
-                  <p className="text-muted-foreground/60"><strong>Meet-ups (coming soon)</strong> – Check in together regularly enough and you can unlock deals for real-world activities. A chance to catch up and spend time together (win/win).</p>
+                  <p className="text-gray-500"><strong>Meet-ups (coming soon)</strong> – Check in together regularly enough and you can unlock deals for real-world activities. A chance to catch up and spend time together (win/win).</p>
                 </div>
               </div>
-              <p className="text-foreground text-center">Just a simple way to stay connected.</p>
+              <p className="text-black text-center">Just a simple way to stay connected.</p>
             </div>
           </DialogContent>
           </Dialog>

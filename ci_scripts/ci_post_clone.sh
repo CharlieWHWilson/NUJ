@@ -11,3 +11,10 @@ else
 fi
 
 npm run cap:sync
+
+# cap sync regenerates CapApp-SPM/Package.swift with node_modules paths.
+# Xcode Cloud can fail to resolve those paths, so keep references inside ios/.
+CAP_SPM_FILE="ios/App/CapApp-SPM/Package.swift"
+if [ -f "$CAP_SPM_FILE" ]; then
+  perl -0777 -i -pe 's#path: "\.\./\.\./\.\./node_modules/@capacitor/local-notifications"#path: "../../CapacitorPlugins/local-notifications"#g; s#path: "\.\./\.\./\.\./node_modules/@capacitor/push-notifications"#path: "../../CapacitorPlugins/push-notifications"#g' "$CAP_SPM_FILE"
+fi

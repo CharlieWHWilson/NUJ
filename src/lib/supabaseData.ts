@@ -27,15 +27,13 @@ type ProfileLookupResult = {
   username: string;
   user_code: string;
   email: string | null;
-  phone: string | null;
 };
 
 type GetProfileByUserCodeRow = {
   user_id: string;
-  username: string;
+  username: string | null;
   user_code: string;
   email: string | null;
-  phone: string | null;
 };
 
 const normalizePersonName = (value: string) =>
@@ -164,12 +162,13 @@ export const searchProfileById = async (
 
   if (!row) return null;
 
+  const safeUsername = row.username?.trim() || row.email?.trim() || `Mate ${row.user_code}`;
+
   return {
     id: row.user_id,
-    username: row.username,
+    username: safeUsername,
     user_code: row.user_code,
     email: row.email ?? null,
-    phone: row.phone ?? null,
   };
 };
 
@@ -528,8 +527,11 @@ export const getLatestCheckinForUser = async (userId: string) => {
   return data?.checked_in_at ?? null;
 };
 
-export const buildMateInitials = (name: string) => {
-  return name
+export const buildMateInitials = (name?: string | null) => {
+  const safeName = (name || "").trim();
+  if (!safeName) return "M";
+
+  return safeName
     .split(" ")
     .map((part) => part[0])
     .filter(Boolean)

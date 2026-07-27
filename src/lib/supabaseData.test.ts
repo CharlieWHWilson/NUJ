@@ -18,26 +18,26 @@ const supabaseState = vi.hoisted(() => ({
   mateUpdates: [] as Array<{ id?: string; user_id?: string; mate_user_id?: string }>,
 }));
 
+const rpcMock = vi.hoisted(() => vi.fn(async (fnName: string, params: any) => {
+  if (fnName === "get_profile_by_user_code") {
+    return { data: null, error: null };
+  }
+
+  if (fnName === "get_relevant_mate_checkins") {
+    const userIds = Array.isArray(params?.p_mate_user_ids) ? params.p_mate_user_ids : [];
+    return {
+      data: supabaseState.checkinsByUserId.filter((row) => userIds.includes(row.user_id)),
+      error: null,
+    };
+  }
+
+  return { data: null, error: null };
+}));
+
 const supabaseMock = vi.hoisted(() => {
   const auth = {
     getUser: vi.fn(async () => ({ data: { user: { id: supabaseState.currentUserId } }, error: null })),
   };
-
-  const rpc = vi.fn(async (fnName: string, params: any) => {
-    if (fnName === "get_profile_by_user_code") {
-      return { data: null, error: null };
-    }
-
-    if (fnName === "get_relevant_mate_checkins") {
-      const userIds = Array.isArray(params?.p_mate_user_ids) ? params.p_mate_user_ids : [];
-      return {
-        data: supabaseState.checkinsByUserId.filter((row) => userIds.includes(row.user_id)),
-        error: null,
-      };
-    }
-
-    return { data: null, error: null };
-  });
 
   const from = vi.fn((table: string) => {
     const query: any = {
@@ -160,7 +160,7 @@ const supabaseMock = vi.hoisted(() => {
     return { data: [], error: null };
   };
 
-  return { auth, from, rpc };
+  return { auth, from, rpc: rpcMock };
 });
 
 vi.mock("@/lib/supabase", () => ({
@@ -221,6 +221,35 @@ describe("fetchCurrentUserMates", () => {
 
     expect(profile).toBeNull();
     expect(supabaseState.profileIdLookups).toHaveLength(0);
+  });
+
+  it("uses the returned display name even when the profile username is empty", async () => {
+    rpcMock.mockImplementationOnce(async (fnName: string) => {
+      if (fnName === "get_profile_by_user_code") {
+        return {
+          data: [
+            {
+              user_id: "user-b",
+              username: null,
+              user_code: "MCL3MEG",
+              email: "lyra@example.com",
+            },
+          ],
+          error: null,
+        };
+      }
+
+      return { data: null, error: null };
+    });
+
+    const profile = await searchProfileById("MCL3MEG");
+
+    expect(profile).toEqual({
+      id: "user-b",
+      username: "lyra@example.com",
+      user_code: "MCL3MEG",
+      email: "lyra@example.com",
+    });
   });
 
   it("uses a case-insensitive profile match so a checked-in mate does not fall back to three days ago", async () => {

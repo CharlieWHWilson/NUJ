@@ -2,7 +2,7 @@ import { FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { MessageCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { registerUser, loginUser } from "@/lib/auth";
+import { getRegistrationNameError, registerUser, loginUser } from "@/lib/auth";
 import {
   Dialog,
   DialogContent,
@@ -24,7 +24,6 @@ const Auth = () => {
 
   const [registerName, setRegisterName] = useState("");
   const [registerEmail, setRegisterEmail] = useState("");
-  const [registerPhone, setRegisterPhone] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
   const [registerConfirmPassword, setRegisterConfirmPassword] = useState("");
 
@@ -57,6 +56,12 @@ const Auth = () => {
     setErrorMessage("");
     setSuccessMessage("");
 
+    const nameError = getRegistrationNameError(registerName);
+    if (nameError) {
+      setErrorMessage(nameError);
+      return;
+    }
+
     if (registerPassword !== registerConfirmPassword) {
       setErrorMessage("Passwords do not match.");
       return;
@@ -66,7 +71,6 @@ const Auth = () => {
     const result = await registerUser({
       name: registerName,
       email: registerEmail,
-      phone: registerPhone,
       password: registerPassword,
     });
     setLoading(false);
@@ -146,7 +150,7 @@ const Auth = () => {
           <form className="space-y-3" onSubmit={submitRegister}>
             <Input
               type="text"
-              placeholder="Name"
+              placeholder="First name (required)"
               value={registerName}
               onChange={(event) => setRegisterName(event.target.value)}
               required
@@ -156,13 +160,6 @@ const Auth = () => {
               placeholder="Email"
               value={registerEmail}
               onChange={(event) => setRegisterEmail(event.target.value)}
-              required
-            />
-            <Input
-              type="tel"
-              placeholder="Phone"
-              value={registerPhone}
-              onChange={(event) => setRegisterPhone(event.target.value)}
               required
             />
             <Input

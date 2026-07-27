@@ -20,7 +20,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfUse from "./pages/TermsOfUse";
 import Support from "./pages/Support";
 import { scheduleDailyReminderNotification } from "./lib/dailyReminder";
-import { isAuthenticated } from "./lib/auth";
+import { isAuthenticated, isVerifiedAuthUser } from "./lib/auth";
 import { registerForPushNotifications, syncPendingPushToken } from "./lib/pushNotifications";
 
 const queryClient = new QueryClient();
@@ -111,7 +111,7 @@ const App = () => {
     checkAuth();
 
     const authSubscription = supabase.auth.onAuthStateChange((_, session) => {
-      setAuthState(session ? "authenticated" : "unauthenticated");
+      setAuthState(session && isVerifiedAuthUser(session.user) ? "authenticated" : "unauthenticated");
     });
 
     return () => authSubscription.data?.subscription?.unsubscribe();

@@ -8,21 +8,48 @@ export interface AuthUser {
   userCode?: string;
 }
 
+type AuthUserRecord = {
+  email_confirmed_at?: string | null;
+  confirmed_at?: string | null;
+};
+
+const normalizeDisplayName = (value: string) => value.trim().replace(/\s+/g, " ");
+
+export const getRegistrationNameError = (value: string): string | null => {
+  const normalized = normalizeDisplayName(value);
+  if (!normalized) {
+    return "First name is required.";
+  }
+
+  return null;
+};
+
+export const isVerifiedAuthUser = (user: AuthUserRecord | null | undefined): boolean => {
+  if (!user) return false;
+  return Boolean(user.email_confirmed_at ?? user.confirmed_at);
+};
+
 export const registerUser = async (input: {
   name: string;
   email: string;
-  phone: string;
   password: string;
 }) => {
   try {
+    const normalizedName = normalizeDisplayName(input.name);
+    const nameError = getRegistrationNameError(normalizedName);
+    if (nameError) {
+      return { ok: false as const, message: nameError };
+    }
+
     // Create auth user and store basic metadata
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: input.email,
       password: input.password,
       options: {
         data: {
-          name: input.name,
-          phone: input.phone,
+          name: normalizedName,
+          full_name: normalizedName,
+          username: normalizedName,
         },
       },
     });
@@ -42,10 +69,12 @@ export const registerUser = async (input: {
       };
     }
 
-    const { error: profileError } = await supabase.from("profiles").insert({
-      id: authData.user.id,
-      username: input.name,
-    });
+    const { error: profileError } = await supabase
+      .from("profiles")
+      .upsert({
+        id: authData.user.id,
+        username: normalizedName,
+      }, { onConflict: "id" });
 
     if (profileError) {
       return { ok: false as const, message: profileError.message };
@@ -84,9 +113,14 @@ export const getCurrentUser = async (): Promise<AuthUser | null> => {
   try {
     const { data } = await supabase.auth.getUser();
     if (!data.user) return null;
+    if (!isVerifiedAuthUser(data.user)) return null;
 
     const authUser = data.user;
-    const fallbackUsername = authUser.user_metadata?.name ?? authUser.email ?? "Unknown user";
+    const fallbackUsername = authUser.user_metadata?.full_name
+      ?? authUser.user_metadata?.username
+      ?? authUser.user_metadata?.name
+      ?? authUser.email
+      ?? "Unknown user";
 
     const fetchProfile = async (selection: string) => (
       supabase
@@ -108,19 +142,19 @@ export const getCurrentUser = async (): Promise<AuthUser | null> => {
       return null;
     }
 
-    if (!profile) {
+    if (!profile?.username?.trim()) {
       const { data: sessionData } = await supabase.auth.getSession();
       if (sessionData.session) {
-        await supabase.from("profiles").insert({
+        await supabase.from("profiles").upsert({
           id: authUser.id,
           username: fallbackUsername,
-        });
+        }, { onConflict: "id" });
       }
     }
 
     return {
       id: authUser.id,
-      username: profile?.username ?? fallbackUsername,
+      username: profile?.username?.trim() || fallbackUsername,
       email: authUser.email ?? undefined,
       userCode: profile?.user_code ?? authUser.id,
     };
@@ -133,7 +167,7 @@ export const isAuthenticated = async (): Promise<boolean> => {
   try {
     const { data, error } = await supabase.auth.getUser();
     if (error) return false;
-    return !!data.user;
+    return isVerifiedAuthUser(data.user);
   } catch {
     return false;
   }

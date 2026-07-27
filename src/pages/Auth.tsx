@@ -150,7 +150,7 @@ const Auth = () => {
           <form className="space-y-3" onSubmit={submitRegister}>
             <Input
               type="text"
-              placeholder="First name (required)"
+              placeholder="Name"
               value={registerName}
               onChange={(event) => setRegisterName(event.target.value)}
               required
@@ -234,10 +234,12 @@ const Auth = () => {
               <div>
                 <p className="font-medium text-foreground mb-2">How it works</p>
                 <div className="space-y-3">
-                  <p><strong>Check in</strong> – Tap once to say “you’re around.” No typing, no explanation, it takes a second. Nothing more needed, you’re ‘around’.</p>
+                  <p><strong>Add mates</strong> - Share your NUJ code (in your profile) with friends to stay connected. Add them as mates by entering their NUJ code.</p>
+                  <p><strong>Groups</strong> - Create groups so you can keep track of mates</p>
+                  <p><strong>Check in</strong> – Tap once to say “you’re around.” No typing, no explanation, it takes a second. Nothing more needed, you’re ‘around’. Set up a daily reminder so you don’t forget.</p>
                   <p><strong>See who’s around</strong> – Your mates’ last check-ins are visible: today, yesterday, or a few days ago. Quiet awareness, nothing more.</p>
                   <p><strong>Gentle nudges</strong> – If someone’s been quiet, send a small NUJ to show you’re thinking of them.</p>
-                  <p className="text-muted-foreground/60"><strong>Meet-ups (coming soon)</strong> – Check in together regularly enough and you can unlock deals for real-world activities. A chance to catch up and spend time together (win/win).</p>
+                  <p><strong>Meet-ups (coming soon)</strong> – Check in together regularly enough and you can unlock deals for real-world activities. A chance to catch up and spend time together (win/win).</p>
                 </div>
               </div>
 

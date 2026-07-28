@@ -518,13 +518,15 @@ export const getLatestCheckinForUser = async (userId: string) => {
     .from("checkins")
     .select("checked_in_at")
     .eq("user_id", userId)
-    .maybeSingle();
+    .order("checked_in_at", { ascending: false })
+    .limit(1);
 
   if (error) {
     throw error;
   }
 
-  return data?.checked_in_at ?? null;
+  const latestRow = Array.isArray(data) ? data[0] : data;
+  return latestRow?.checked_in_at ?? null;
 };
 
 export const buildMateInitials = (name?: string | null) => {

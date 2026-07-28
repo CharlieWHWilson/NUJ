@@ -33,7 +33,8 @@ const Profile = () => {
   const [resetRequested, setResetRequested] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
-  const shareUserCode = user?.userCode ?? user?.id ?? "";
+  const shareUserCode = user?.userCode ?? "";
+  const hasShareUserCode = shareUserCode.trim().length > 0;
 
   const persistReminderSettings = (nextEnabled: boolean, nextTime: string) => {
     saveDailyReminderSettings({
@@ -211,12 +212,14 @@ const Profile = () => {
           )}
           <div className="flex items-center gap-2">
             <Label>NUJ code:</Label>
-            <span className="text-sm text-muted-foreground">{shareUserCode}</span>
+            <span className="text-sm text-muted-foreground">{hasShareUserCode ? shareUserCode : "Generating..."}</span>
             <button
               type="button"
               className="ml-2 p-1 rounded hover:bg-accent transition-colors"
               title="Copy NUJ code"
+              disabled={!hasShareUserCode}
               onClick={() => {
+                if (!hasShareUserCode) return;
                 navigator.clipboard.writeText(shareUserCode);
               }}
             >
@@ -226,6 +229,7 @@ const Profile = () => {
               type="button"
               className="ml-1 p-1 rounded hover:bg-accent transition-colors"
               title="Send to mate"
+              disabled={!hasShareUserCode}
               onClick={() => setShareOpen(true)}
             >
               <Share2 size={16} />

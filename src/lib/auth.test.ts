@@ -74,10 +74,13 @@ describe("auth registration", () => {
       email: "lyra@example.com",
       password: "password123",
       options: {
+        emailRedirectTo: "http://localhost:3000/check-in",
         data: {
           name: "Lyra Wilson",
           full_name: "Lyra Wilson",
           username: "Lyra Wilson",
+          display_name: "Lyra Wilson",
+          phone: "",
         },
       },
     });
@@ -137,5 +140,24 @@ describe("auth registration", () => {
     });
 
     await expect(getCurrentUser()).resolves.toBeNull();
+  });
+
+  it("maps database signup failures to an actionable migration message", async () => {
+    signUpMock.mockResolvedValue({
+      data: { user: null, session: null },
+      error: { message: "Database error saving new user" },
+    });
+
+    const result = await registerUser({
+      name: "Lyra",
+      email: "lyra@example.com",
+      password: "password123",
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      message:
+        "Signup failed because your Supabase profiles trigger/schema is out of date. Run migrations 026_harden_profile_signup_trigger.sql and 027_remove_phone_storage.sql, then try again.",
+    });
   });
 });

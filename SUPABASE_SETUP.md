@@ -1,5 +1,9 @@
 # Supabase Setup Guide for NUJ
 
+> Important: This guide contains legacy starter SQL examples.
+> For production or any new environment, use the checked-in migrations in [supabase/migrations](supabase/migrations) as the source of truth.
+> The current signup flow depends on migrations through 027, including verified-email profile lookup and automatic profile user_code generation.
+
 ## 1. Create Supabase Project
 
 1. Go to [supabase.com](https://supabase.com)

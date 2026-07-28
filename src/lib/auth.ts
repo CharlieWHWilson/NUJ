@@ -13,7 +13,25 @@ type AuthUserRecord = {
   confirmed_at?: string | null;
 };
 
+const mapSignupErrorMessage = (message: string): string => {
+  const normalized = message.toLowerCase();
+  if (normalized.includes("database error saving new user")) {
+    return "Signup failed because your Supabase profiles trigger/schema is out of date. Run migrations 026_harden_profile_signup_trigger.sql and 027_remove_phone_storage.sql, then try again.";
+  }
+
+  return message;
+};
+
 const normalizeDisplayName = (value: string) => value.trim().replace(/\s+/g, " ");
+
+const buildEmailRedirectUrl = (path: string): string | undefined => {
+  if (typeof window === "undefined") return undefined;
+
+  const base = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+
+  return `${window.location.origin}${base}${normalizedPath}`;
+};
 
 export const getRegistrationNameError = (value: string): string | null => {
   const normalized = normalizeDisplayName(value);
@@ -46,16 +64,19 @@ export const registerUser = async (input: {
       email: input.email,
       password: input.password,
       options: {
+        emailRedirectTo: buildEmailRedirectUrl("/check-in"),
         data: {
           name: normalizedName,
           full_name: normalizedName,
           username: normalizedName,
+          display_name: normalizedName,
+          phone: "",
         },
       },
     });
 
     if (authError) {
-      return { ok: false as const, message: authError.message };
+      return { ok: false as const, message: mapSignupErrorMessage(authError.message) };
     }
 
     if (!authData.user) {
@@ -152,11 +173,28 @@ export const getCurrentUser = async (): Promise<AuthUser | null> => {
       }
     }
 
+    let resolvedUserCode = profile?.user_code?.trim() || undefined;
+    if (!resolvedUserCode) {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (sessionData.session) {
+        await supabase.from("profiles").upsert({
+          id: authUser.id,
+          username: profile?.username?.trim() || fallbackUsername,
+        }, { onConflict: "id" });
+
+        const refreshedProfile = await fetchProfile("username, user_code");
+        if (!refreshedProfile.error) {
+          profile = refreshedProfile.data;
+          resolvedUserCode = refreshedProfile.data?.user_code?.trim() || undefined;
+        }
+      }
+    }
+
     return {
       id: authUser.id,
       username: profile?.username?.trim() || fallbackUsername,
       email: authUser.email ?? undefined,
-      userCode: profile?.user_code ?? authUser.id,
+      userCode: resolvedUserCode,
     };
   } catch {
     return null;

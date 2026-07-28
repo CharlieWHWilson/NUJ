@@ -27,3 +27,4 @@ dist-ssr
 NUJ logo.png
 routing-app-coverage.geojson
 supabase/.temp/
+ios/build/

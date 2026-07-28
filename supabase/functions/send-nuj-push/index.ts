@@ -94,6 +94,25 @@ interface PushRequestBody {
   data?: Record<string, unknown>
 }
 
+async function getRecipientBadgeCount(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  userId: string,
+) {
+  const { data, error } = await supabaseAdmin.rpc('get_user_badge_count', {
+    p_user_id: userId,
+  })
+
+  if (error) {
+    throw new Error(`Failed to calculate badge count: ${error.message}`)
+  }
+
+  if (typeof data !== 'number' || Number.isNaN(data)) {
+    return 0
+  }
+
+  return Math.max(0, Math.floor(data))
+}
+
 function apnsErrorToRemoved(reason: string | undefined) {
   // Remove only when APNs indicates this specific device token is invalid/stale.
   // Do not remove for provider/config issues (e.g. InvalidProviderToken, TopicDisallowed).
@@ -185,6 +204,14 @@ Deno.serve(async (req) => {
       })
     }
 
+    let badgeCount = 0
+    try {
+      badgeCount = await getRecipientBadgeCount(supabaseAdmin, recipientUserId)
+    } catch (err) {
+      const details = err instanceof Error ? err.message : 'Unable to calculate badge count'
+      return jsonResponse({ success: false, error: 'BadgeCalculationError', details }, 500)
+    }
+
     let apnsJwt: string
     try {
       apnsJwt = await getApnsJwt()
@@ -223,6 +250,7 @@ Deno.serve(async (req) => {
             body,
           },
           sound: 'default',
+          badge: badgeCount,
         },
         ...(data ? { data } : {}),
       }

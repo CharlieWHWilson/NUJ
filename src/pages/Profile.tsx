@@ -17,6 +17,7 @@ import {
   saveDailyReminderSettings,
   scheduleDailyReminderNotification,
 } from "@/lib/dailyReminder";
+import { initializeAttentionBadge } from "@/lib/attentionBadge";
 import { logoutUser } from "@/lib/auth";
 import { clearAppStorage } from "@/lib/utils";
 import { CHECKIN_STORAGE_KEY } from "@/hooks/useCheckin";
@@ -42,6 +43,7 @@ const Profile = () => {
       time: nextTime,
     });
     scheduleDailyReminderNotification();
+    void initializeAttentionBadge();
   };
 
   const handleToggleReminder = async (checked: boolean) => {

@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { NujReceived } from "@/data/mockData";
 import { NujSent } from "@/data/nujsSent";
+import { syncAttentionBadgeCount } from "@/lib/attentionBadge";
 
 export const ACTIVE_NUJ_EXISTS_ERROR = "An active NUJ is already waiting for acknowledgement.";
 
@@ -11,6 +12,7 @@ type NujRow = {
   recipient_user_id: string;
   created_at: string;
   acknowledged_at: string | null;
+  read_at: string | null;
 };
 
 type MateLookupRow = {
@@ -69,7 +71,7 @@ export const useNujsSupabase = () => {
 
       const { data: receivedData, error: receivedError } = await supabase
         .from("nujs")
-        .select("id, sender_user_id, recipient_user_id, created_at, acknowledged_at")
+        .select("id, sender_user_id, recipient_user_id, created_at, acknowledged_at, read_at")
         .eq("recipient_user_id", currentUserId)
         .order("created_at", { ascending: false });
 
@@ -77,7 +79,7 @@ export const useNujsSupabase = () => {
 
       const { data: sentData, error: sentError } = await supabase
         .from("nujs")
-        .select("id, sender_user_id, recipient_user_id, created_at, acknowledged_at")
+        .select("id, sender_user_id, recipient_user_id, created_at, acknowledged_at, read_at")
         .eq("sender_user_id", currentUserId)
         .order("created_at", { ascending: false });
 
@@ -144,6 +146,7 @@ export const useNujsSupabase = () => {
       setNujsReceived(formattedReceived);
       setNujsSent(formattedSent);
       setError(null);
+      await syncAttentionBadgeCount();
     } catch (err) {
       console.error("Error fetching NUJs:", err);
       setError(err instanceof Error ? err.message : "Failed to fetch NUJs");
@@ -236,6 +239,7 @@ export const useNujsSupabase = () => {
       }
 
       await refresh();
+      await syncAttentionBadgeCount();
       return data;
     } catch (err) {
       console.error("Error sending NUJ:", err);
@@ -297,6 +301,7 @@ export const useNujsSupabase = () => {
       }
 
       setNujsReceived((prev) => prev.filter((n) => n.id !== nujId));
+      await syncAttentionBadgeCount();
     } catch (err) {
       console.error("Error acknowledging received NUJ:", err);
       throw err;
@@ -318,11 +323,33 @@ export const useNujsSupabase = () => {
       if (deleteError) throw deleteError;
 
       setNujsSent((prev) => prev.filter((n) => n.id !== nujId));
+      await syncAttentionBadgeCount();
     } catch (err) {
       console.error("Error cancelling sent NUJ:", err);
       throw err;
     }
   };
+
+  const markReceivedNujsRead = useCallback(async () => {
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) return;
+
+      const readAt = new Date().toISOString();
+      const { error: readError } = await supabase
+        .from("nujs")
+        .update({ read_at: readAt })
+        .eq("recipient_user_id", userData.user.id)
+        .is("acknowledged_at", null)
+        .is("read_at", null);
+
+      if (readError) throw readError;
+
+      await syncAttentionBadgeCount();
+    } catch (err) {
+      console.error("Error marking NUJs as read:", err);
+    }
+  }, []);
 
   return {
     nujsReceived,
@@ -332,6 +359,7 @@ export const useNujsSupabase = () => {
     sendNuj,
     acknowledgeReceivedNuj,
     cancelSentNuj,
+    markReceivedNujsRead,
     refresh,
   };
 };

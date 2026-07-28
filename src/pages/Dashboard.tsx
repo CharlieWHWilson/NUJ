@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ChevronDown, ChevronRight, Plus, MapPin, HelpCircle, MessageCircle, X } from "lucide-react";
 import {
@@ -52,6 +52,7 @@ const Dashboard = () => {
     nujsSent,
     acknowledgeReceivedNuj,
     cancelSentNuj,
+    markReceivedNujsRead,
   } = useNujsSupabase();
   const [addMateOpen, setAddMateOpen] = useState(false);
   const [selectedNuj, setSelectedNuj] = useState<string | null>(null);
@@ -84,6 +85,14 @@ const Dashboard = () => {
   const setSectionOpen = (section: SectionKey | "nujSent", open: boolean) => {
     setOpenSections((current) => ({ ...current, [section]: open }));
   };
+
+  useEffect(() => {
+    if (!openSections.nuj || nujsReceived.length === 0) {
+      return;
+    }
+
+    void markReceivedNujsRead();
+  }, [openSections.nuj, nujsReceived.length, markReceivedNujsRead]);
 
   const completeNujAction = async (nujId: string) => {
     await acknowledgeReceivedNuj(nujId);

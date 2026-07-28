@@ -22,6 +22,7 @@ import Support from "./pages/Support";
 import { scheduleDailyReminderNotification } from "./lib/dailyReminder";
 import { isAuthenticated, isVerifiedAuthUser } from "./lib/auth";
 import { registerForPushNotifications, syncPendingPushToken } from "./lib/pushNotifications";
+import { clearAttentionBadgeCount, initializeAttentionBadge } from "./lib/attentionBadge";
 
 const queryClient = new QueryClient();
 
@@ -123,11 +124,13 @@ const App = () => {
 
   useEffect(() => {
     if (authState !== "authenticated") {
+      void clearAttentionBadgeCount();
       return;
     }
 
     void registerForPushNotifications();
     void syncPendingPushToken();
+    void initializeAttentionBadge();
   }, [authState]);
 
   return (

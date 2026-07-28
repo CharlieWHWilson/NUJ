@@ -13,7 +13,7 @@ const DEFAULT_SETTINGS: DailyReminderSettings = {
 };
 
 let scheduledReminderTimeout: number | null = null;
-const DAILY_REMINDER_NOTIFICATION_ID = 1001;
+export const DAILY_REMINDER_NOTIFICATION_ID = 1001;
 
 const isValidTime = (value: string): boolean => {
   return /^([01]\d|2[0-3]):([0-5]\d)$/.test(value);

@@ -283,7 +283,9 @@ const Dashboard = () => {
                     <button className="w-full flex items-center justify-between text-left px-4 py-3 hover:bg-muted/40 focus:outline-none">
                       <div className="flex items-center gap-2">
                         <span className="text-sm" aria-hidden="true">👉</span>
-                        <h2 className="font-semibold text-sm tracking-tight">You have {nujsReceived.length} NUJs</h2>
+                        <h2 className="font-semibold text-sm tracking-tight">
+                          You have {nujsReceived.length} {nujsReceived.length === 1 ? "NUJ" : "NUJs"}
+                        </h2>
                       </div>
                       <div className="flex items-center gap-2">
                         <ChevronDown
@@ -334,7 +336,7 @@ const Dashboard = () => {
                     <button className="w-full flex items-center justify-between text-left px-4 py-3 hover:bg-muted/40 focus:outline-none">
                       <div className="flex items-center gap-2">
                         <span className="text-sm" aria-hidden="true">👈</span>
-                        <h2 className="font-semibold text-sm tracking-tight">NUJs you've sent</h2>
+                        <h2 className="font-semibold text-sm tracking-tight">Sent NUJs</h2>
                       </div>
                       <div className="flex items-center gap-2">
                         <ChevronDown

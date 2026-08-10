@@ -167,16 +167,26 @@ export const useNujsSupabase = () => {
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) throw new Error("Not authenticated");
 
-      const { data: reciprocalMateRows, error: reciprocalMateError } = await supabase
-        .from("mates")
-        .select("id")
-        .eq("user_id", recipientUserId)
-        .eq("mate_user_id", userData.user.id)
-        .limit(1);
+      let canSendToRecipient = true;
+      const { data: reciprocalMateData, error: reciprocalMateError } = await supabase
+        .rpc("can_send_nuj_to_recipient", { p_recipient_user_id: recipientUserId });
 
-      if (reciprocalMateError) throw reciprocalMateError;
+      if (reciprocalMateError) {
+        const errorMessage = reciprocalMateError.message.toLowerCase();
+        const functionMissing =
+          errorMessage.includes("does not exist")
+          || errorMessage.includes("could not find function");
 
-      if (!Array.isArray(reciprocalMateRows) || reciprocalMateRows.length === 0) {
+        if (functionMissing) {
+          console.warn("can_send_nuj_to_recipient RPC not found; skipping reciprocal mate guard");
+        } else {
+          throw reciprocalMateError;
+        }
+      } else {
+        canSendToRecipient = Boolean(reciprocalMateData);
+      }
+
+      if (!canSendToRecipient) {
         throw new Error(MUTUAL_MATE_REQUIRED_ERROR);
       }
 

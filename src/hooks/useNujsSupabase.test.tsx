@@ -46,6 +46,32 @@ const supabaseMock = vi.hoisted(() => {
     invoke: vi.fn(async () => makeResult(null)),
   };
 
+  const rpc = vi.fn(async (functionName: string, params?: Record<string, any>) => {
+    if (functionName === "can_send_nuj_to_recipient") {
+      const recipientUserId = params?.p_recipient_user_id as string | undefined;
+      if (!recipientUserId) {
+        return makeResult(false);
+      }
+
+      const recipientMates = state.matesByUserId[recipientUserId] ?? [];
+      const senderUsername = state.profilesById[state.currentUserId]?.username?.trim().toLowerCase();
+      const canSend = recipientMates.some((mate) => {
+        if (mate.mate_user_id === state.currentUserId) return true;
+
+        const legacyNameMatch =
+          !mate.mate_user_id
+          && Boolean(senderUsername)
+          && mate.name.trim().toLowerCase() === senderUsername;
+
+        return legacyNameMatch;
+      });
+
+      return makeResult(canSend);
+    }
+
+    return makeResult(null);
+  });
+
   const from = vi.fn((table: string) => {
     const query: any = {
       _table: table,
@@ -218,7 +244,7 @@ const supabaseMock = vi.hoisted(() => {
     return makeResult([]);
   };
 
-  return { auth, from, functions };
+  return { auth, from, functions, rpc };
 });
 
 vi.mock("@/lib/supabase", () => ({

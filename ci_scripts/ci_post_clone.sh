@@ -3,6 +3,14 @@ set -eu
 
 cd "$CI_WORKSPACE"
 
+# Ensure each Xcode Cloud archive has a strictly increasing iOS build number.
+# Use epoch seconds to avoid collisions across rebuilds/reruns.
+IOS_BUILD_NUMBER="$(date +%s)"
+PBXPROJ_FILE="ios/App/App.xcodeproj/project.pbxproj"
+if [ -f "$PBXPROJ_FILE" ]; then
+  perl -i -pe "s/CURRENT_PROJECT_VERSION = \d+;/CURRENT_PROJECT_VERSION = ${IOS_BUILD_NUMBER};/g" "$PBXPROJ_FILE"
+fi
+
 if command -v npm >/dev/null 2>&1; then
   if [ -f package-lock.json ]; then
     npm ci

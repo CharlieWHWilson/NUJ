@@ -16,18 +16,9 @@ const getDaysSinceCheckin = (status: PresenceStatus, daysSinceCheckin?: number) 
 };
 
 const getPresenceColor = (days: number) => {
-  if (days <= 1) return "hsl(120 70% 42%)";
-  if (days >= 5) return "hsl(var(--destructive))";
-
-  if (days <= 3) {
-    const ratio = (days - 1) / 2;
-    const hue = 120 - ((120 - 38) * ratio);
-    return `hsl(${hue} 78% 45%)`;
-  }
-
-  const ratio = (days - 3) / 2;
-  const hue = 38 - (38 * ratio);
-  return `hsl(${hue} 78% 45%)`;
+  if (days <= 3) return "hsl(120 70% 42%)";
+  if (days <= 14) return "hsl(38 92% 48%)";
+  return "hsl(var(--destructive))";
 };
 
 export const MateAvatar = ({ initials, size = "md", status, daysSinceCheckin }: MateAvatarProps) => {

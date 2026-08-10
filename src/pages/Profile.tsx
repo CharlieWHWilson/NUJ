@@ -23,7 +23,6 @@ import { clearAppStorage } from "@/lib/utils";
 import { CHECKIN_STORAGE_KEY } from "@/hooks/useCheckin";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { supabase } from "@/lib/supabase";
-import { Textarea } from "@/components/ui/textarea";
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -37,7 +36,8 @@ const Profile = () => {
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const shareUserCode = user?.userCode ?? "";
   const hasShareUserCode = shareUserCode.trim().length > 0;
-  const shareInviteMessage = `Join me on NUJ. A simple way to stay connected. Add me as a mate using my NUJ code: ${shareUserCode}`;
+  const appStoreUrl = "https://apps.apple.com/gb/app/nuj-social/id6789114237";
+  const shareInviteMessage = `Join me on NUJ. A simple way to stay connected.\n\nAdd me as a mate using my NUJ code: ${shareUserCode}\n\nShare your NUJ code with me to do the same.`;
 
   const persistReminderSettings = (nextEnabled: boolean, nextTime: string) => {
     saveDailyReminderSettings({
@@ -254,12 +254,25 @@ const Profile = () => {
                 <DialogTitle>Send your NUJ code</DialogTitle>
               </DialogHeader>
               <div className="space-y-3">
-                <Textarea
-                  value={shareInviteMessage}
-                  readOnly
-                  className="min-h-[96px] resize-none text-sm"
+                <div
+                  className="rounded-md border border-input bg-background px-3 py-2 text-sm leading-relaxed"
                   aria-label="NUJ invite message"
-                />
+                >
+                  <p>
+                    Join me on {" "}
+                    <a
+                      href={appStoreUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="underline underline-offset-2"
+                    >
+                      NUJ
+                    </a>
+                    . A simple way to stay connected.
+                  </p>
+                  <p className="mt-3">Add me as a mate using my NUJ code: {shareUserCode}</p>
+                  <p className="mt-3">Share your NUJ code with me to do the same.</p>
+                </div>
                 <button
                   onClick={() => {
                     navigator.clipboard.writeText(shareInviteMessage);

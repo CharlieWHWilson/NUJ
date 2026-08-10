@@ -314,14 +314,17 @@ export const presenceLabel = (status: PresenceStatus, daysSinceCheckin?: number,
       if (elapsedHours < 24) return elapsedHours === 1 ? "1 hour ago" : `${elapsedHours} hours ago`;
 
       const elapsedDays = Math.floor(elapsedHours / 24);
-      return elapsedDays === 1 ? "1 day ago" : `${elapsedDays} days ago`;
+      if (elapsedDays < 30) return elapsedDays === 1 ? "1 day ago" : `${elapsedDays} days ago`;
+
+      return "over a month ago";
     }
   }
 
   if (typeof daysSinceCheckin === "number") {
     if (daysSinceCheckin <= 0) return "Today";
     if (daysSinceCheckin === 1) return "1 day ago";
-    return `${daysSinceCheckin} days ago`;
+    if (daysSinceCheckin < 30) return `${daysSinceCheckin} days ago`;
+    return "over a month ago";
   }
 
   switch (status) {

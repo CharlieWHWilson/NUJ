@@ -5,6 +5,31 @@ import { Badge } from "@/lib/badgePlugin";
 import { DAILY_REMINDER_NOTIFICATION_ID, loadDailyReminderSettings } from "@/lib/dailyReminder";
 import { derivePresenceStatus, getCurrentUserId, getLatestCheckinForUser } from "@/lib/supabaseData";
 
+interface AttentionBadgeInputs {
+  unreadCount: number;
+  checkedInToday: boolean;
+  reminderEnabled: boolean;
+  reminderTime: string;
+  now?: Date;
+}
+
+export const calculateAttentionBadgeCount = ({
+  unreadCount,
+  checkedInToday,
+  reminderEnabled,
+  reminderTime,
+  now = new Date(),
+}: AttentionBadgeInputs): number => {
+  const reminderDue = reminderEnabled && (() => {
+    const [hours, minutes] = reminderTime.split(":").map(Number);
+    const reminderTimeValue = new Date(now);
+    reminderTimeValue.setHours(hours, minutes, 0, 0);
+    return now >= reminderTimeValue;
+  })();
+
+  return unreadCount + (checkedInToday ? 0 : reminderDue ? 1 : 0);
+};
+
 let listenersRegistered = false;
 
 const isNativeIos = () => Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios";
@@ -24,7 +49,7 @@ const setNativeBadgeCount = async (count: number) => {
   }
 };
 
-const fetchServerBadgeCount = async (): Promise<number> => {
+const fetchUnreadNujCount = async (): Promise<number> => {
   if (typeof supabase.rpc !== "function") {
     return 0;
   }
@@ -35,6 +60,22 @@ const fetchServerBadgeCount = async (): Promise<number> => {
   }
 
   return toNonNegativeInt(data);
+};
+
+const computeBadgeCountFromLiveState = async (): Promise<number> => {
+  const userId = await getCurrentUserId();
+  if (!userId) return 0;
+
+  const reminderSettings = loadDailyReminderSettings();
+  const checkedInToday = await hasCurrentUserCheckedInToday(userId);
+
+  const unreadCount = await fetchUnreadNujCount();
+  return calculateAttentionBadgeCount({
+    unreadCount,
+    checkedInToday,
+    reminderEnabled: reminderSettings.enabled,
+    reminderTime: reminderSettings.time,
+  });
 };
 
 const hasCurrentUserCheckedInToday = async (userId: string): Promise<boolean> => {
@@ -72,7 +113,12 @@ const updateNeedsCheckInFromReminderState = async () => {
   reminderTime.setHours(hours, minutes, 0, 0);
 
   const checkedInToday = await hasCurrentUserCheckedInToday(userId);
-  const shouldNeedCheckIn = !checkedInToday && now >= reminderTime;
+  if (checkedInToday) {
+    await setNeedsCheckIn(false);
+    return;
+  }
+
+  const shouldNeedCheckIn = now >= reminderTime;
   await setNeedsCheckIn(shouldNeedCheckIn);
 };
 
@@ -80,8 +126,9 @@ const handleDailyReminderNotification = async () => {
   const userId = await getCurrentUserId();
   if (!userId) return;
 
+  const reminderSettings = loadDailyReminderSettings();
   const checkedInToday = await hasCurrentUserCheckedInToday(userId);
-  if (checkedInToday) {
+  if (checkedInToday || !reminderSettings.enabled) {
     await setNeedsCheckIn(false);
     return;
   }
@@ -113,7 +160,7 @@ const registerNativeReminderListeners = () => {
 
 export const syncAttentionBadgeCount = async (): Promise<number> => {
   try {
-    const count = await fetchServerBadgeCount();
+    const count = await computeBadgeCountFromLiveState();
     await setNativeBadgeCount(count);
     return count;
   } catch (error) {

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ClipboardCopy, MessageSquare, Mail, Phone, Share2, Trash2 } from "lucide-react";
+import { ClipboardCopy, Copy, MessageSquare, Share2, Trash2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -23,6 +23,7 @@ import { clearAppStorage } from "@/lib/utils";
 import { CHECKIN_STORAGE_KEY } from "@/hooks/useCheckin";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { supabase } from "@/lib/supabase";
+import { Textarea } from "@/components/ui/textarea";
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -36,6 +37,7 @@ const Profile = () => {
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const shareUserCode = user?.userCode ?? "";
   const hasShareUserCode = shareUserCode.trim().length > 0;
+  const shareInviteMessage = `Join me on NUJ. A simple way to stay connected. Add me as a mate using my NUJ code: ${shareUserCode}`;
 
   const persistReminderSettings = (nextEnabled: boolean, nextTime: string) => {
     saveDailyReminderSettings({
@@ -225,7 +227,7 @@ const Profile = () => {
                 navigator.clipboard.writeText(shareUserCode);
               }}
             >
-              <ClipboardCopy size={16} />
+              <Copy size={16} />
             </button>
             <button
               type="button"
@@ -251,37 +253,28 @@ const Profile = () => {
               <DialogHeader>
                 <DialogTitle>Send your NUJ code</DialogTitle>
               </DialogHeader>
-              <div className="space-y-2">
-                {/* Share message removed from card, only in share options */}
+              <div className="space-y-3">
+                <Textarea
+                  value={shareInviteMessage}
+                  readOnly
+                  className="min-h-[96px] resize-none text-sm"
+                  aria-label="NUJ invite message"
+                />
                 <button
                   onClick={() => {
-                    navigator.clipboard.writeText(shareUserCode);
+                    navigator.clipboard.writeText(shareInviteMessage);
                   }}
                   className="w-full flex items-center gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors text-left"
                 >
-                  <ClipboardCopy size={17} className="text-muted-foreground" />
+                  <Copy size={17} className="text-muted-foreground" />
                   <span className="text-sm font-medium">Copy message</span>
                 </button>
                 <button
-                  onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(shareUserCode)}`, "_blank")}
+                  onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(shareInviteMessage)}`, "_self")}
                   className="w-full flex items-center gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors text-left"
                 >
                   <MessageSquare size={17} className="text-muted-foreground" />
                   <span className="text-sm font-medium">WhatsApp</span>
-                </button>
-                <button
-                  onClick={() => window.open(`sms:?&body=${encodeURIComponent(shareUserCode)}`, "_blank")}
-                  className="w-full flex items-center gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors text-left"
-                >
-                  <Phone size={17} className="text-muted-foreground" />
-                  <span className="text-sm font-medium">SMS</span>
-                </button>
-                <button
-                  onClick={() => window.open(`mailto:?subject=${encodeURIComponent("Your NUJ code")}&body=${encodeURIComponent(shareUserCode)}`, "_blank")}
-                  className="w-full flex items-center gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors text-left"
-                >
-                  <Mail size={17} className="text-muted-foreground" />
-                  <span className="text-sm font-medium">Email</span>
                 </button>
               </div>
             </DialogContent>
@@ -309,7 +302,7 @@ const Profile = () => {
               value={reminderTime}
               onChange={(event) => handleChangeReminderTime(event.target.value)}
               disabled={!dailyReminderEnabled}
-              className="mt-2 w-full sm:w-1/2"
+              className="mt-2 w-[50%] max-w-[50%] min-w-0"
             />
           </div>
         </div>

@@ -30,4 +30,11 @@ describe("presenceLabel", () => {
   it("falls back to day bucket when no timestamp is provided", () => {
     expect(presenceLabel("yesterday", 1)).toBe("1 day ago");
   });
+
+  it("caps the label at over a month ago for older timestamps", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-08-10T12:00:00.000Z"));
+
+    expect(presenceLabel("few-days", 30, "2026-07-01T10:00:00.000Z")).toBe("over a month ago");
+  });
 });

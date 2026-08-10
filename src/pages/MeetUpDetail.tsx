@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { ArrowLeft, Users, Link2, MessageSquare, Mail, Phone } from "lucide-react";
+import { ArrowLeft, Users, Link2, MessageSquare, Phone } from "lucide-react";
 import { meetUps, mates } from "@/data/mockData";
 import { MateAvatar } from "@/components/MateComponents";
 import { useJoinedMeetups } from "@/hooks/useJoinedMeetups";
@@ -104,7 +104,7 @@ const MeetUpDetail = () => {
                   </button>
 
                   <button
-                    onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(`${shareText} ${shareLink}`)}`, "_blank")}
+                    onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(`${shareText} ${shareLink}`)}`, "_self")}
                     className="w-full flex items-center gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors text-left"
                   >
                     <MessageSquare size={17} className="text-muted-foreground" />
@@ -112,19 +112,11 @@ const MeetUpDetail = () => {
                   </button>
 
                   <button
-                    onClick={() => window.open(`sms:?&body=${encodeURIComponent(`${shareText} ${shareLink}`)}`, "_blank")}
+                    onClick={() => window.open(`sms:?body=${encodeURIComponent(`${shareText} ${shareLink}`)}`, "_self")}
                     className="w-full flex items-center gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors text-left"
                   >
                     <Phone size={17} className="text-muted-foreground" />
                     <span className="text-sm font-medium">SMS</span>
-                  </button>
-
-                  <button
-                    onClick={() => window.open(`mailto:?subject=${encodeURIComponent(`NUJ Meet-up: ${meetup.title}`)}&body=${encodeURIComponent(`${shareText}\n\n${shareLink}`)}`, "_blank")}
-                    className="w-full flex items-center gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors text-left"
-                  >
-                    <Mail size={17} className="text-muted-foreground" />
-                    <span className="text-sm font-medium">Email</span>
                   </button>
                 </div>
               </DialogContent>

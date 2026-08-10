@@ -1,4 +1,4 @@
-import { MessageSquare, Mail, Phone } from "lucide-react";
+import { MessageSquare, Phone } from "lucide-react";
 import { NujReceived, Mate, formatNujTimestamp } from "@/data/mockData";
 import { MateAvatar } from "@/components/MateComponents";
 
@@ -30,7 +30,7 @@ export const NujActionSheet = ({ nuj, mate, onClose, onActionComplete }: NujActi
       label: "WhatsApp",
       icon: <MessageSquare size={18} />,
       onClick: async () => {
-        window.open(`https://wa.me/`, "_blank");
+        window.open(`https://wa.me/?text=${encodeURIComponent(`Hi ${mate.name.split(" ")[0]}!`)}`, "_self");
         await completeAction();
       },
     },
@@ -38,15 +38,7 @@ export const NujActionSheet = ({ nuj, mate, onClose, onActionComplete }: NujActi
       label: "SMS",
       icon: <Phone size={18} />,
       onClick: async () => {
-        window.open(`sms:`, "_blank");
-        await completeAction();
-      },
-    },
-    {
-      label: "Email",
-      icon: <Mail size={18} />,
-      onClick: async () => {
-        window.open(`mailto:`, "_blank");
+        window.open(`sms:?body=${encodeURIComponent(`Hi ${mate.name.split(" ")[0]}!`)}`, "_self");
         await completeAction();
       },
     },

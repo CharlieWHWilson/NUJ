@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, MessageSquare, Mail, Phone, Trash2 } from "lucide-react";
+import { ArrowLeft, MessageSquare, Phone, Trash2 } from "lucide-react";
 import { presenceLabel } from "@/data/mockData";
 import { MateAvatar } from "@/components/MateComponents";
 import { useMatesSupabase } from "@/hooks/useMatesSupabase";
@@ -20,6 +20,10 @@ const MatePage = () => {
   );
 
   if (!mate) return null;
+
+  const openContactAction = (url: string) => {
+    window.open(url, "_self");
+  };
 
   const actions = [
     {
@@ -57,21 +61,15 @@ const MatePage = () => {
       icon: <MessageSquare size={20} />,
       description: "Open in WhatsApp",
       primary: false,
-      onClick: () => window.open(`https://wa.me/?text=Hey+${mate.name.split(" ")[0]}`, "_blank"),
+      onClick: () =>
+        openContactAction(`https://wa.me/?text=${encodeURIComponent(`Hey ${mate.name.split(" ")[0]}!`)}`),
     },
     {
       label: "SMS",
       icon: <Phone size={20} />,
       description: "Send a text",
       primary: false,
-      onClick: () => window.open(`sms:`, "_blank"),
-    },
-    {
-      label: "Email",
-      icon: <Mail size={20} />,
-      description: "Send an email",
-      primary: false,
-      onClick: () => window.open(`mailto:`, "_blank"),
+      onClick: () => openContactAction(`sms:?body=${encodeURIComponent(`Hey ${mate.name.split(" ")[0]}!`)}`),
     },
   ];
 

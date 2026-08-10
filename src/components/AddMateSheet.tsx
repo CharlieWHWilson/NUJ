@@ -1,4 +1,4 @@
-import { Share2, MessageSquare, Mail, ClipboardCopy, Phone } from "lucide-react";
+import { Share2, MessageSquare, ClipboardCopy, Phone } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { addCurrentUserMate, buildMateInitials, searchProfileById } from "@/lib/supabaseData";
@@ -167,25 +167,18 @@ export const AddMateSheet = ({ open, onClose, onMateAdded }: AddMateSheetProps) 
                 <span className="font-medium text-sm">Copy message</span>
               </button>
               <button
-                onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(shareMsg)}`, "_blank")}
+                onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(shareMsg)}`, "_self")}
                 className="w-full flex items-center gap-3 p-4 rounded-2xl bg-muted/50 hover:bg-muted transition-colors text-left"
               >
                 <MessageSquare size={18} className="text-muted-foreground" />
                 <span className="font-medium text-sm">WhatsApp</span>
               </button>
               <button
-                onClick={() => window.open(`sms:?&body=${encodeURIComponent(shareMsg)}`, "_blank")}
+                onClick={() => window.open(`sms:?body=${encodeURIComponent(shareMsg)}`, "_self")}
                 className="w-full flex items-center gap-3 p-4 rounded-2xl bg-muted/50 hover:bg-muted transition-colors text-left"
               >
                 <Phone size={18} className="text-muted-foreground" />
                 <span className="font-medium text-sm">SMS</span>
-              </button>
-              <button
-                onClick={() => window.open(`mailto:?subject=${encodeURIComponent("Join me on NUJ!")}&body=${encodeURIComponent(shareMsg)}`, "_blank")}
-                className="w-full flex items-center gap-3 p-4 rounded-2xl bg-muted/50 hover:bg-muted transition-colors text-left"
-              >
-                <Mail size={18} className="text-muted-foreground" />
-                <span className="font-medium text-sm">Email</span>
               </button>
             </div>
           </div>

@@ -6,7 +6,7 @@ import {
   upsertCurrentUserCheckin,
 } from "@/lib/supabaseData";
 import { supabase } from "@/lib/supabase";
-import { setNeedsCheckInAndSyncBadge } from "@/lib/attentionBadge";
+import { clearAttentionBadgeCount, setNeedsCheckInAndSyncBadge } from "@/lib/attentionBadge";
 
 const toErrorMessage = (error: unknown, fallback: string) => {
   if (error instanceof Error && error.message) return error.message;
@@ -87,6 +87,7 @@ export const useCheckin = (currentUserId?: string) => {
     try {
       setError(null);
       await upsertCurrentUserCheckin();
+      await clearAttentionBadgeCount();
       await setNeedsCheckInAndSyncBadge(false);
       setCheckedIn(true);
       window.dispatchEvent(new Event("nuj:checkin-updated"));

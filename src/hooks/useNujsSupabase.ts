@@ -5,6 +5,7 @@ import { NujSent } from "@/data/nujsSent";
 import { syncAttentionBadgeCount } from "@/lib/attentionBadge";
 
 export const ACTIVE_NUJ_EXISTS_ERROR = "An active NUJ is already waiting for acknowledgement.";
+export const MUTUAL_MATE_REQUIRED_ERROR = "A mutual mate connection is required to send a NUJ.";
 
 type NujRow = {
   id: string;
@@ -165,6 +166,19 @@ export const useNujsSupabase = () => {
     try {
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) throw new Error("Not authenticated");
+
+      const { data: reciprocalMateRows, error: reciprocalMateError } = await supabase
+        .from("mates")
+        .select("id")
+        .eq("user_id", recipientUserId)
+        .eq("mate_user_id", userData.user.id)
+        .limit(1);
+
+      if (reciprocalMateError) throw reciprocalMateError;
+
+      if (!Array.isArray(reciprocalMateRows) || reciprocalMateRows.length === 0) {
+        throw new Error(MUTUAL_MATE_REQUIRED_ERROR);
+      }
 
       const { data: existingNujs, error: existingNujsError } = await supabase
         .from("nujs")

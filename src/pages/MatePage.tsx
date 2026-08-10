@@ -5,12 +5,14 @@ import { presenceLabel } from "@/data/mockData";
 import { MateAvatar } from "@/components/MateComponents";
 import { useMatesSupabase } from "@/hooks/useMatesSupabase";
 import { toast } from "@/components/ui/sonner";
-import { ACTIVE_NUJ_EXISTS_ERROR, useNujsSupabase } from "@/hooks/useNujsSupabase";
+import { ACTIVE_NUJ_EXISTS_ERROR, MUTUAL_MATE_REQUIRED_ERROR, useNujsSupabase } from "@/hooks/useNujsSupabase";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const MatePage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [showRemovePrompt, setShowRemovePrompt] = useState(false);
+  const [showMutualMateBlockDialog, setShowMutualMateBlockDialog] = useState(false);
   const { mates, removeMate } = useMatesSupabase();
   const { sendNuj } = useNujsSupabase();
 
@@ -43,6 +45,11 @@ const MatePage = () => {
           await sendNuj(mate.mateUserId);
           toast(`NUJ sent to ${mate.name}`);
         } catch (err) {
+          if (err instanceof Error && err.message === MUTUAL_MATE_REQUIRED_ERROR) {
+            setShowMutualMateBlockDialog(true);
+            return;
+          }
+
           if (err instanceof Error && err.message === ACTIVE_NUJ_EXISTS_ERROR) {
             toast(`NUJ already pending for ${mate.name}`, {
               description: "You can send another NUJ once they acknowledge the current one.",
@@ -164,6 +171,26 @@ const MatePage = () => {
           )}
         </div>
       </div>
+
+      <Dialog open={showMutualMateBlockDialog} onOpenChange={setShowMutualMateBlockDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Unable to send NUJ</DialogTitle>
+            <DialogDescription>
+              {mate.name} hasn’t added you as a mate yet. Send them your NUJ code so you can NUJ each other.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <button
+              type="button"
+              onClick={() => setShowMutualMateBlockDialog(false)}
+              className="w-full h-10 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-95 transition-opacity"
+            >
+              OK
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

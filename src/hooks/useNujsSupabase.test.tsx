@@ -1,6 +1,6 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { useNujsSupabase } from "./useNujsSupabase";
+import { MUTUAL_MATE_REQUIRED_ERROR, useNujsSupabase } from "./useNujsSupabase";
 
 type QueryResult<T = any> = {
   data: T;
@@ -78,6 +78,10 @@ const supabaseMock = vi.hoisted(() => {
 
       order(field: string, options?: { ascending?: boolean }) {
         this._order = { field, ascending: options?.ascending ?? true };
+        return this;
+      },
+
+      limit() {
         return this;
       },
 
@@ -168,7 +172,16 @@ const supabaseMock = vi.hoisted(() => {
 
     if (table === "mates") {
       const userFilter = query._filters.find((f: any) => f.field === "user_id");
-      const rows = state.matesByUserId[userFilter?.value ?? ""] ?? [];
+      const scopedUserId = userFilter?.value ?? "";
+      let rows = (state.matesByUserId[scopedUserId] ?? []).map((row) => ({
+        ...row,
+        user_id: scopedUserId,
+      }));
+      for (const filter of query._filters) {
+        if (filter.op === "eq") {
+          rows = rows.filter((row) => (row as any)[filter.field] === filter.value);
+        }
+      }
       return makeResult(rows);
     }
 
@@ -292,6 +305,19 @@ describe("useNujsSupabase", () => {
 
     expect(state.nujs).toHaveLength(1);
     expect(result.current.nujsSent).toHaveLength(1);
+  });
+
+  it("blocks sending a NUJ when the recipient has not added the sender as a mate", async () => {
+    state.matesByUserId["user-b"] = [];
+
+    const { result } = renderHook(() => useNujsSupabase());
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    await expect(result.current.sendNuj("user-b")).rejects.toThrow(MUTUAL_MATE_REQUIRED_ERROR);
+    expect(state.nujs).toHaveLength(0);
   });
 
   it("allows cancelling a sent NUJ and sending another one to the same recipient", async () => {

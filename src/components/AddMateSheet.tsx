@@ -54,6 +54,7 @@ export const AddMateSheet = ({ open, onClose, onMateAdded }: AddMateSheetProps) 
 
   // Share logic (same as Profile page)
   const shareMsg = user?.userCode ?? user?.id ?? "";
+  const shareInviteMessage = `Join me on NUJ. A simple way to stay connected.\n\nAdd me as a mate using my NUJ code: ${shareMsg}\n\nShare your NUJ code with me to do the same.`;
 
   const handleSearch = async () => {
     setSearchError('');
@@ -177,14 +178,14 @@ export const AddMateSheet = ({ open, onClose, onMateAdded }: AddMateSheetProps) 
               <p className="mt-3">Share your NUJ code with me to do the same.</p>
             </div>
             <button
-              onClick={() => { navigator.clipboard.writeText(shareMsg); }}
+              onClick={() => { navigator.clipboard.writeText(shareInviteMessage); }}
               className="w-full flex items-center gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors text-left"
             >
               <ClipboardCopy size={17} className="text-muted-foreground" />
               <span className="text-sm font-medium">Copy message</span>
             </button>
             <button
-              onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(shareMsg)}`, "_self")}
+              onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(shareInviteMessage)}`, "_self")}
               className="w-full flex items-center gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors text-left"
             >
               <MessageSquare size={17} className="text-muted-foreground" />

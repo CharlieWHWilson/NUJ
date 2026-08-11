@@ -30,5 +30,11 @@ npm run cap:sync
 # Xcode Cloud can fail to resolve those paths, so keep references inside ios/.
 CAP_SPM_FILE="ios/App/CapApp-SPM/Package.swift"
 if [ -f "$CAP_SPM_FILE" ]; then
-  perl -0777 -i -pe 's#path:\s*"\.\./\.\./\.\./node_modules/@capacitor/local-notifications"#path: "../../CapacitorPlugins/local-notifications"#g; s#path:\s*"\.\./\.\./\.\./node_modules/@capacitor/push-notifications"#path: "../../CapacitorPlugins/push-notifications"#g' "$CAP_SPM_FILE"
+  # Replace fragile node_modules package paths with repository-local plugin paths.
+  perl -i -pe 's#\.\./\.\./\.\./node_modules/\@capacitor/local-notifications#../../CapacitorPlugins/local-notifications#g; s#\.\./\.\./\.\./node_modules/\@capacitor/push-notifications#../../CapacitorPlugins/push-notifications#g' "$CAP_SPM_FILE"
+
+  if grep -q "node_modules/@capacitor" "$CAP_SPM_FILE"; then
+    echo "Failed to rewrite Capacitor plugin paths in ${CAP_SPM_FILE}" >&2
+    exit 1
+  fi
 fi

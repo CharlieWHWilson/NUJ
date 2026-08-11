@@ -1,4 +1,4 @@
-import { Share2, MessageSquare, ClipboardCopy, Phone } from "lucide-react";
+import { Share2, MessageSquare, ClipboardCopy } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { addCurrentUserMate, buildMateInitials, searchProfileById } from "@/lib/supabaseData";
@@ -156,31 +156,40 @@ export const AddMateSheet = ({ open, onClose, onMateAdded }: AddMateSheetProps) 
           </button>
         </div>
         {tab === 'share' && (
-          <div>
-            {/* Share message removed from card, only in share options */}
-            <div className="space-y-2">
-              <button
-                onClick={() => { navigator.clipboard.writeText(shareMsg); }}
-                className="w-full flex items-center gap-3 p-4 rounded-2xl bg-muted/50 hover:bg-muted transition-colors text-left"
-              >
-                <ClipboardCopy size={18} className="text-muted-foreground" />
-                <span className="font-medium text-sm">Copy message</span>
-              </button>
-              <button
-                onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(shareMsg)}`, "_self")}
-                className="w-full flex items-center gap-3 p-4 rounded-2xl bg-muted/50 hover:bg-muted transition-colors text-left"
-              >
-                <MessageSquare size={18} className="text-muted-foreground" />
-                <span className="font-medium text-sm">WhatsApp</span>
-              </button>
-              <button
-                onClick={() => window.open(`sms:?body=${encodeURIComponent(shareMsg)}`, "_self")}
-                className="w-full flex items-center gap-3 p-4 rounded-2xl bg-muted/50 hover:bg-muted transition-colors text-left"
-              >
-                <Phone size={18} className="text-muted-foreground" />
-                <span className="font-medium text-sm">SMS</span>
-              </button>
+          <div className="space-y-3">
+            <div
+              className="rounded-md border border-input bg-background px-3 py-2 text-sm leading-relaxed"
+              aria-label="NUJ invite message"
+            >
+              <p>
+                Join me on{" "}
+                <a
+                  href="https://nuj.app"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline underline-offset-2"
+                >
+                  NUJ
+                </a>
+                . A simple way to stay connected.
+              </p>
+              <p className="mt-3">Add me as a mate using my NUJ code: <span className="font-semibold">{shareMsg}</span></p>
+              <p className="mt-3">Share your NUJ code with me to do the same.</p>
             </div>
+            <button
+              onClick={() => { navigator.clipboard.writeText(shareMsg); }}
+              className="w-full flex items-center gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors text-left"
+            >
+              <ClipboardCopy size={17} className="text-muted-foreground" />
+              <span className="text-sm font-medium">Copy message</span>
+            </button>
+            <button
+              onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(shareMsg)}`, "_self")}
+              className="w-full flex items-center gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors text-left"
+            >
+              <MessageSquare size={17} className="text-muted-foreground" />
+              <span className="text-sm font-medium">WhatsApp</span>
+            </button>
           </div>
         )}
         {tab === 'find' && (

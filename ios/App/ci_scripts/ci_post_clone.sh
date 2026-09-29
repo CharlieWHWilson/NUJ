@@ -1,7 +1,8 @@
 #!/bin/sh
 set -eu
 
-cd "$CI_WORKSPACE"
+# Xcode Cloud runs this from ios/App/ci_scripts; work from the repository root.
+cd "${CI_PRIMARY_REPOSITORY_PATH:-$(cd "$(dirname "$0")/../../.." && pwd)}"
 
 # Ensure each Xcode Cloud archive has a strictly increasing iOS build number.
 # Prefer CI_BUILD_NUMBER (monotonic in Xcode Cloud), with epoch fallback.
@@ -13,18 +14,25 @@ if [ -f "$PBXPROJ_FILE" ]; then
   grep -n "CURRENT_PROJECT_VERSION = " "$PBXPROJ_FILE" | head -n 4
 fi
 
-if command -v npm >/dev/null 2>&1; then
-  if [ -f package-lock.json ]; then
-    npm ci
-  else
-    npm install --no-audit --no-fund
-  fi
-else
-  echo "npm is required for Xcode Cloud builds" >&2
-  exit 1
+# Xcode Cloud images ship without Node; install it via Homebrew.
+if ! command -v npm >/dev/null 2>&1; then
+  export HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_INSTALL_CLEANUP=1
+  brew install node
 fi
 
-npm run cap:sync
+if [ -f package-lock.json ]; then
+  npm ci --no-audit --no-fund
+else
+  npm install --no-audit --no-fund
+fi
+
+# .env.local isn't in the repo, so only rebuild web assets when Supabase config is provided
+# as Xcode Cloud environment variables; otherwise ship the committed ios/App/App/public bundle.
+if [ -n "${VITE_SUPABASE_URL:-}" ] && [ -n "${VITE_SUPABASE_ANON_KEY:-}" ]; then
+  npm run cap:sync
+else
+  echo "VITE_SUPABASE_* not set; using committed web assets"
+fi
 
 # cap sync regenerates CapApp-SPM/Package.swift with node_modules paths.
 # Xcode Cloud can fail to resolve those paths, so keep references inside ios/.

@@ -283,12 +283,14 @@ describe("useNujsSupabase", () => {
 
     expect(result.current.nujsSent).toHaveLength(1);
     expect(result.current.nujsSent[0].toMateName).toBe("User B");
-    expect(supabaseMock.functions.invoke).toHaveBeenCalledWith("send-nuj-push", {
-      body: expect.objectContaining({
-        recipientUserId: "user-b",
-        title: "User A sent a NUJ",
-        body: "Open NUJ to view it.",
-      }),
+    await waitFor(() => {
+      expect(supabaseMock.functions.invoke).toHaveBeenCalledWith("send-nuj-push", {
+        body: expect.objectContaining({
+          recipientUserId: "user-b",
+          title: "User A sent a NUJ",
+          body: "Open NUJ to view it.",
+        }),
+      });
     });
   });
 

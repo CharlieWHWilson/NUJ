@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { addCurrentUserMate, buildMateInitials, searchProfileById } from "@/lib/supabaseData";
 import { supabase } from "@/lib/supabase";
+import { APP_STORE_URL, buildAddMateLink, buildInviteMessage } from "@/lib/mateInvite";
 
 interface AddMateSheetProps {
   open: boolean;
@@ -54,7 +55,8 @@ export const AddMateSheet = ({ open, onClose, onMateAdded }: AddMateSheetProps) 
 
   // Share logic (same as Profile page)
   const shareMsg = user?.userCode ?? user?.id ?? "";
-  const shareInviteMessage = `Join me on NUJ. A simple way to stay connected.\n\nAdd me as a mate using my NUJ code: ${shareMsg}\n\nShare your NUJ code with me to do the same.`;
+  const shareInviteMessage = buildInviteMessage(shareMsg);
+  const addMateLink = buildAddMateLink(shareMsg);
 
   const handleSearch = async () => {
     setSearchError('');
@@ -165,7 +167,7 @@ export const AddMateSheet = ({ open, onClose, onMateAdded }: AddMateSheetProps) 
               <p>
                 Join me on{" "}
                 <a
-                  href="https://nuj.app"
+                  href={APP_STORE_URL}
                   target="_blank"
                   rel="noreferrer"
                   className="underline underline-offset-2"
@@ -174,8 +176,8 @@ export const AddMateSheet = ({ open, onClose, onMateAdded }: AddMateSheetProps) 
                 </a>
                 . A simple way to stay connected.
               </p>
-              <p className="mt-3">Add me as a mate using my NUJ code: <span className="font-semibold">{shareMsg}</span></p>
-              <p className="mt-3">Share your NUJ code with me to do the same.</p>
+              <p className="mt-3 break-all">Tap to add me as a mate: <span className="underline underline-offset-2">{addMateLink}</span></p>
+              <p className="mt-3">Or add me using my NUJ code: <span className="font-semibold">{shareMsg}</span></p>
             </div>
             <button
               onClick={() => { navigator.clipboard.writeText(shareInviteMessage); }}

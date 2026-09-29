@@ -42,7 +42,8 @@ const GroupDetail = () => {
     const [minDays, maxDays] = matesDayRange;
     return groupMates.filter((mate) => {
       const daysSinceCheckin = getDaysSinceCheckin(mate);
-      return daysSinceCheckin >= minDays && daysSinceCheckin <= maxDays;
+      // The slider's top stop means "31+ days", so older mates are never hidden.
+      return daysSinceCheckin >= minDays && (maxDays >= 31 || daysSinceCheckin <= maxDays);
     });
   }, [groupMates, matesDayRange]);
 

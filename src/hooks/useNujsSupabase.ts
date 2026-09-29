@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import { NujReceived } from "@/data/mockData";
 import { NujSent } from "@/data/nujsSent";
@@ -36,11 +37,54 @@ const toInitials = (name: string) =>
     .join("")
     .toUpperCase();
 
+const sendNewNujPush = async (sender: User, recipientUserId: string, nujId?: string) => {
+  try {
+    let senderDisplayName = "Someone";
+    const metadataUsername = sender.user_metadata?.username;
+    if (typeof metadataUsername === "string" && metadataUsername.trim().length > 0) {
+      senderDisplayName = metadataUsername.trim();
+    } else {
+      const { data: senderProfileRows } = await supabase
+        .from("profiles")
+        .select("id, username")
+        .in("id", [sender.id]);
+
+      const senderProfile = ((senderProfileRows as ProfileLookupRow[] | null) || [])[0];
+      if (senderProfile?.username?.trim()) {
+        senderDisplayName = senderProfile.username.trim();
+      }
+    }
+
+    const { data: pushResult, error: pushError } = await supabase.functions.invoke("send-nuj-push", {
+      body: {
+        recipientUserId,
+        title: `${senderDisplayName} sent a NUJ`,
+        body: "Open NUJ to view it.",
+        data: {
+          type: "new_nuj",
+          nujId,
+          senderUserId: sender.id,
+        },
+      },
+    });
+
+    // Keep send NUJ successful even if push delivery fails.
+    if (pushError) {
+      console.warn("Failed to send NUJ push", pushError.message);
+    } else if (pushResult && typeof pushResult === "object" && ((pushResult as { sent?: number }).sent ?? 0) === 0) {
+      console.warn("NUJ push was invoked but no notifications were delivered", pushResult);
+    }
+  } catch (err) {
+    console.warn("Failed to send NUJ push", err);
+  }
+};
+
 export const useNujsSupabase = () => {
   const [nujsReceived, setNujsReceived] = useState<NujReceived[]>([]);
   const [nujsSent, setNujsSent] = useState<NujSent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const mateLookupRef = useRef(new Map<string, MateLookupRow>());
 
   const refresh = async () => {
     try {
@@ -69,6 +113,7 @@ export const useNujsSupabase = () => {
           matesByUserId.set(mate.mate_user_id, mate);
         }
       }
+      mateLookupRef.current = matesByUserId;
 
       const { data: receivedData, error: receivedError } = await supabase
         .from("nujs")
@@ -166,10 +211,20 @@ export const useNujsSupabase = () => {
     try {
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) throw new Error("Not authenticated");
+      const senderUser = userData.user;
+
+      // Run the reciprocal-mate guard and pending-NUJ check in parallel to cut round trips.
+      const [guardResult, existingResult] = await Promise.all([
+        supabase.rpc("can_send_nuj_to_recipient", { p_recipient_user_id: recipientUserId }),
+        supabase
+          .from("nujs")
+          .select("id, acknowledged_at")
+          .eq("sender_user_id", senderUser.id)
+          .eq("recipient_user_id", recipientUserId),
+      ]);
 
       let canSendToRecipient = true;
-      const { data: reciprocalMateData, error: reciprocalMateError } = await supabase
-        .rpc("can_send_nuj_to_recipient", { p_recipient_user_id: recipientUserId });
+      const { data: reciprocalMateData, error: reciprocalMateError } = guardResult;
 
       if (reciprocalMateError) {
         const errorMessage = reciprocalMateError.message.toLowerCase();
@@ -190,12 +245,7 @@ export const useNujsSupabase = () => {
         throw new Error(MUTUAL_MATE_REQUIRED_ERROR);
       }
 
-      const { data: existingNujs, error: existingNujsError } = await supabase
-        .from("nujs")
-        .select("id, acknowledged_at")
-        .eq("sender_user_id", userData.user.id)
-        .eq("recipient_user_id", recipientUserId);
-
+      const { data: existingNujs, error: existingNujsError } = existingResult;
       if (existingNujsError) throw existingNujsError;
 
       const hasPendingNuj = ((existingNujs as Pick<NujRow, "id" | "acknowledged_at">[] | null) || [])
@@ -208,7 +258,7 @@ export const useNujsSupabase = () => {
       const { data, error: insertError } = await supabase
         .from("nujs")
         .insert({
-          sender_user_id: userData.user.id,
+          sender_user_id: senderUser.id,
           recipient_user_id: recipientUserId,
         })
         .select()
@@ -216,54 +266,28 @@ export const useNujsSupabase = () => {
 
       if (insertError) throw insertError;
 
-      let senderDisplayName = "Someone";
-      const metadataUsername = userData.user.user_metadata?.username;
-      if (typeof metadataUsername === "string" && metadataUsername.trim().length > 0) {
-        senderDisplayName = metadataUsername.trim();
-      } else {
-        const { data: senderProfileRows } = await supabase
-          .from("profiles")
-          .select("id, username")
-          .in("id", [userData.user.id]);
-
-        const senderProfile = ((senderProfileRows as ProfileLookupRow[] | null) || [])[0];
-        if (senderProfile?.username?.trim()) {
-          senderDisplayName = senderProfile.username.trim();
-        }
-      }
-
-      const insertedNuj = data as Pick<NujRow, "id"> | null;
-      const { data: pushResult, error: pushError } = await supabase.functions.invoke("send-nuj-push", {
-        body: {
-          recipientUserId,
-          title: `${senderDisplayName} sent a NUJ`,
-          body: "Open NUJ to view it.",
-          data: {
-            type: "new_nuj",
-            nujId: insertedNuj?.id,
-            senderUserId: userData.user.id,
+      const insertedNuj = data as Pick<NujRow, "id" | "created_at"> | null;
+      const knownMate = mateLookupRef.current.get(recipientUserId);
+      if (insertedNuj?.id) {
+        const recipientName = knownMate?.name ?? "Unknown mate";
+        setNujsSent((prev) => [
+          {
+            id: insertedNuj.id,
+            toMateId: knownMate?.id ?? recipientUserId,
+            toMateName: recipientName,
+            toMateInitials: knownMate?.initials ?? toInitials(recipientName),
+            sentAt: insertedNuj.created_at ?? new Date().toISOString(),
           },
-        },
-      });
-
-      // Keep send NUJ successful even if push delivery fails.
-      if (pushError) {
-        console.warn("Failed to send NUJ push", pushError.message);
-      } else if (pushResult && typeof pushResult === "object") {
-        const result = pushResult as {
-          sent?: number;
-          failed?: number;
-          attemptedTokens?: number;
-          apnsFailuresByReason?: Record<string, number>;
-        };
-
-        if ((result.sent ?? 0) === 0) {
-          console.warn("NUJ push was invoked but no notifications were delivered", result);
-        }
+          ...prev.filter((nuj) => nuj.id !== insertedNuj.id),
+        ]);
       }
 
-      await refresh();
-      await syncAttentionBadgeCount();
+      // Push delivery and list refresh happen in the background so the sender gets instant feedback.
+      void (async () => {
+        await sendNewNujPush(senderUser, recipientUserId, insertedNuj?.id);
+        await refresh();
+      })();
+
       return data;
     } catch (err) {
       console.error("Error sending NUJ:", err);

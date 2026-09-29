@@ -23,6 +23,7 @@ import { clearAppStorage } from "@/lib/utils";
 import { CHECKIN_STORAGE_KEY } from "@/hooks/useCheckin";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { supabase } from "@/lib/supabase";
+import { APP_STORE_URL, buildAddMateLink, buildInviteMessage } from "@/lib/mateInvite";
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -36,8 +37,7 @@ const Profile = () => {
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const shareUserCode = user?.userCode ?? "";
   const hasShareUserCode = shareUserCode.trim().length > 0;
-  const appStoreUrl = "https://apps.apple.com/gb/app/nuj-social/id6789114237";
-  const shareInviteMessage = `Join me on NUJ. A simple way to stay connected.\n\nAdd me as a mate using my NUJ code: ${shareUserCode}\n\nShare your NUJ code with me to do the same.`;
+  const shareInviteMessage = buildInviteMessage(shareUserCode);
 
   const persistReminderSettings = (nextEnabled: boolean, nextTime: string) => {
     saveDailyReminderSettings({
@@ -261,7 +261,7 @@ const Profile = () => {
                   <p>
                     Join me on {" "}
                     <a
-                      href={appStoreUrl}
+                      href={APP_STORE_URL}
                       target="_blank"
                       rel="noreferrer"
                       className="underline underline-offset-2"
@@ -270,8 +270,8 @@ const Profile = () => {
                     </a>
                     . A simple way to stay connected.
                   </p>
-                  <p className="mt-3">Add me as a mate using my NUJ code: {shareUserCode}</p>
-                  <p className="mt-3">Share your NUJ code with me to do the same.</p>
+                  <p className="mt-3 break-all">Tap to add me as a mate: <span className="underline underline-offset-2">{buildAddMateLink(shareUserCode)}</span></p>
+                  <p className="mt-3">Or add me using my NUJ code: {shareUserCode}</p>
                 </div>
                 <button
                   onClick={() => {

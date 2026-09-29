@@ -31,7 +31,7 @@ npm run cap:sync
 CAP_SPM_FILE="ios/App/CapApp-SPM/Package.swift"
 if [ -f "$CAP_SPM_FILE" ]; then
   # Replace fragile node_modules package paths with repository-local plugin paths.
-  perl -i -pe 's#\.\./\.\./\.\./node_modules/\@capacitor/local-notifications#../../CapacitorPlugins/local-notifications#g; s#\.\./\.\./\.\./node_modules/\@capacitor/push-notifications#../../CapacitorPlugins/push-notifications#g' "$CAP_SPM_FILE"
+  perl -i -pe 's#\.\./\.\./\.\./node_modules/\@capacitor/local-notifications#../../CapacitorPlugins/local-notifications#g; s#\.\./\.\./\.\./node_modules/\@capacitor/push-notifications#../../CapacitorPlugins/push-notifications#g; s#\.\./\.\./\.\./node_modules/\@capacitor/app"#../../CapacitorPlugins/app"#g' "$CAP_SPM_FILE"
 
   if grep -q "node_modules/@capacitor" "$CAP_SPM_FILE"; then
     echo "Failed to rewrite Capacitor plugin paths in ${CAP_SPM_FILE}" >&2

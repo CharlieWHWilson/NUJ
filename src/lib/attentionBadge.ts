@@ -49,17 +49,21 @@ const setNativeBadgeCount = async (count: number) => {
   }
 };
 
-const fetchUnreadNujCount = async (): Promise<number> => {
-  if (typeof supabase.rpc !== "function") {
-    return 0;
-  }
+// Count unread NUJs directly: get_my_badge_count also includes the server-side needs_check_in
+// flag, which double-counts the reminder (and can be stale) since it's added locally below.
+const fetchUnreadNujCount = async (userId: string): Promise<number> => {
+  const { count, error } = await supabase
+    .from("nujs")
+    .select("id", { count: "exact", head: true })
+    .eq("recipient_user_id", userId)
+    .is("acknowledged_at", null)
+    .is("read_at", null);
 
-  const { data, error } = await supabase.rpc("get_my_badge_count");
   if (error) {
     throw error;
   }
 
-  return toNonNegativeInt(data);
+  return toNonNegativeInt(count);
 };
 
 const computeBadgeCountFromLiveState = async (): Promise<number> => {
@@ -67,9 +71,11 @@ const computeBadgeCountFromLiveState = async (): Promise<number> => {
   if (!userId) return 0;
 
   const reminderSettings = loadDailyReminderSettings();
-  const checkedInToday = await hasCurrentUserCheckedInToday(userId);
+  const [checkedInToday, unreadCount] = await Promise.all([
+    hasCurrentUserCheckedInToday(userId),
+    fetchUnreadNujCount(userId),
+  ]);
 
-  const unreadCount = await fetchUnreadNujCount();
   return calculateAttentionBadgeCount({
     unreadCount,
     checkedInToday,

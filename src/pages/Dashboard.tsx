@@ -79,7 +79,8 @@ const Dashboard = () => {
   const filteredMates = sortedMates.filter((mate) => {
     const daysSinceCheckin = getDaysSinceCheckin(mate);
     const [minDays, maxDays] = matesDayRange;
-    return daysSinceCheckin >= minDays && daysSinceCheckin <= maxDays;
+    // The slider's top stop means "31+ days", so older mates are never hidden.
+    return daysSinceCheckin >= minDays && (maxDays >= 31 || daysSinceCheckin <= maxDays);
   });
 
   const setSectionOpen = (section: SectionKey | "nujSent", open: boolean) => {

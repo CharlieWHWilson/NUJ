@@ -23,7 +23,9 @@ const MatesHub = () => {
 
   const filteredMates = sortedMates.filter((mate) => {
     const daysSinceCheckin = getDaysSinceCheckin(mate);
-    return daysSinceCheckin >= matesDayRange[0] && daysSinceCheckin <= matesDayRange[1];
+    const [minDays, maxDays] = matesDayRange;
+    // The slider's top stop means "31+ days", so older mates are never hidden.
+    return daysSinceCheckin >= minDays && (maxDays >= 31 || daysSinceCheckin <= maxDays);
   });
 
   return (

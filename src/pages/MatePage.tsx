@@ -14,7 +14,8 @@ const MatePage = () => {
   const [showRemovePrompt, setShowRemovePrompt] = useState(false);
   const [showMutualMateBlockDialog, setShowMutualMateBlockDialog] = useState(false);
   const { mates, removeMate } = useMatesSupabase();
-  const { sendNuj } = useNujsSupabase();
+  const { sendNuj, nujsSent } = useNujsSupabase();
+  const [sendState, setSendState] = useState<"idle" | "sending" | "sent">("idle");
 
   const mate = useMemo(
     () => mates.find((item) => item.id === id) ?? null,
@@ -23,17 +24,27 @@ const MatePage = () => {
 
   if (!mate) return null;
 
+  const hasPendingSentNuj = (nujsSent ?? []).some(
+    (nuj) => nuj.toMateId === mate.id || (mate.mateUserId && nuj.toMateId === mate.mateUserId)
+  );
+  const nujLocked = sendState !== "idle" || hasPendingSentNuj;
+
   const openContactAction = (url: string) => {
     window.open(url, "_self");
   };
 
   const actions = [
     {
-      label: "Send NUJ",
-      icon: <span className="text-lg leading-none">👉</span>,
-      description: "A silent signal. No words needed.",
+      label: sendState === "sending" ? "Sending NUJ…" : nujLocked ? "NUJ sent" : "Send NUJ",
+      icon: <span className="text-lg leading-none">{nujLocked && sendState !== "sending" ? "✓" : "👉"}</span>,
+      description: nujLocked
+        ? `Waiting for ${mate.name.split(" ")[0]} to acknowledge it.`
+        : "A silent signal. No words needed.",
       primary: true,
+      disabled: nujLocked,
       onClick: async () => {
+        if (nujLocked) return;
+
         if (!mate.mateUserId) {
           toast(`Unable to send NUJ to ${mate.name}`, {
             description: "Please remove and re-add this mate by NUJ code.",
@@ -41,22 +52,27 @@ const MatePage = () => {
           return;
         }
 
+        setSendState("sending");
         try {
           await sendNuj(mate.mateUserId);
+          setSendState("sent");
           toast(`NUJ sent to ${mate.name}`);
         } catch (err) {
           if (err instanceof Error && err.message === MUTUAL_MATE_REQUIRED_ERROR) {
+            setSendState("idle");
             setShowMutualMateBlockDialog(true);
             return;
           }
 
           if (err instanceof Error && err.message === ACTIVE_NUJ_EXISTS_ERROR) {
+            setSendState("sent");
             toast(`NUJ already pending for ${mate.name}`, {
               description: "You can send another NUJ once they acknowledge the current one.",
             });
             return;
           }
 
+          setSendState("idle");
           toast(`Unable to send NUJ to ${mate.name}`, {
             description: "Please try again in a moment.",
           });
@@ -68,6 +84,7 @@ const MatePage = () => {
       icon: <MessageSquare size={20} />,
       description: "Open in WhatsApp",
       primary: false,
+      disabled: false,
       onClick: () =>
         openContactAction(`https://wa.me/?text=${encodeURIComponent(`Hey ${mate.name.split(" ")[0]}!`)}`),
     },
@@ -76,6 +93,7 @@ const MatePage = () => {
       icon: <Phone size={20} />,
       description: "Send a text",
       primary: false,
+      disabled: false,
       onClick: () => openContactAction(`sms:?body=${encodeURIComponent(`Hey ${mate.name.split(" ")[0]}!`)}`),
     },
   ];
@@ -111,20 +129,32 @@ const MatePage = () => {
 
       {/* Actions */}
       <div className="px-5 space-y-3">
-        {actions.map((action) => (
+        {actions.map((action) => {
+          const locked = action.primary && action.disabled;
+          return (
           <button
-            key={action.label}
+            key={action.primary ? "send-nuj" : action.label}
             onClick={action.onClick}
-            className="w-full flex items-center gap-4 p-5 rounded-2xl transition-colors text-left"
+            disabled={action.disabled}
+            aria-disabled={action.disabled}
+            className="w-full flex items-center gap-4 p-5 rounded-2xl transition-colors duration-150 text-left disabled:cursor-not-allowed"
             style={{
-              background: action.primary
+              background: locked
+                ? "hsl(142 60% 94%)"
+                : action.primary
                 ? "hsl(var(--primary))"
                 : "hsl(var(--card))",
-              color: action.primary
+              color: locked
+                ? "hsl(142 60% 25%)"
+                : action.primary
                 ? "hsl(var(--primary-foreground))"
                 : "hsl(var(--foreground))",
-              border: action.primary ? "none" : "1px solid hsl(var(--border))",
-              boxShadow: action.primary ? "0 4px 20px hsl(215 28% 13% / 0.15)" : "var(--nuj-card-shadow)",
+              border: locked
+                ? "1px solid hsl(142 50% 75%)"
+                : action.primary ? "none" : "1px solid hsl(var(--border))",
+              boxShadow: locked
+                ? "none"
+                : action.primary ? "0 4px 20px hsl(215 28% 13% / 0.15)" : "var(--nuj-card-shadow)",
             }}
           >
             <span style={{ opacity: action.primary ? 0.9 : 0.6 }}>{action.icon}</span>
@@ -133,7 +163,9 @@ const MatePage = () => {
               <p
                 className="text-sm mt-0.5"
                 style={{
-                  color: action.primary
+                  color: locked
+                    ? "hsl(142 40% 30% / 0.85)"
+                    : action.primary
                     ? "hsl(var(--primary-foreground) / 0.7)"
                     : "hsl(var(--muted-foreground))",
                 }}
@@ -142,7 +174,8 @@ const MatePage = () => {
               </p>
             </div>
           </button>
-        ))}
+          );
+        })}
 
         <div className="pt-2 flex justify-end">
           {!showRemovePrompt ? (

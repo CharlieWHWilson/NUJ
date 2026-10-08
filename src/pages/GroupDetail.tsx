@@ -7,7 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { useMatesSupabase } from "@/hooks/useMatesSupabase";
 import {
+  CHECKIN_CADENCE_OPTIONS,
   DEFAULT_CHECKIN_CADENCE_DAYS,
+  formatCheckinCadence,
   getDaysSinceCheckin,
   isWithinCheckinCadence,
   useGroupsSupabase,
@@ -153,7 +155,7 @@ const GroupDetail = () => {
           <div className="flex items-center justify-between mb-2">
             <p className="text-sm font-medium">Check-in cadence</p>
             <span className="text-xs text-muted-foreground">
-              {cadenceDays === 1 ? "Every day" : `Every ${cadenceDays} days`}
+              {formatCheckinCadence(cadenceDays)}
             </span>
           </div>
           <div className="flex justify-start mb-2">
@@ -162,13 +164,13 @@ const GroupDetail = () => {
             </span>
           </div>
           <Slider
-            value={[cadenceDays]}
-            min={1}
-            max={7}
+            value={[Math.max(0, CHECKIN_CADENCE_OPTIONS.indexOf(cadenceDays))]}
+            min={0}
+            max={CHECKIN_CADENCE_OPTIONS.length - 1}
             step={1}
-            aria-label="Check-in cadence in days"
-            onValueChange={(value) => setCadenceDays(value[0] ?? DEFAULT_CHECKIN_CADENCE_DAYS)}
-            onValueCommit={(value) => void saveCadence(value[0] ?? DEFAULT_CHECKIN_CADENCE_DAYS)}
+            aria-label="Check-in cadence"
+            onValueChange={(value) => setCadenceDays(CHECKIN_CADENCE_OPTIONS[value[0] ?? 0] ?? DEFAULT_CHECKIN_CADENCE_DAYS)}
+            onValueCommit={(value) => void saveCadence(CHECKIN_CADENCE_OPTIONS[value[0] ?? 0] ?? DEFAULT_CHECKIN_CADENCE_DAYS)}
           />
           {cadenceError && <p className="text-xs text-destructive mt-2">{cadenceError}</p>}
         </div>

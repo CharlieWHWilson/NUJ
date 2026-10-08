@@ -3,6 +3,16 @@ import { supabase } from "@/lib/supabase";
 import { Group, Mate } from "@/data/mockData";
 
 export const DEFAULT_CHECKIN_CADENCE_DAYS = 1;
+// Must match the groups_checkin_cadence_days_range constraint; 30 represents "every month".
+export const CHECKIN_CADENCE_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 14, 21, 30];
+
+export const formatCheckinCadence = (days: number) => {
+  if (days === 1) return "Every day";
+  if (days === 7) return "Every week";
+  if (days === 30) return "Every month";
+  if (days % 7 === 0) return `Every ${days / 7} weeks`;
+  return `Every ${days} days`;
+};
 
 export const getDaysSinceCheckin = (mate: Pick<Mate, "lastCheckin" | "daysSinceCheckin">) => {
   if (typeof mate.daysSinceCheckin === "number") return mate.daysSinceCheckin;
@@ -17,7 +27,7 @@ export const isWithinCheckinCadence = (
 ) => getDaysSinceCheckin(mate) < cadenceDays;
 
 const toCadenceDays = (value: unknown) =>
-  typeof value === "number" && value >= 1 && value <= 7 ? value : DEFAULT_CHECKIN_CADENCE_DAYS;
+  CHECKIN_CADENCE_OPTIONS.includes(value as number) ? (value as number) : DEFAULT_CHECKIN_CADENCE_DAYS;
 
 const isMissingGroupMatesTableError = (error: unknown) => {
   if (!error || typeof error !== "object") return false;

@@ -11,6 +11,7 @@ export const APP_STORAGE_KEYS = [
   "nuj.joined_meetups",
   "nuj-sent",
   "nuj.daily_reminder",
+  "nuj.last_checkin_at",
   "nuj_checkin_date_v2",
 ];
 

@@ -30,6 +30,10 @@ vi.mock("./lib/supabase", () => ({
 
 vi.mock("./lib/dailyReminder", () => ({
   scheduleDailyReminderNotification: vi.fn(),
+  recordLastCheckin: vi.fn(),
+  hasReminderIntervalElapsed: vi.fn(() => true),
+  isCheckinReminderNotificationId: vi.fn(() => false),
+  loadDailyReminderSettings: vi.fn(() => ({ enabled: false, time: "08:00", intervalDays: 1 })),
 }));
 
 import App from "./App";

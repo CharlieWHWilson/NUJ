@@ -2,7 +2,11 @@ import { Capacitor } from "@capacitor/core";
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { supabase } from "@/lib/supabase";
 import { Badge } from "@/lib/badgePlugin";
-import { DAILY_REMINDER_NOTIFICATION_ID, loadDailyReminderSettings } from "@/lib/dailyReminder";
+import {
+  hasReminderIntervalElapsed,
+  isCheckinReminderNotificationId,
+  loadDailyReminderSettings,
+} from "@/lib/dailyReminder";
 import { derivePresenceStatus, getCurrentUserId, getLatestCheckinForUser } from "@/lib/supabaseData";
 
 interface AttentionBadgeInputs {
@@ -71,15 +75,16 @@ const computeBadgeCountFromLiveState = async (): Promise<number> => {
   if (!userId) return 0;
 
   const reminderSettings = loadDailyReminderSettings();
-  const [checkedInToday, unreadCount] = await Promise.all([
-    hasCurrentUserCheckedInToday(userId),
+  const [latestCheckin, unreadCount] = await Promise.all([
+    getLatestCheckinForUser(userId),
     fetchUnreadNujCount(userId),
   ]);
 
   return calculateAttentionBadgeCount({
     unreadCount,
-    checkedInToday,
-    reminderEnabled: reminderSettings.enabled,
+    checkedInToday: derivePresenceStatus(latestCheckin) === "today",
+    reminderEnabled: reminderSettings.enabled
+      && hasReminderIntervalElapsed(reminderSettings.intervalDays, latestCheckin),
     reminderTime: reminderSettings.time,
   });
 };
@@ -118,8 +123,9 @@ const updateNeedsCheckInFromReminderState = async () => {
   const reminderTime = new Date(now);
   reminderTime.setHours(hours, minutes, 0, 0);
 
-  const checkedInToday = await hasCurrentUserCheckedInToday(userId);
-  if (checkedInToday) {
+  const latestCheckin = await getLatestCheckinForUser(userId);
+  const checkedInToday = derivePresenceStatus(latestCheckin) === "today";
+  if (checkedInToday || !hasReminderIntervalElapsed(reminderSettings.intervalDays, latestCheckin)) {
     await setNeedsCheckIn(false);
     return;
   }
@@ -147,7 +153,7 @@ const registerNativeReminderListeners = () => {
 
   LocalNotifications.addListener("localNotificationReceived", async (event) => {
     const notificationId = (event as { id?: number }).id;
-    if (notificationId !== DAILY_REMINDER_NOTIFICATION_ID) return;
+    if (!isCheckinReminderNotificationId(notificationId)) return;
 
     await handleDailyReminderNotification();
     await syncAttentionBadgeCount();
@@ -155,7 +161,7 @@ const registerNativeReminderListeners = () => {
 
   LocalNotifications.addListener("localNotificationActionPerformed", async (event) => {
     const notificationId = (event as { notification?: { id?: number } }).notification?.id;
-    if (notificationId !== DAILY_REMINDER_NOTIFICATION_ID) return;
+    if (!isCheckinReminderNotificationId(notificationId)) return;
 
     await handleDailyReminderNotification();
     await syncAttentionBadgeCount();

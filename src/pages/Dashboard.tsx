@@ -20,7 +20,6 @@ import { useMatesSupabase } from "@/hooks/useMatesSupabase";
 import { useNujsSupabase } from "@/hooks/useNujsSupabase";
 import {
   DEFAULT_CHECKIN_CADENCE_DAYS,
-  formatCheckinWindow,
   isWithinCheckinCadence,
   useGroupsSupabase,
 } from "@/hooks/useGroupsSupabase";
@@ -438,7 +437,7 @@ const Dashboard = () => {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium">{group.name}</p>
-                        <p className="text-xs text-muted-foreground">{checkedInWithinCadence}/{groupMates.length} checked in {formatCheckinWindow(cadenceDays)}</p>
+                        <p className="text-xs text-muted-foreground">{checkedInWithinCadence}/{groupMates.length} checked in</p>
                       </div>
                       <ChevronRight size={14} className="text-muted-foreground shrink-0" />
                     </button>

@@ -8,7 +8,6 @@ import { Slider } from "@/components/ui/slider";
 import { useMatesSupabase } from "@/hooks/useMatesSupabase";
 import {
   DEFAULT_CHECKIN_CADENCE_DAYS,
-  formatCheckinWindow,
   getDaysSinceCheckin,
   isWithinCheckinCadence,
   useGroupsSupabase,
@@ -159,7 +158,7 @@ const GroupDetail = () => {
           </div>
           <div className="flex justify-start mb-2">
             <span className="text-xs text-muted-foreground">
-              {matesWithinCadence}/{groupMates.length} checked in {formatCheckinWindow(cadenceDays)}
+              {matesWithinCadence}/{groupMates.length} checked in
             </span>
           </div>
           <Slider

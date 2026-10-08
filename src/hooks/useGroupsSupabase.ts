@@ -16,9 +16,6 @@ export const isWithinCheckinCadence = (
   cadenceDays: number,
 ) => getDaysSinceCheckin(mate) < cadenceDays;
 
-export const formatCheckinWindow = (cadenceDays: number) =>
-  cadenceDays <= 1 ? "today" : `within the last ${cadenceDays} days`;
-
 const toCadenceDays = (value: unknown) =>
   typeof value === "number" && value >= 1 && value <= 7 ? value : DEFAULT_CHECKIN_CADENCE_DAYS;
 

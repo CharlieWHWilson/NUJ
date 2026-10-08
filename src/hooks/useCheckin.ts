@@ -7,7 +7,7 @@ import {
 } from "@/lib/supabaseData";
 import { supabase } from "@/lib/supabase";
 import { clearAttentionBadgeCount, setNeedsCheckInAndSyncBadge } from "@/lib/attentionBadge";
-import { scheduleInactivityReminder } from "@/lib/dailyReminder";
+import { recordLastCheckin } from "@/lib/dailyReminder";
 
 const toErrorMessage = (error: unknown, fallback: string) => {
   if (error instanceof Error && error.message) return error.message;
@@ -57,7 +57,7 @@ export const useCheckin = (currentUserId?: string) => {
 
       try {
         const latestCheckin = await getLatestCheckinForUser(resolvedUserId);
-        void scheduleInactivityReminder(latestCheckin);
+        recordLastCheckin(latestCheckin);
         if (active) {
           setCheckedIn(derivePresenceStatus(latestCheckin) === "today");
           setLoading(false);
@@ -89,7 +89,7 @@ export const useCheckin = (currentUserId?: string) => {
     try {
       setError(null);
       await upsertCurrentUserCheckin();
-      void scheduleInactivityReminder(new Date());
+      recordLastCheckin(new Date());
       await clearAttentionBadgeCount();
       await setNeedsCheckInAndSyncBadge(false);
       setCheckedIn(true);

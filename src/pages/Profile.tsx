@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import {
+  REMINDER_INTERVAL_OPTIONS,
   loadDailyReminderSettings,
   requestDailyReminderPermission,
   saveDailyReminderSettings,
@@ -32,6 +33,7 @@ const Profile = () => {
 
   const [dailyReminderEnabled, setDailyReminderEnabled] = useState(initialReminderSettings.enabled);
   const [reminderTime, setReminderTime] = useState(initialReminderSettings.time);
+  const [reminderIntervalDays, setReminderIntervalDays] = useState(initialReminderSettings.intervalDays);
   const [resetRequested, setResetRequested] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
@@ -39,10 +41,11 @@ const Profile = () => {
   const hasShareUserCode = shareUserCode.trim().length > 0;
   const shareInviteMessage = buildInviteMessage(shareUserCode);
 
-  const persistReminderSettings = (nextEnabled: boolean, nextTime: string) => {
+  const persistReminderSettings = (nextEnabled: boolean, nextTime: string, nextIntervalDays = reminderIntervalDays) => {
     saveDailyReminderSettings({
       enabled: nextEnabled,
       time: nextTime,
+      intervalDays: nextIntervalDays,
     });
     scheduleDailyReminderNotification();
     void initializeAttentionBadge();
@@ -57,7 +60,7 @@ const Profile = () => {
 
     const hasPermission = await requestDailyReminderPermission();
     if (!hasPermission) {
-      alert("Allow notifications to enable daily check-in reminders.");
+      alert("Allow notifications to enable check-in reminders.");
       setDailyReminderEnabled(false);
       persistReminderSettings(false, reminderTime);
       return;
@@ -70,6 +73,11 @@ const Profile = () => {
   const handleChangeReminderTime = (value: string) => {
     setReminderTime(value);
     persistReminderSettings(dailyReminderEnabled, value);
+  };
+
+  const handleChangeReminderInterval = (value: number) => {
+    setReminderIntervalDays(value);
+    persistReminderSettings(dailyReminderEnabled, reminderTime, value);
   };
 
   const [shareOpen, setShareOpen] = useState(false);
@@ -297,27 +305,60 @@ const Profile = () => {
         <div className="nuj-card p-4 space-y-4">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="font-medium text-sm">Daily check-in reminder</p>
-              <p className="text-xs text-muted-foreground mt-1">Receive a push notification at your selected time</p>
+              <p className="font-medium text-sm">Check-in reminder</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {dailyReminderEnabled
+                  ? `${reminderIntervalDays === 1 ? "Every day" : `Every ${reminderIntervalDays} days`} at ${reminderTime}`
+                  : "A gentle nudge at a time that suits you"}
+              </p>
             </div>
             <Switch
               checked={dailyReminderEnabled}
               onCheckedChange={handleToggleReminder}
-              aria-label="Enable daily check-in reminder"
+              aria-label="Enable check-in reminder"
             />
           </div>
 
-          <div>
-            <Label htmlFor="reminder-time">Reminder time</Label>
-            <Input
-              id="reminder-time"
-              type="time"
-              value={reminderTime}
-              onChange={(event) => handleChangeReminderTime(event.target.value)}
-              disabled={!dailyReminderEnabled}
-              className="mt-2 w-[50%] max-w-[50%] min-w-0"
-            />
-          </div>
+          {dailyReminderEnabled && (
+            <>
+              <div>
+                <Label htmlFor="reminder-time">Time</Label>
+                <Input
+                  id="reminder-time"
+                  type="time"
+                  value={reminderTime}
+                  onChange={(event) => handleChangeReminderTime(event.target.value)}
+                  className="mt-2 w-[50%] max-w-[50%] min-w-0"
+                />
+              </div>
+
+              <div>
+                <Label id="reminder-interval-label">How often</Label>
+                <div role="radiogroup" aria-labelledby="reminder-interval-label" className="mt-2 flex gap-1.5">
+                  {REMINDER_INTERVAL_OPTIONS.map((days) => {
+                    const selected = days === reminderIntervalDays;
+                    return (
+                      <button
+                        key={days}
+                        type="button"
+                        role="radio"
+                        aria-checked={selected}
+                        aria-label={days === 1 ? "Every day" : `Every ${days} days`}
+                        onClick={() => handleChangeReminderInterval(days)}
+                        className={`flex-1 h-8 rounded-full text-xs font-medium transition-colors ${
+                          selected
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted text-muted-foreground hover:bg-secondary hover:text-foreground"
+                        }`}
+                      >
+                        {days === 1 ? "Daily" : days}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         <button

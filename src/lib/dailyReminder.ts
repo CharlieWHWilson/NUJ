@@ -9,7 +9,7 @@ export interface DailyReminderSettings {
 const REMINDER_STORAGE_KEY = "nuj.daily_reminder";
 const DEFAULT_SETTINGS: DailyReminderSettings = {
   enabled: false,
-  time: "09:00",
+  time: "08:00",
 };
 
 let scheduledReminderTimeout: number | null = null;

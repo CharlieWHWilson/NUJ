@@ -14,6 +14,8 @@ const DEFAULT_SETTINGS: DailyReminderSettings = {
 
 let scheduledReminderTimeout: number | null = null;
 export const DAILY_REMINDER_NOTIFICATION_ID = 1001;
+export const INACTIVITY_REMINDER_NOTIFICATION_ID = 1002;
+const INACTIVITY_THRESHOLD_MS = 7 * 24 * 60 * 60 * 1000;
 
 const isValidTime = (value: string): boolean => {
   return /^([01]\d|2[0-3]):([0-5]\d)$/.test(value);
@@ -119,6 +121,55 @@ const getNextReminderDate = (time: string): Date => {
   }
 
   return nextReminder;
+};
+
+// First reminder-time slot strictly more than a week after the last check-in.
+export const getInactivityReminderDate = (lastCheckinAt: Date, time: string): Date => {
+  const [hours, minutes] = time.split(":").map((value) => Number(value));
+  const threshold = new Date(lastCheckinAt.getTime() + INACTIVITY_THRESHOLD_MS);
+  const fireAt = new Date(threshold);
+
+  fireAt.setHours(hours, minutes, 0, 0);
+
+  if (fireAt <= threshold) {
+    fireAt.setDate(fireAt.getDate() + 1);
+  }
+
+  return fireAt;
+};
+
+export const scheduleInactivityReminder = async (lastCheckinAt: string | Date | null) => {
+  if (typeof window === "undefined" || !isNativePlatform()) return;
+
+  try {
+    const permission = await LocalNotifications.checkPermissions();
+    if (permission.display !== "granted") return;
+
+    await LocalNotifications.cancel({
+      notifications: [{ id: INACTIVITY_REMINDER_NOTIFICATION_ID }],
+    });
+
+    if (!lastCheckinAt) return;
+
+    const lastCheckin = new Date(lastCheckinAt);
+    if (Number.isNaN(lastCheckin.getTime())) return;
+
+    const fireAt = getInactivityReminderDate(lastCheckin, loadDailyReminderSettings().time);
+    if (fireAt.getTime() <= Date.now()) return;
+
+    await LocalNotifications.schedule({
+      notifications: [
+        {
+          id: INACTIVITY_REMINDER_NOTIFICATION_ID,
+          title: "",
+          body: "You haven't checked in for over a week. Tap to let your mates know you're there.",
+          schedule: { at: fireAt, allowWhileIdle: true },
+        },
+      ],
+    });
+  } catch (error) {
+    console.warn("Failed to schedule inactivity reminder", error);
+  }
 };
 
 export const scheduleDailyReminderNotification = async () => {

@@ -174,7 +174,7 @@ export const AddMateSheet = ({ open, onClose, onMateAdded }: AddMateSheetProps) 
                 >
                   NUJ
                 </a>
-                . A simple way to stay connected.
+                . Stay connected.
               </p>
               <p className="mt-3 break-all">Tap to add me as a mate: <span className="underline underline-offset-2">{addMateLink}</span></p>
               <p className="mt-3">Or add me using my NUJ code: <span className="font-semibold">{shareMsg}</span></p>

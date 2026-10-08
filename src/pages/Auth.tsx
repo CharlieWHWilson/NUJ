@@ -243,7 +243,7 @@ const Auth = () => {
                 </div>
               </div>
 
-              <p className="text-foreground text-center">Just a simple way to stay connected.</p>
+              <p className="text-foreground text-center">Stay connected.</p>
             </div>
           </DialogContent>
         </Dialog>

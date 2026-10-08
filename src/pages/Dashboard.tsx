@@ -156,7 +156,7 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background max-w-md mx-auto">
+    <div className="min-h-screen bg-background max-w-md mx-auto flex flex-col justify-center">
       <div className="px-5 nuj-safe-top-dashboard">
         <div
           className={`nuj-card p-4 ${checkedIn ? "cursor-pointer bg-emerald-50/60 border-emerald-200/70" : ""}`}
@@ -236,7 +236,7 @@ const Dashboard = () => {
                   <p className="text-gray-500"><strong>Meet-ups (coming soon)</strong> – Check in together regularly enough and you can unlock deals for real-world activities. A chance to catch up and spend time together (win/win).</p>
                 </div>
               </div>
-              <p className="text-black text-center">Just a simple way to stay connected.</p>
+              <p className="text-black text-center">Stay connected.</p>
             </div>
           </DialogContent>
           </Dialog>
@@ -269,7 +269,7 @@ const Dashboard = () => {
       </div>
 
 
-      <div className="px-5 space-y-4 nuj-safe-bottom-page">
+      <div className="px-5 space-y-3 nuj-safe-bottom-page">
         {/* Side-by-side NUJ boxes */}
         {(nujsReceived.length > 0 || nujsSent.length > 0) && (
           <div className="flex gap-4">
@@ -284,8 +284,8 @@ const Dashboard = () => {
                     <button className="w-full flex items-center justify-between text-left px-4 py-3 hover:bg-muted/40 focus:outline-none">
                       <div className="flex items-center gap-2">
                         <span className="text-sm" aria-hidden="true">👉</span>
-                        <h2 className="font-semibold text-sm tracking-tight">
-                          You have {nujsReceived.length} {nujsReceived.length === 1 ? "NUJ" : "NUJs"}
+                        <h2 className="font-semibold text-sm tracking-tight whitespace-nowrap">
+                          {nujsReceived.length} {nujsReceived.length === 1 ? "NUJ" : "NUJs"} to you
                         </h2>
                       </div>
                       <div className="flex items-center gap-2">
@@ -337,7 +337,9 @@ const Dashboard = () => {
                     <button className="w-full flex items-center justify-between text-left px-4 py-3 hover:bg-muted/40 focus:outline-none">
                       <div className="flex items-center gap-2">
                         <span className="text-sm" aria-hidden="true">👈</span>
-                        <h2 className="font-semibold text-sm tracking-tight">Sent NUJs</h2>
+                        <h2 className="font-semibold text-sm tracking-tight whitespace-nowrap">
+                          {nujsSent.length} {nujsSent.length === 1 ? "NUJ" : "NUJs"} sent
+                        </h2>
                       </div>
                       <div className="flex items-center gap-2">
                         <ChevronDown
@@ -618,7 +620,7 @@ const Dashboard = () => {
         </div>
 
         <p className="text-center text-xs text-muted-foreground/70 py-2">
-          Just a simple way to stay connected
+          Stay connected
         </p>
       </div>
 

@@ -19,7 +19,11 @@ const CheckIn = () => {
     <div className="relative min-h-screen bg-background flex flex-col max-w-md mx-auto">
       <TopNav />
 
-      <div className="flex-1 flex flex-col items-center justify-center px-6 pb-16 nuj-safe-bottom">
+      {/* Bottom padding mirrors the TopNav height so content centres on the screen, not the space below the nav */}
+      <div
+        className="flex-1 flex flex-col items-center justify-center px-6"
+        style={{ paddingBottom: "calc(var(--nuj-safe-top) + 7rem)" }}
+      >
         {/* Ambient subtle circle */}
         <div
           className="absolute inset-0 pointer-events-none"
@@ -31,7 +35,7 @@ const CheckIn = () => {
         />
 
         <div className="relative text-center">
-          <p className="text-muted-foreground text-lg font-medium mb-16 tracking-wide uppercase" style={{ letterSpacing: "0.1em" }}>
+          <p className="text-muted-foreground text-lg font-medium mb-8 tracking-wide uppercase" style={{ letterSpacing: "0.1em" }}>
             {new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}
           </p>
 
@@ -58,20 +62,20 @@ const CheckIn = () => {
           </button>
 
           {!checkedIn && (
-            <p className="text-muted-foreground text-sm mt-12 max-w-xs mx-auto leading-relaxed">
+            <p className="text-muted-foreground text-sm mt-6 max-w-xs mx-auto leading-relaxed">
               A quick tap so your mates know you’re there
             </p>
           )}
 
           {checkedIn && (
-            <div className="mt-12">
+            <div className="mt-6">
               <p className="text-muted-foreground text-sm max-w-xs mx-auto leading-relaxed">
                 Your mates will see you've checked in
               </p>
 
               <button
                 onClick={() => navigate("/dashboard")}
-                className="mt-[12vh] inline-flex items-center justify-center rounded-full border border-muted-foreground/40 px-5 py-3 text-base font-medium text-muted-foreground shadow-sm transition-colors hover:border-foreground/30 hover:text-foreground"
+                className="mt-8 inline-flex items-center justify-center rounded-full border border-muted-foreground/40 px-5 py-3 text-base font-medium text-muted-foreground shadow-sm transition-colors hover:border-foreground/30 hover:text-foreground"
               >
                 See who's around →
               </button>

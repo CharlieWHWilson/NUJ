@@ -268,7 +268,7 @@ const Profile = () => {
                     >
                       NUJ
                     </a>
-                    . A simple way to stay connected.
+                    . Stay connected.
                   </p>
                   <p className="mt-3 break-all">Tap to add me as a mate: <span className="underline underline-offset-2">{buildAddMateLink(shareUserCode)}</span></p>
                   <p className="mt-3">Or add me using my NUJ code: {shareUserCode}</p>

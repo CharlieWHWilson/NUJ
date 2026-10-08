@@ -13,7 +13,7 @@ export const buildAddMateLink = (userCode: string) =>
   `${INVITE_BASE_URL}/add/${encodeURIComponent(userCode)}`;
 
 export const buildInviteMessage = (userCode: string) =>
-  `Join me on NUJ. A simple way to stay connected.\n\nTap to add me as a mate: ${buildAddMateLink(userCode)}\n\nOr add me using my NUJ code: ${userCode}\n\nDon't have NUJ yet? ${APP_STORE_URL}`;
+  `Join me on NUJ. Stay connected.\n\nTap to add me as a mate: ${buildAddMateLink(userCode)}\n\nOr add me using my NUJ code: ${userCode}\n\nDon't have NUJ yet? ${APP_STORE_URL}`;
 
 // Returns the in-app route for an incoming link (e.g. universal link), or null if it isn't one of ours.
 export const getInAppPathFromUrl = (url: string): string | null => {

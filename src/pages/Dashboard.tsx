@@ -285,7 +285,9 @@ const Dashboard = () => {
                       <div className="flex items-center gap-2">
                         <span className="text-sm" aria-hidden="true">👉</span>
                         <h2 className="font-semibold text-sm tracking-tight whitespace-nowrap">
-                          {nujsReceived.length} {nujsReceived.length === 1 ? "NUJ" : "NUJs"} to you
+                          {nujsReceived.length === 0
+                            ? "No NUJs 👏"
+                            : `${nujsReceived.length} ${nujsReceived.length === 1 ? "NUJ" : "NUJs"} to you`}
                         </h2>
                       </div>
                       <div className="flex items-center gap-2">

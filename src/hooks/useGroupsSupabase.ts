@@ -1,6 +1,26 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { Group } from "@/data/mockData";
+import { Group, Mate } from "@/data/mockData";
+
+export const DEFAULT_CHECKIN_CADENCE_DAYS = 1;
+
+export const getDaysSinceCheckin = (mate: Pick<Mate, "lastCheckin" | "daysSinceCheckin">) => {
+  if (typeof mate.daysSinceCheckin === "number") return mate.daysSinceCheckin;
+  if (mate.lastCheckin === "today") return 0;
+  if (mate.lastCheckin === "yesterday") return 1;
+  return 3;
+};
+
+export const isWithinCheckinCadence = (
+  mate: Pick<Mate, "lastCheckin" | "daysSinceCheckin">,
+  cadenceDays: number,
+) => getDaysSinceCheckin(mate) < cadenceDays;
+
+export const formatCheckinWindow = (cadenceDays: number) =>
+  cadenceDays <= 1 ? "today" : `within the last ${cadenceDays} days`;
+
+const toCadenceDays = (value: unknown) =>
+  typeof value === "number" && value >= 1 && value <= 7 ? value : DEFAULT_CHECKIN_CADENCE_DAYS;
 
 const isMissingGroupMatesTableError = (error: unknown) => {
   if (!error || typeof error !== "object") return false;
@@ -55,6 +75,7 @@ export const useGroupsSupabase = () => {
                 id: group.id,
                 name: group.name,
                 mates: [],
+                checkinCadenceDays: toCadenceDays(group.checkin_cadence_days),
               };
             }
             throw matesError;
@@ -64,6 +85,7 @@ export const useGroupsSupabase = () => {
             id: group.id,
             name: group.name,
             mates: (mateIds || []).map((m: any) => m.mate_id),
+            checkinCadenceDays: toCadenceDays(group.checkin_cadence_days),
           };
         })
       );
@@ -119,6 +141,7 @@ export const useGroupsSupabase = () => {
         id: groupData.id,
         name: groupData.name,
         mates: mateIds,
+        checkinCadenceDays: toCadenceDays(groupData.checkin_cadence_days),
       };
 
       setGroups((prev) => [...prev, newGroup]);
@@ -208,6 +231,22 @@ export const useGroupsSupabase = () => {
     }
   };
 
+  const updateGroupCadence = async (groupId: string, cadenceDays: number) => {
+    const { error: cadenceError } = await supabase
+      .from("groups")
+      .update({ checkin_cadence_days: cadenceDays })
+      .eq("id", groupId);
+
+    if (cadenceError) {
+      console.error("Error updating group cadence:", cadenceError);
+      throw cadenceError;
+    }
+
+    setGroups((prev) =>
+      prev.map((group) => (group.id === groupId ? { ...group, checkinCadenceDays: cadenceDays } : group))
+    );
+  };
+
   return {
     groups,
     loading,
@@ -216,6 +255,7 @@ export const useGroupsSupabase = () => {
     removeGroup,
     updateGroupMates,
     updateGroup,
+    updateGroupCadence,
     refresh,
   };
 };

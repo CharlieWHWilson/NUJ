@@ -18,7 +18,12 @@ import { useCheckin } from "@/hooks/useCheckin";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useMatesSupabase } from "@/hooks/useMatesSupabase";
 import { useNujsSupabase } from "@/hooks/useNujsSupabase";
-import { useGroupsSupabase } from "@/hooks/useGroupsSupabase";
+import {
+  DEFAULT_CHECKIN_CADENCE_DAYS,
+  formatCheckinWindow,
+  isWithinCheckinCadence,
+  useGroupsSupabase,
+} from "@/hooks/useGroupsSupabase";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -418,7 +423,8 @@ const Dashboard = () => {
               <div className="space-y-3">
                 {groupsList.map((group) => {
                   const groupMates = mates.filter((m) => group.mates.includes(m.id));
-                  const todayInGroup = groupMates.filter((m) => m.lastCheckin === "today").length;
+                  const cadenceDays = group.checkinCadenceDays ?? DEFAULT_CHECKIN_CADENCE_DAYS;
+                  const checkedInWithinCadence = groupMates.filter((m) => isWithinCheckinCadence(m, cadenceDays)).length;
                   return (
                     <button
                       key={group.id}
@@ -432,7 +438,7 @@ const Dashboard = () => {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium">{group.name}</p>
-                        <p className="text-xs text-muted-foreground">{todayInGroup}/{groupMates.length} checked in today</p>
+                        <p className="text-xs text-muted-foreground">{checkedInWithinCadence}/{groupMates.length} checked in {formatCheckinWindow(cadenceDays)}</p>
                       </div>
                       <ChevronRight size={14} className="text-muted-foreground shrink-0" />
                     </button>

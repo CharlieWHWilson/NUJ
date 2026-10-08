@@ -62,6 +62,7 @@ export interface Group {
   id: string;
   name: string;
   mates: string[]; // mate ids
+  checkinCadenceDays?: number;
 }
 
 export interface MeetUp {

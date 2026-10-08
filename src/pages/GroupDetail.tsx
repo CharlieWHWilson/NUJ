@@ -6,37 +6,53 @@ import { useParams } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { useMatesSupabase } from "@/hooks/useMatesSupabase";
-import { useGroupsSupabase } from "@/hooks/useGroupsSupabase";
-
-const getDaysSinceCheckin = (mate: { lastCheckin: "today" | "yesterday" | "few-days"; daysSinceCheckin?: number }) => {
-  if (typeof mate.daysSinceCheckin === "number") return mate.daysSinceCheckin;
-  if (mate.lastCheckin === "today") return 0;
-  if (mate.lastCheckin === "yesterday") return 1;
-  return 3;
-};
+import {
+  DEFAULT_CHECKIN_CADENCE_DAYS,
+  formatCheckinWindow,
+  getDaysSinceCheckin,
+  isWithinCheckinCadence,
+  useGroupsSupabase,
+} from "@/hooks/useGroupsSupabase";
 
 const GroupDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { mates } = useMatesSupabase();
-  const { groups, updateGroup, removeGroup } = useGroupsSupabase();
+  const { groups, updateGroup, updateGroupCadence, removeGroup } = useGroupsSupabase();
   const group = groups.find((g) => g.id === id);
   const [isEditing, setIsEditing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [groupName, setGroupName] = useState(group?.name ?? "");
   const [groupMateIds, setGroupMateIds] = useState<string[]>(group?.mates ?? []);
   const [matesDayRange, setMatesDayRange] = useState<[number, number]>([0, 31]);
+  const [cadenceDays, setCadenceDays] = useState(group?.checkinCadenceDays ?? DEFAULT_CHECKIN_CADENCE_DAYS);
+  const [cadenceError, setCadenceError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!group) return;
     setGroupName(group.name);
     setGroupMateIds(group.mates);
+    setCadenceDays(group.checkinCadenceDays ?? DEFAULT_CHECKIN_CADENCE_DAYS);
   }, [group]);
 
   const groupMates = useMemo(
     () => mates.filter((mate) => groupMateIds.includes(mate.id)),
     [groupMateIds, mates],
   );
+
+  const matesWithinCadence = groupMates.filter((mate) => isWithinCheckinCadence(mate, cadenceDays)).length;
+
+  const saveCadence = async (nextCadence: number) => {
+    if (!group || nextCadence === (group.checkinCadenceDays ?? DEFAULT_CHECKIN_CADENCE_DAYS)) return;
+
+    try {
+      setCadenceError(null);
+      await updateGroupCadence(group.id, nextCadence);
+    } catch {
+      setCadenceDays(group.checkinCadenceDays ?? DEFAULT_CHECKIN_CADENCE_DAYS);
+      setCadenceError("Couldn't save the check-in cadence. Please try again.");
+    }
+  };
 
   const filteredGroupMates = useMemo(() => {
     const [minDays, maxDays] = matesDayRange;
@@ -133,7 +149,31 @@ const GroupDetail = () => {
         <p className="text-muted-foreground text-sm mt-1">{groupMates.length} mates</p>
       </div>
 
-      <div className="px-5 nuj-safe-bottom-page">
+      <div className="px-5 space-y-4 nuj-safe-bottom-page">
+        <div className="nuj-card p-4">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm font-medium">Check-in cadence</p>
+            <span className="text-xs text-muted-foreground">
+              {cadenceDays === 1 ? "Every day" : `Every ${cadenceDays} days`}
+            </span>
+          </div>
+          <div className="flex justify-start mb-2">
+            <span className="text-xs text-muted-foreground">
+              {matesWithinCadence}/{groupMates.length} checked in {formatCheckinWindow(cadenceDays)}
+            </span>
+          </div>
+          <Slider
+            value={[cadenceDays]}
+            min={1}
+            max={7}
+            step={1}
+            aria-label="Check-in cadence in days"
+            onValueChange={(value) => setCadenceDays(value[0] ?? DEFAULT_CHECKIN_CADENCE_DAYS)}
+            onValueCommit={(value) => void saveCadence(value[0] ?? DEFAULT_CHECKIN_CADENCE_DAYS)}
+          />
+          {cadenceError && <p className="text-xs text-destructive mt-2">{cadenceError}</p>}
+        </div>
+
         <div className="nuj-card p-4">
           {filteredGroupMates.map((mate) => (
             <div key={mate.id} className="flex items-center gap-2">

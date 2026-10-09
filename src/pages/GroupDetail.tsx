@@ -152,30 +152,6 @@ const GroupDetail = () => {
 
       <div className="px-5 space-y-4 nuj-safe-bottom-page">
         <div className="nuj-card p-4">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-medium">Check-in cadence</p>
-            <span className="text-xs text-muted-foreground">
-              {formatCheckinCadence(cadenceDays)}
-            </span>
-          </div>
-          <div className="flex justify-start mb-2">
-            <span className="text-xs text-muted-foreground">
-              {matesWithinCadence}/{groupMates.length} checked in
-            </span>
-          </div>
-          <Slider
-            value={[Math.max(0, CHECKIN_CADENCE_OPTIONS.indexOf(cadenceDays))]}
-            min={0}
-            max={CHECKIN_CADENCE_OPTIONS.length - 1}
-            step={1}
-            aria-label="Check-in cadence"
-            onValueChange={(value) => setCadenceDays(CHECKIN_CADENCE_OPTIONS[value[0] ?? 0] ?? DEFAULT_CHECKIN_CADENCE_DAYS)}
-            onValueCommit={(value) => void saveCadence(CHECKIN_CADENCE_OPTIONS[value[0] ?? 0] ?? DEFAULT_CHECKIN_CADENCE_DAYS)}
-          />
-          {cadenceError && <p className="text-xs text-destructive mt-2">{cadenceError}</p>}
-        </div>
-
-        <div className="nuj-card p-4">
           {filteredGroupMates.map((mate) => (
             <div key={mate.id} className="flex items-center gap-2">
               <div className="flex-1 min-w-0">
@@ -264,6 +240,30 @@ const GroupDetail = () => {
               </button>
             </div>
           )}
+        </div>
+
+        <div className="nuj-card p-4">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm font-medium">Check-in cadence</p>
+            <span className="text-xs text-muted-foreground">
+              {formatCheckinCadence(cadenceDays)}
+            </span>
+          </div>
+          <div className="flex justify-start mb-2">
+            <span className="text-xs text-muted-foreground">
+              {matesWithinCadence}/{groupMates.length} checked in
+            </span>
+          </div>
+          <Slider
+            value={[Math.max(0, CHECKIN_CADENCE_OPTIONS.indexOf(cadenceDays))]}
+            min={0}
+            max={CHECKIN_CADENCE_OPTIONS.length - 1}
+            step={1}
+            aria-label="Check-in cadence"
+            onValueChange={(value) => setCadenceDays(CHECKIN_CADENCE_OPTIONS[value[0] ?? 0] ?? DEFAULT_CHECKIN_CADENCE_DAYS)}
+            onValueCommit={(value) => void saveCadence(CHECKIN_CADENCE_OPTIONS[value[0] ?? 0] ?? DEFAULT_CHECKIN_CADENCE_DAYS)}
+          />
+          {cadenceError && <p className="text-xs text-destructive mt-2">{cadenceError}</p>}
         </div>
       </div>
     </div>

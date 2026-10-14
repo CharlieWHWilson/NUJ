@@ -226,21 +226,21 @@ const Dashboard = () => {
               <DialogTitle className="text-black">What is NUJ?</DialogTitle>
             </DialogHeader>
             <div className="text-sm text-black space-y-4 max-h-[70vh] overflow-y-auto pr-1">
-              <p>NUJ is the easy way to stay connected with mates. No pressure, guilt or long messages.</p>
-              <p>Life gets busy, contact drifts and keeping in touch can feel harder than it should.</p>
-              <p>NUJ removes that barrier by making it easy to acknowledge each other regularly even when nothing specific is said.</p>
+              <p>NUJ is the easy way to stay connected with mates. No pressure, guilt or obligation to send a message.</p>
+              <p>Life gets busy, contact drifts and keeping in touch gets harder.</p>
+              <p>NUJ removes that barrier by making it easy to acknowledge each other regularly, even when nothing needs to be said.</p>
               <div>
-                <p className="font-medium text-black mb-2">How it works</p>
+                <p className="font-medium text-black mb-2"><strong>How it works</strong></p>
                 <div className="space-y-3">
-                  <p><strong>Add mates</strong> - Share your NUJ code (in your profile) with friends to stay connected. Add them as mates by entering their NUJ code.</p>
-                  <p><strong>Groups</strong> - Create groups so you can keep track of mates</p>
-                  <p><strong>Check in</strong> – Tap once to say “you’re around.” No typing, no explanation, it takes a second. Nothing more needed, you’re ‘around’. Set up a daily reminder so you don’t forget.</p>
-                  <p><strong>See who’s around</strong> – Your mates’ last check-ins are visible: today, yesterday, or a few days ago. Quiet awareness, nothing more.</p>
-                  <p><strong>Gentle nudges</strong> – If someone’s been quiet, send a small NUJ to show you’re thinking of them.</p>
-                  <p className="text-gray-500"><strong>Meet-ups (coming soon)</strong> – Check in together regularly enough and you can unlock deals for real-world activities. A chance to catch up and spend time together (win/win).</p>
+                  <p><strong>Add mates</strong> – Share your NUJ code (in your profile) with friends, or enter theirs to connect.</p>
+                  <p><strong>Groups</strong> – Create groups to keep track of your mates.</p>
+                  <p><strong>Check in</strong> – Tap once to say “you’re around”. It takes a second. Nothing more needed. Set a reminder so you don’t forget.</p>
+                  <p><strong>See who’s around</strong> – See when your mates last checked in.</p>
+                  <p><strong>Gentle nudges</strong> – If someone’s been quiet, send a small NUJ to let them know you’re thinking of them.</p>
+                  <p className="text-gray-500"><strong>Meet-ups (coming soon)</strong> – Check in together regularly to unlock deals on real-world activities. A chance to catch up and spend time together. Win-win.</p>
                 </div>
               </div>
-              <p className="text-black text-center">Stay connected.</p>
+              <p className="text-black text-center"><strong>Stay connected</strong></p>
             </div>
           </DialogContent>
           </Dialog>

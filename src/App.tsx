@@ -2,26 +2,26 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { BrowserRouter, Navigate, Route, Routes, useNavigate, useParams } from "react-router-dom";
 import { Capacitor } from "@capacitor/core";
 import { App as CapacitorApp } from "@capacitor/app";
 import { supabase } from "./lib/supabase";
-import CheckIn from "./pages/CheckIn";
-import Dashboard from "./pages/Dashboard";
-import MatesHub from "./pages/MatesHub";
-import MatePage from "./pages/MatePage";
-import MeetUpsHub from "./pages/MeetUpsHub";
-import MeetUpDetail from "./pages/MeetUpDetail";
-import GroupDetail from "./pages/GroupDetail";
-import Profile from "./pages/Profile";
-import NotFound from "./pages/NotFound";
-import Auth from "./pages/Auth";
-import UpdatePassword from "./pages/UpdatePassword";
-import PrivacyPolicy from "./pages/PrivacyPolicy";
-import TermsOfUse from "./pages/TermsOfUse";
-import Support from "./pages/Support";
-import AddMateFromLink from "./pages/AddMateFromLink";
+const CheckIn = lazy(() => import("./pages/CheckIn"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const MatesHub = lazy(() => import("./pages/MatesHub"));
+const MatePage = lazy(() => import("./pages/MatePage"));
+const MeetUpsHub = lazy(() => import("./pages/MeetUpsHub"));
+const MeetUpDetail = lazy(() => import("./pages/MeetUpDetail"));
+const GroupDetail = lazy(() => import("./pages/GroupDetail"));
+const Profile = lazy(() => import("./pages/Profile"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const Auth = lazy(() => import("./pages/Auth"));
+const UpdatePassword = lazy(() => import("./pages/UpdatePassword"));
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+const TermsOfUse = lazy(() => import("./pages/TermsOfUse"));
+const Support = lazy(() => import("./pages/Support"));
+const AddMateFromLink = lazy(() => import("./pages/AddMateFromLink"));
 import {
   getInAppPathFromUrl,
   normalizeInviteCode,
@@ -218,27 +218,33 @@ const App = () => {
         <BrowserRouter basename={import.meta.env.BASE_URL} future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <PushDashboardRedirectHandler authState={authState} />
           <DeepLinkHandler authState={authState} />
-          <Routes>
-            <Route path="/privacy" element={<PrivacyPolicy />} />
-            <Route path="/terms" element={<TermsOfUse />} />
-            <Route path="/support" element={<Support />} />
-            <Route path="/account/update-password" element={<UpdatePassword />} />
-            <Route
-              path="/auth"
-              element={authState === "authenticated" ? <Navigate to="/check-in" replace /> : <Auth />}
-            />
-            <Route path="/" element={<HomeRoute authState={authState} />} />
-            <Route path="/check-in" element={<ProtectedRoute authState={authState}><CheckIn /></ProtectedRoute>} />
-            <Route path="/dashboard" element={<ProtectedRoute authState={authState}><Dashboard /></ProtectedRoute>} />
-            <Route path="/mates" element={<ProtectedRoute authState={authState}><MatesHub /></ProtectedRoute>} />
-            <Route path="/mate/:id" element={<ProtectedRoute authState={authState}><MatePage /></ProtectedRoute>} />
-            <Route path="/meetups" element={<ProtectedRoute authState={authState}><MeetUpsHub /></ProtectedRoute>} />
-            <Route path="/meetup/:id" element={<ProtectedRoute authState={authState}><MeetUpDetail /></ProtectedRoute>} />
-            <Route path="/group/:id" element={<ProtectedRoute authState={authState}><GroupDetail /></ProtectedRoute>} />
-            <Route path="/add/:code" element={<InviteRoute authState={authState} />} />
-            <Route path="/profile" element={<ProtectedRoute authState={authState}><Profile /></ProtectedRoute>} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <Suspense fallback={(
+            <div className="min-h-screen flex items-center justify-center bg-background text-muted-foreground" role="status">
+              Loading...
+            </div>
+          )}>
+            <Routes>
+              <Route path="/privacy" element={<PrivacyPolicy />} />
+              <Route path="/terms" element={<TermsOfUse />} />
+              <Route path="/support" element={<Support />} />
+              <Route path="/account/update-password" element={<UpdatePassword />} />
+              <Route
+                path="/auth"
+                element={authState === "authenticated" ? <Navigate to="/check-in" replace /> : <Auth />}
+              />
+              <Route path="/" element={<HomeRoute authState={authState} />} />
+              <Route path="/check-in" element={<ProtectedRoute authState={authState}><CheckIn /></ProtectedRoute>} />
+              <Route path="/dashboard" element={<ProtectedRoute authState={authState}><Dashboard /></ProtectedRoute>} />
+              <Route path="/mates" element={<ProtectedRoute authState={authState}><MatesHub /></ProtectedRoute>} />
+              <Route path="/mate/:id" element={<ProtectedRoute authState={authState}><MatePage /></ProtectedRoute>} />
+              <Route path="/meetups" element={<ProtectedRoute authState={authState}><MeetUpsHub /></ProtectedRoute>} />
+              <Route path="/meetup/:id" element={<ProtectedRoute authState={authState}><MeetUpDetail /></ProtectedRoute>} />
+              <Route path="/group/:id" element={<ProtectedRoute authState={authState}><GroupDetail /></ProtectedRoute>} />
+              <Route path="/add/:code" element={<InviteRoute authState={authState} />} />
+              <Route path="/profile" element={<ProtectedRoute authState={authState}><Profile /></ProtectedRoute>} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>

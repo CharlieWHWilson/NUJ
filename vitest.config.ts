@@ -9,8 +9,8 @@ export default defineConfig({
     globals: true,
     setupFiles: ["./src/test/setup.ts"],
     projects: [
-      { extends: true, test: { name: "ui", include: ["src/**/*.{test,spec}.{ts,tsx}"], exclude: ["src/test/*.database.test.ts", "**/node_modules/**"] } },
-      { extends: true, test: { name: "database", environment: "node", include: ["src/test/*.database.test.ts"] } },
+      { extends: true, test: { name: "ui", include: ["src/**/*.{test,spec}.{ts,tsx}"], exclude: ["src/test/*.database.test.ts", "src/test/*.server.test.ts", "**/node_modules/**"] } },
+      { extends: true, test: { name: "database", environment: "node", include: ["src/test/*.database.test.ts", "src/test/*.server.test.ts"] } },
     ],
   },
   resolve: {

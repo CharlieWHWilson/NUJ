@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCurrentUser } from "./useCurrentUser";
 import { useMatesSupabase } from "./useMatesSupabase";
+import { useAppRefresh } from "./useAppRefresh";
 import { listMateRequests, MATES_UPDATED_EVENT, respondToMateRequest, sendMateRequest } from "@/lib/mateRequests";
 
 export const useMateConnections = () => {
@@ -15,6 +16,7 @@ export const useMateConnections = () => {
     retry: false,
     refetchInterval: 60_000,
   });
+  useAppRefresh(() => { if (user?.id) return requests.refetch(); });
 
   useEffect(() => {
     const update = () => { void queryClient.invalidateQueries({ queryKey: ["mate-requests"] }); };

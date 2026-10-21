@@ -148,6 +148,59 @@ The database tests use embedded PostgreSQL, never your live Supabase database.
 
 ## Ship the app
 
+### Priority notification and freshness fixes
+
+Apply `supabase/migrations/037_authorize_nuj_push.sql` once after migration 036,
+then deploy the updated Edge Function:
+
+```sh
+supabase functions deploy send-nuj-push
+```
+
+Use the linked production project only after staging verification. Reauthenticate
+the Supabase CLI with `supabase login` if its access token has expired. No new
+secrets are required; retain the existing APNs and Supabase server credentials.
+The existing website client key must never be replaced with a service-role key.
+
+The function validates the caller's user token and claims an actual NUJ event
+through the caller's authenticated database context. The database checks the
+actor, mutual mate connection, event type and recent event timestamp; it generates
+the recipient, display name and message. Caller-provided recipient/title/body are
+ignored. Each event/type can be claimed only once, preventing replayed pushes.
+Only `read_at` and `acknowledged_at` remain client-updatable on NUJ events.
+
+Apply the SQL before deploying the function. Without migration 037 the secured
+function refuses to deliver; sending and acknowledging NUJs in the app still
+persist even if push delivery fails. Claims are at-most-once attempts: a failed
+APNs attempt is not automatically retried. Check delivery responses/server logs
+instead of repeatedly submitting the same event.
+
+The app's local Badge plugin is now compiled into the App target and registered
+by `NujBridgeViewController`, selected in the main storyboard. A new native build
+is required; a website-only deployment cannot repair an installed iOS bridge.
+
+NUJs, mates, shared groups and mate requests refresh on foreground/native resume;
+NUJs also refresh on incoming/opened pushes, with a visible-screen polling fallback.
+Check-in state also refreshes at local midnight. Turning reminders off cancels
+daily, interval and weekly inactivity notifications. Native reminder scheduling
+is serialized so turning the setting off wins over in-flight permission checks.
+
+Before release, test on a physical iPhone:
+
+1. Send a real NUJ between accepted mates; confirm exactly one push and the current sender name.
+2. Acknowledge it from the other account; confirm the sender's outbox refreshes on return.
+3. Confirm the app-icon badge clears without `UNIMPLEMENTED` bridge errors.
+4. Disable reminders; confirm no pending notification IDs 1001, 1002 or 1101-1110 remain.
+5. Leave the app open across midnight, or simulate the date in a test environment;
+  confirm yesterday's check-in no longer shows as today's.
+
+Automated security and lifecycle checks:
+
+```sh
+npm test -- src/test/nujPush.server.test.ts src/test/mateRequests.database.test.ts src/hooks/useAppRefresh.test.tsx src/hooks/useCheckin.test.tsx src/lib/dailyReminder.test.ts
+npm exec --yes --package=deno -- deno check --node-modules-dir=none --no-lock supabase/functions/send-nuj-push/index.ts
+```
+
 After applying the migration and deploying the website:
 
 ```sh

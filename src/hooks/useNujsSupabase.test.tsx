@@ -294,6 +294,17 @@ describe("useNujsSupabase", () => {
     });
   });
 
+  it("refreshes incoming and acknowledged NUJs on foreground and push events", async () => {
+    const { result } = renderHook(() => useNujsSupabase());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    state.nujs.push({ id: "incoming", sender_user_id: "user-b", recipient_user_id: "user-a", created_at: new Date().toISOString(), acknowledged_at: null });
+    await act(async () => { window.dispatchEvent(new Event("focus")); });
+    await waitFor(() => expect(result.current.nujsReceived).toHaveLength(1));
+    state.nujs[0].acknowledged_at = new Date().toISOString();
+    await act(async () => { window.dispatchEvent(new Event("nuj:refresh")); });
+    await waitFor(() => expect(result.current.nujsReceived).toHaveLength(0));
+  });
+
   it("does not fail NUJ send when push invoke fails", async () => {
     supabaseMock.functions.invoke.mockResolvedValueOnce(makeResult(null, { message: "invoke failed" }));
 

@@ -140,7 +140,8 @@ const handleDailyReminderNotification = async () => {
 
   const reminderSettings = loadDailyReminderSettings();
   const checkedInToday = await hasCurrentUserCheckedInToday(userId);
-  if (checkedInToday || !reminderSettings.enabled) {
+  const latestCheckin = await getLatestCheckinForUser(userId);
+  if (checkedInToday || !reminderSettings.enabled || !hasReminderIntervalElapsed(reminderSettings.intervalDays, latestCheckin)) {
     await setNeedsCheckIn(false);
     return;
   }

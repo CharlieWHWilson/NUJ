@@ -1,4 +1,4 @@
-import { createClient } from 'npm:@supabase/supabase-js@2'
+import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2'
 import { SignJWT, importPKCS8 } from 'npm:jose@5'
 
 // Expected secrets (configure in Dashboard > Edge Functions > Secrets)
@@ -88,14 +88,18 @@ function getSupabaseAdminKey() {
 }
 
 interface PushRequestBody {
-  recipientUserId: string
-  title: string
-  body: string
   data?: Record<string, unknown>
 }
 
+interface AuthorizedPush {
+  recipientUserId: string
+  title: string
+  body: string
+  data: Record<string, unknown>
+}
+
 async function getRecipientBadgeCount(
-  supabaseAdmin: ReturnType<typeof createClient>,
+  supabaseAdmin: SupabaseClient,
   userId: string,
 ) {
   const { data, error } = await supabaseAdmin.rpc('get_user_badge_count', {
@@ -164,6 +168,14 @@ Deno.serve(async (req) => {
 
     const supabaseAdmin = createClient(SUPABASE_URL, adminKey)
 
+    const authorization = req.headers.get('Authorization') ?? ''
+    const token = authorization.match(/^Bearer\s+(\S+)$/i)?.[1]
+    if (!token) return jsonResponse({ success: false, error: 'Unauthorized' }, 401)
+    const { data: authData, error: authError } = await supabaseAdmin.auth.getUser(token)
+    if (authError || !authData.user?.email_confirmed_at) {
+      return jsonResponse({ success: false, error: 'Unauthorized' }, 401)
+    }
+
     let payload: PushRequestBody
     try {
       payload = await req.json()
@@ -171,16 +183,24 @@ Deno.serve(async (req) => {
       return jsonResponse({ success: false, error: 'InvalidJSON' }, 400)
     }
 
-    const { recipientUserId, title, body, data } = payload ?? {}
-    if (!recipientUserId || typeof recipientUserId !== 'string') {
-      return jsonResponse({ success: false, error: 'recipientUserId is required' }, 400)
+    const nujId = payload?.data?.nujId
+    const kind = payload?.data?.type
+    if (typeof nujId !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(nujId)
+      || (kind !== 'new_nuj' && kind !== 'nuj_acknowledged')) {
+      return jsonResponse({ success: false, error: 'A valid NUJ event and notification type are required' }, 400)
     }
-    if (!title || typeof title !== 'string') {
-      return jsonResponse({ success: false, error: 'title is required' }, 400)
+    const callerClient = createClient(SUPABASE_URL, adminKey, {
+      global: { headers: { Authorization: authorization } },
+      auth: { persistSession: false, autoRefreshToken: false },
+    })
+    const { data: claimedPush, error: claimError } = await callerClient.rpc('claim_nuj_push', {
+      p_nuj_id: nujId, p_kind: kind,
+    })
+    if (claimError) {
+      return jsonResponse({ success: false, error: 'NotificationNotAuthorized' }, claimError.code === 'P0001' ? 403 : 503)
     }
-    if (!body || typeof body !== 'string') {
-      return jsonResponse({ success: false, error: 'body is required' }, 400)
-    }
+    if (!claimedPush) return jsonResponse({ success: true, sent: 0, duplicate: true })
+    const { recipientUserId, title, body, data } = claimedPush as AuthorizedPush
 
     const { data: tokensRows, error } = await supabaseAdmin
       .from('push_tokens')
@@ -268,7 +288,7 @@ Deno.serve(async (req) => {
         })
       }
 
-      let res = await sendToHost(APNS_HOST)
+      const res = await sendToHost(APNS_HOST)
 
       if (res.ok) {
         sent += 1

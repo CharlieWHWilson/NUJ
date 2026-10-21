@@ -17,6 +17,7 @@ const DEFAULT_SETTINGS: DailyReminderSettings = {
 };
 
 let scheduledReminderTimeout: number | null = null;
+let nativeReminderQueue: Promise<void> = Promise.resolve();
 export const DAILY_REMINDER_NOTIFICATION_ID = 1001;
 export const INACTIVITY_REMINDER_NOTIFICATION_ID = 1002;
 const INACTIVITY_THRESHOLD_MS = 7 * 24 * 60 * 60 * 1000;
@@ -138,7 +139,7 @@ const ensureNativeReminderPermission = async (): Promise<boolean> => {
 
 const cancelNativeReminder = async () => {
   await LocalNotifications.cancel({
-    notifications: [DAILY_REMINDER_NOTIFICATION_ID, ...INTERVAL_REMINDER_IDS].map((id) => ({ id })),
+    notifications: [DAILY_REMINDER_NOTIFICATION_ID, INACTIVITY_REMINDER_NOTIFICATION_ID, ...INTERVAL_REMINDER_IDS].map((id) => ({ id })),
   });
 };
 
@@ -224,19 +225,19 @@ export const scheduleInactivityReminder = async (lastCheckinAt: string | Date | 
   if (typeof window === "undefined" || !isNativePlatform()) return;
 
   try {
-    const permission = await LocalNotifications.checkPermissions();
-    if (permission.display !== "granted") return;
-
     await LocalNotifications.cancel({
       notifications: [{ id: INACTIVITY_REMINDER_NOTIFICATION_ID }],
     });
 
-    if (!lastCheckinAt) return;
+    const settings = loadDailyReminderSettings();
+    if (!settings.enabled || !lastCheckinAt) return;
+    const permission = await LocalNotifications.checkPermissions();
+    if (permission.display !== "granted") return;
 
     const lastCheckin = new Date(lastCheckinAt);
     if (Number.isNaN(lastCheckin.getTime())) return;
 
-    const fireAt = getInactivityReminderDate(lastCheckin, loadDailyReminderSettings().time);
+    const fireAt = getInactivityReminderDate(lastCheckin, settings.time);
     if (fireAt.getTime() <= Date.now()) return;
 
     await LocalNotifications.schedule({
@@ -263,23 +264,21 @@ export const scheduleDailyReminderNotification = async () => {
   }
 
   const settings = loadDailyReminderSettings();
-  if (!settings.enabled) {
-    if (isNativePlatform()) {
-      await cancelNativeReminder();
-    }
-    return;
-  }
-
   if (isNativePlatform()) {
-    const hasPermission = await ensureNativeReminderPermission();
-    if (!hasPermission) {
-      return;
-    }
-
-    await cancelNativeReminder();
-    await scheduleNativeReminder(settings);
+    const scheduleLatest = async () => {
+      await cancelNativeReminder();
+      const latestSettings = loadDailyReminderSettings();
+      if (!latestSettings.enabled) return;
+      const hasPermission = await ensureNativeReminderPermission();
+      if (!hasPermission || !loadDailyReminderSettings().enabled) return;
+      await scheduleNativeReminder(latestSettings);
+      await scheduleInactivityReminder(loadLastCheckin());
+    };
+    nativeReminderQueue = nativeReminderQueue.then(scheduleLatest, scheduleLatest);
+    await nativeReminderQueue;
     return;
   }
+  if (!settings.enabled) return;
 
   const [nextReminder] = getUpcomingReminderDates(
     settings.time,
@@ -314,5 +313,4 @@ export const recordLastCheckin = (lastCheckinAt: string | Date | null) => {
   }
 
   void scheduleDailyReminderNotification();
-  void scheduleInactivityReminder(lastCheckinAt);
 };

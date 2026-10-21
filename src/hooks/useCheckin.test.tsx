@@ -36,6 +36,7 @@ vi.mock("@/lib/supabaseData", () => ({
   getLatestCheckinForUser: getLatestCheckinForUserMock,
   upsertCurrentUserCheckin: upsertCurrentUserCheckinMock,
 }));
+vi.mock("@/lib/dailyReminder", () => ({ recordLastCheckin: vi.fn() }));
 
 describe("useCheckin", () => {
   beforeEach(() => {
@@ -114,5 +115,31 @@ describe("useCheckin", () => {
       expect(getLatestCheckinForUserMock).toHaveBeenCalledWith("user-1");
       expect(result.current.checkedIn).toBe(true);
     });
+  });
+
+  it("rechecks today's status when returning to the app", async () => {
+    getLatestCheckinForUserMock.mockResolvedValue("2026-07-01T08:00:00Z");
+    derivePresenceStatusMock.mockReturnValue("today");
+    const { result } = renderHook(() => useCheckin("user-1"));
+    await waitFor(() => expect(result.current.checkedIn).toBe(true));
+    derivePresenceStatusMock.mockReturnValue("yesterday");
+    await act(async () => { window.dispatchEvent(new Event("focus")); });
+    await waitFor(() => expect(result.current.checkedIn).toBe(false));
+    expect(getLatestCheckinForUserMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("rechecks status across local midnight without a screen remount", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 6, 1, 23, 59, 59));
+    getLatestCheckinForUserMock.mockResolvedValue("2026-07-01T08:00:00Z");
+    derivePresenceStatusMock.mockReturnValue("today");
+    const { result, unmount } = renderHook(() => useCheckin("user-1"));
+    await act(async () => {});
+    expect(result.current.checkedIn).toBe(true);
+    derivePresenceStatusMock.mockReturnValue("yesterday");
+    await act(async () => { vi.advanceTimersByTime(1100); });
+    expect(result.current.checkedIn).toBe(false);
+    unmount();
+    vi.useRealTimers();
   });
 });

@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabase";
 import type { Mate } from "@/data/mockData";
 import { addCurrentUserMate, fetchCurrentUserMates } from "@/lib/supabaseData";
 import { MATES_UPDATED_EVENT, removeMateConnection } from "@/lib/mateRequests";
+import { useAppRefresh } from "./useAppRefresh";
 
 export const useMatesSupabase = () => {
   const [mates, setMates] = useState<Mate[]>([]);
@@ -42,28 +43,14 @@ export const useMatesSupabase = () => {
     };
   }, [refresh]);
 
+  useAppRefresh(refresh);
   useEffect(() => {
-    const handleFocus = () => {
-      void refresh();
-    };
-
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        void refresh();
-      }
-    };
-
     const intervalId = window.setInterval(() => {
-      void refresh();
+      if (!document.hidden) void refresh();
     }, 60_000);
-
-    window.addEventListener("focus", handleFocus);
-    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
       window.clearInterval(intervalId);
-      window.removeEventListener("focus", handleFocus);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [refresh]);
 

@@ -38,13 +38,15 @@ describe("mate request consent and privacy", () => {
         username text, user_code text, last_checkin_at timestamptz);
       create table public.checkins(user_id uuid primary key references auth.users on delete cascade, checked_in_at timestamptz);
       create table public.nujs(id uuid primary key default gen_random_uuid(), sender_user_id uuid references auth.users on delete cascade,
-        recipient_user_id uuid references auth.users on delete cascade, acknowledged_at timestamptz);
+        recipient_user_id uuid references auth.users on delete cascade, acknowledged_at timestamptz, read_at timestamptz, created_at timestamptz not null default now());
       alter table public.profiles enable row level security;
       alter table public.checkins enable row level security;
       alter table public.nujs enable row level security;
       create policy "lookup" on public.profiles for select using(true);
       create policy "read checkins" on public.checkins for select using(true);
       create policy "send" on public.nujs for insert with check(auth.uid() = sender_user_id);
+      create policy "read own nujs" on public.nujs for select using(auth.uid() in (sender_user_id, recipient_user_id));
+      create policy "acknowledge own nujs" on public.nujs for update using(auth.uid() = recipient_user_id) with check(auth.uid() = recipient_user_id);
       grant select on public.profiles, public.checkins, public.nujs to anon, authenticated;
       grant insert on public.nujs to authenticated;
     `);
@@ -58,6 +60,7 @@ describe("mate request consent and privacy", () => {
     await database.exec(readFileSync("supabase/migrations/034_shared_groups.sql", "utf8"));
     await database.exec(readFileSync("supabase/migrations/035_short_shared_group_invites.sql", "utf8"));
     await database.exec(readFileSync("supabase/migrations/036_mate_requests.sql", "utf8"));
+    await database.exec(readFileSync("supabase/migrations/037_authorize_nuj_push.sql", "utf8"));
     migrated = (await database.query<typeof migrated[number]>("select user_id, mate_user_id, connection_accepted from public.mates")).rows;
   }, 30000);
 
@@ -159,6 +162,44 @@ describe("mate request consent and privacy", () => {
     await database.exec("reset role; set request.jwt.claim.sub = ''; set role anon;");
     expect((await database.query("select * from public.profiles")).rows).toHaveLength(0);
     await expect(database.query(`select public.send_mate_request('${first}')`)).rejects.toThrow(/permission denied/);
+  });
+
+  it("authorizes event-based pushes once, with the server choosing recipient and display name", async () => {
+    await requestAndAccept();
+    const id = await scalar<string>(`insert into public.nujs(sender_user_id, recipient_user_id) values('${second}', '${first}') returning id as value`);
+    const push = await scalar<Record<string, unknown>>(`select public.claim_nuj_push('${id}', 'new_nuj') as value`);
+    expect(push).toMatchObject({ recipientUserId: first, title: "Alex sent a NUJ", body: "Open NUJ to view it.", data: { type: "new_nuj", nujId: id } });
+    expect(await scalar(`select public.claim_nuj_push('${id}', 'new_nuj') as value`)).toBeNull();
+    await expect(database.query(`select public.claim_nuj_push('${id}', 'nuj_acknowledged')`)).rejects.toThrow("unavailable");
+    await asUser(third);
+    await expect(database.query(`select public.claim_nuj_push('${id}', 'new_nuj')`)).rejects.toThrow("unavailable");
+    await expect(database.query("select * from public.nuj_push_deliveries")).rejects.toThrow(/permission denied/);
+    await database.exec(`reset role; update public.nujs set acknowledged_at = now() where id = '${id}';`);
+    await asUser(first);
+    expect(await scalar(`select public.claim_nuj_push('${id}', 'nuj_acknowledged')->>'recipientUserId' as value`)).toBe(second);
+    expect(await scalar(`select public.claim_nuj_push('${id}', 'nuj_acknowledged') as value`)).toBeNull();
+  });
+
+  it("rejects missing, old, or non-mutual notification events", async () => {
+    await requestAndAccept();
+    const id = await scalar<string>(`insert into public.nujs(sender_user_id, recipient_user_id) values('${second}', '${first}') returning id as value`);
+    await database.exec(`reset role; update public.nujs set created_at = now() - interval '1 hour' where id = '${id}';`);
+    await asUser(second);
+    await expect(database.query(`select public.claim_nuj_push('${id}', 'new_nuj')`)).rejects.toThrow("unavailable");
+    await expect(database.query(`select public.claim_nuj_push('${third}', 'new_nuj')`)).rejects.toThrow("unavailable");
+    await database.exec(`reset role; update public.nujs set created_at = now() where id = '${id}'; update public.mates set connection_accepted = false;`);
+    await asUser(second);
+    await expect(database.query(`select public.claim_nuj_push('${id}', 'new_nuj')`)).rejects.toThrow("unavailable");
+  });
+
+  it("allows acknowledgement but prevents clients rewriting a NUJ's sender or creation time", async () => {
+    await requestAndAccept();
+    const id = await scalar<string>(`insert into public.nujs(sender_user_id, recipient_user_id) values('${second}', '${first}') returning id as value`);
+    await asUser(first);
+    await expect(database.query(`update public.nujs set sender_user_id = '${third}' where id = '${id}'`)).rejects.toThrow(/permission denied/);
+    await expect(database.query(`update public.nujs set created_at = now() where id = '${id}'`)).rejects.toThrow(/permission denied/);
+    await database.query(`update public.nujs set acknowledged_at = now(), read_at = now() where id = '${id}'`);
+    expect(await scalar(`select public.claim_nuj_push('${id}', 'nuj_acknowledged')->>'recipientUserId' as value`)).toBe(second);
   });
 
   it("keeps shared membership separate from mate consent and preserves it after removal", async () => {

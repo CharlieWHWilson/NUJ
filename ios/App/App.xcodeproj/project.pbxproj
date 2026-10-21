@@ -16,6 +16,8 @@
 		504EC3121FED79650016851F /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC3101FED79650016851F /* LaunchScreen.storyboard */; };
 		50B271D11FEDC1A000F3C39B /* public in Resources */ = {isa = PBXBuildFile; fileRef = 50B271D01FEDC1A000F3C39B /* public */; };
 		7A6C4B012EDC100100C1A123 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A6C4B002EDC100100C1A123 /* SceneDelegate.swift */; };
+		7A6C4B112EDC100100C1A123 /* BadgePlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A6C4B102EDC100100C1A123 /* BadgePlugin.swift */; };
+		7A6C4B212EDC100100C1A123 /* NujBridgeViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A6C4B202EDC100100C1A123 /* NujBridgeViewController.swift */; };
 		7FBD46CD2FFFBE4400376A82 /* AppClip.app in Embed App Clips */ = {isa = PBXBuildFile; fileRef = 7FBD46C12FFFBE4200376A82 /* AppClip.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
@@ -54,6 +56,8 @@
 		504EC3131FED79650016851F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		50B271D01FEDC1A000F3C39B /* public */ = {isa = PBXFileReference; lastKnownFileType = folder; path = public; sourceTree = "<group>"; };
 		7A6C4B002EDC100100C1A123 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
+		7A6C4B102EDC100100C1A123 /* BadgePlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BadgePlugin.swift; sourceTree = "<group>"; };
+		7A6C4B202EDC100100C1A123 /* NujBridgeViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NujBridgeViewController.swift; sourceTree = "<group>"; };
 		7FB1BF202FFD9BA4007E715D /* App.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = App.entitlements; sourceTree = "<group>"; };
 		7FBD46C12FFFBE4200376A82 /* AppClip.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AppClip.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		958DCC722DB07C7200EA8C5F /* debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = debug.xcconfig; path = ../debug.xcconfig; sourceTree = SOURCE_ROOT; };
@@ -118,6 +122,8 @@
 				50379B222058CBB4000EE86E /* capacitor.config.json */,
 				504EC3071FED79650016851F /* AppDelegate.swift */,
 				7A6C4B002EDC100100C1A123 /* SceneDelegate.swift */,
+				7A6C4B102EDC100100C1A123 /* BadgePlugin.swift */,
+				7A6C4B202EDC100100C1A123 /* NujBridgeViewController.swift */,
 				504EC30B1FED79650016851F /* Main.storyboard */,
 				504EC30E1FED79650016851F /* Assets.xcassets */,
 				504EC3101FED79650016851F /* LaunchScreen.storyboard */,
@@ -246,6 +252,8 @@
 			files = (
 				504EC3081FED79650016851F /* AppDelegate.swift in Sources */,
 				7A6C4B012EDC100100C1A123 /* SceneDelegate.swift in Sources */,
+				7A6C4B112EDC100100C1A123 /* BadgePlugin.swift in Sources */,
+				7A6C4B212EDC100100C1A123 /* NujBridgeViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

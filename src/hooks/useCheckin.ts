@@ -8,6 +8,7 @@ import {
 import { supabase } from "@/lib/supabase";
 import { clearAttentionBadgeCount, setNeedsCheckInAndSyncBadge } from "@/lib/attentionBadge";
 import { recordLastCheckin } from "@/lib/dailyReminder";
+import { useAppRefresh } from "./useAppRefresh";
 
 const toErrorMessage = (error: unknown, fallback: string) => {
   if (error instanceof Error && error.message) return error.message;
@@ -25,6 +26,22 @@ export const useCheckin = (currentUserId?: string) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [authSyncNonce, setAuthSyncNonce] = useState(0);
+  useAppRefresh(() => setAuthSyncNonce((previous) => previous + 1));
+
+  useEffect(() => {
+    let timeout: ReturnType<typeof setTimeout>;
+    const scheduleMidnight = () => {
+      const now = new Date();
+      const midnight = new Date(now);
+      midnight.setHours(24, 0, 0, 0);
+      timeout = setTimeout(() => {
+        setAuthSyncNonce((previous) => previous + 1);
+        scheduleMidnight();
+      }, midnight.getTime() - now.getTime() + 100);
+    };
+    scheduleMidnight();
+    return () => clearTimeout(timeout);
+  }, []);
 
   useEffect(() => {
     const authSubscription = supabase.auth.onAuthStateChange(() => {

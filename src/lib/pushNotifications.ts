@@ -51,6 +51,7 @@ const requestDashboardOpenFromPush = () => {
 
   window.sessionStorage.setItem(PUSH_OPEN_DASHBOARD_KEY, "1");
   window.dispatchEvent(new CustomEvent(PUSH_OPEN_DASHBOARD_EVENT));
+  window.dispatchEvent(new Event("nuj:refresh"));
 };
 
 const deletePushToken = async (userId: string, token: string) => {
@@ -137,6 +138,10 @@ const ensurePushListeners = () => {
 
   PushNotifications.addListener("registrationError", (error) => {
     console.error("Push registration failed", error);
+  });
+
+  PushNotifications.addListener("pushNotificationReceived", () => {
+    if (typeof window !== "undefined") window.dispatchEvent(new Event("nuj:refresh"));
   });
 
   PushNotifications.addListener("pushNotificationActionPerformed", () => {

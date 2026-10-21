@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { NujReceived } from "@/data/mockData";
 import { NujSent } from "@/data/nujsSent";
 import { syncAttentionBadgeCount } from "@/lib/attentionBadge";
+import { useAppRefresh } from "./useAppRefresh";
 
 export const ACTIVE_NUJ_EXISTS_ERROR = "An active NUJ is already waiting for acknowledgement.";
 export const MUTUAL_MATE_REQUIRED_ERROR = "A mutual mate connection is required to send a NUJ.";
@@ -86,7 +87,7 @@ export const useNujsSupabase = () => {
   const [error, setError] = useState<string | null>(null);
   const mateLookupRef = useRef(new Map<string, MateLookupRow>());
 
-  const refresh = async () => {
+  const refresh = useCallback(async () => {
     try {
       setLoading(true);
       const { data: userData } = await supabase.auth.getUser();
@@ -201,11 +202,16 @@ export const useNujsSupabase = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     void refresh();
-  }, []);
+    const interval = window.setInterval(() => {
+      if (!document.hidden) void refresh();
+    }, 60_000);
+    return () => window.clearInterval(interval);
+  }, [refresh]);
+  useAppRefresh(refresh);
 
   const sendNuj = async (recipientUserId: string) => {
     try {

@@ -109,14 +109,16 @@ const SharedGroupDetail = () => {
       </section>
 
       {group.isOwner && group.inviteCode && <section className="mt-6 border-t border-border pt-4" aria-label="Group invitation">
-        <h2 className="text-sm font-semibold">Invite mates</h2>
-        <div className="flex flex-wrap gap-4 mt-3">
-          <button disabled={busy} onClick={() => void share()} className="flex items-center gap-2 text-sm"><Share2 size={16} />Share invite</button>
-          <button disabled={busy} onClick={() => void share(true)} className="flex items-center gap-2 text-sm"><Copy size={16} />Copy link</button>
-        </div>
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-xs text-muted-foreground">
-          <p className="min-w-0 break-all select-all">Group invite code: {group.inviteCode}</p>
-          <button disabled={busy} onClick={() => { if (window.confirm("Reset the invite? Previously shared links and codes will stop working.")) void perform("reset_invite"); }} className="flex shrink-0 items-center gap-2" aria-label="Reset invite link" title="Reset invite link"><RefreshCw size={14} />Reset</button>
+        <h2 className="text-sm font-semibold">Invite</h2>
+        <div className="mt-3 space-y-2 text-sm text-muted-foreground">
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+            <div className="flex min-w-0 items-center gap-1">
+              <p className="min-w-0 break-all select-all">Group code: {group.inviteCode}</p>
+              <button disabled={busy} onClick={() => void share(true)} className="shrink-0 p-1" aria-label="Copy link"><Copy size={16} /></button>
+            </div>
+            <button disabled={busy} onClick={() => { if (window.confirm("Reset the invite? Previously shared links and codes will stop working.")) void perform("reset_invite"); }} className="flex shrink-0 items-center gap-2" aria-label="Reset invite link" title="Reset invite link"><RefreshCw size={14} />Reset</button>
+          </div>
+          <button disabled={busy} onClick={() => void share()} className="flex items-center gap-2"><Share2 size={16} />Share invite</button>
         </div>
       </section>}
 

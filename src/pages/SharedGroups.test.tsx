@@ -87,9 +87,12 @@ describe("shared-group screens", () => {
     expect(screen.getByText("Owned by you")).toBeInTheDocument();
     const information = screen.getByRole("contentinfo", { name: "Group information" });
     expect(information).toHaveTextContent("Members can see names and check-in status. Group membership does not add individual mates. To leave, transfer ownership to another member first, or delete the group.");
-    expect(screen.getByText(`Group invite code: ${code}`)).toBeInTheDocument();
+    expect(screen.getByText(`Group code: ${code}`)).toBeInTheDocument();
     expect(screen.queryByText(`https://nuj.social/join/${code}`)).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Copy link" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Copy link" })).not.toHaveTextContent("Copy link");
+    expect(screen.queryByText("Copy link")).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Invite" })).toHaveClass("text-sm");
+    expect(screen.getByRole("button", { name: "Share invite" })).not.toHaveClass("text-xs");
     expect(screen.queryByTitle("Today")).not.toBeInTheDocument();
     expect(screen.queryByTitle(/days since check-in/)).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Reset invite link" })).toBeInTheDocument();
@@ -108,7 +111,7 @@ describe("shared-group screens", () => {
     expect(information).toHaveTextContent("Members can see names and check-in status. Group membership does not add individual mates.");
     expect(information).not.toHaveTextContent("To leave, transfer ownership");
     expect(screen.queryByRole("button", { name: "Edit group" })).not.toBeInTheDocument();
-    expect(screen.queryByText("Invite mates")).not.toBeInTheDocument();
+    expect(screen.queryByText("Invite")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Leave group" }));
     expect(await screen.findByText("Destination: /dashboard")).toBeInTheDocument();
     expect(mocks.manage).toHaveBeenCalledWith("group-id", "leave", undefined);

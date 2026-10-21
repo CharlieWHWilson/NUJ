@@ -347,11 +347,11 @@ const Profile = () => {
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="font-medium text-sm">Check-in reminder</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                {dailyReminderEnabled
-                  ? `${reminderIntervalDays === 1 ? "Every day" : `Every ${reminderIntervalDays} days`} at ${reminderTime}`
-                  : "A gentle nudge at a time that suits you"}
-              </p>
+              {dailyReminderEnabled && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  {`${reminderIntervalDays === 1 ? "Every day" : `Every ${reminderIntervalDays} days`} at ${reminderTime}`}
+                </p>
+              )}
             </div>
             <Switch
               checked={dailyReminderEnabled}

@@ -88,7 +88,7 @@ describe("What is NUJ carousel", () => {
     open();
     fireEvent.click(screen.getByRole("button", { name: "Go to slide 5: Shared groups" }));
     expect(screen.getByRole("heading", { name: "Shared groups" })).toBeInTheDocument();
-    expect(screen.getByText(/seven-character group code/)).toBeInTheDocument();
+    expect(screen.getByText("Create a shared group and share a link or group code so your mates can join.")).toBeInTheDocument();
     expect(screen.getByText(/Joining a group doesn't automatically add individual mates/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Go to slide 5: Shared groups" })).toHaveAttribute("aria-current", "step");
     expect(screen.queryByRole("heading", { name: "Stay connected" })).not.toBeInTheDocument();

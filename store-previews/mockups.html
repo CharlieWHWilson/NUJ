@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NUJ</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap');
+    :root {
+      color-scheme: light;
+      --sky: hsl(208 75% 90%);
+      --ink: hsl(215 28% 13%);
+      --muted: hsl(215 15% 45%);
+      --amber: hsl(33 90% 58%);
+      --line: hsl(36 15% 88%);
+      --paper: hsl(0 0% 100%);
+      --wash: hsl(36 15% 93%);
+      --avatar: hsl(35 30% 94%);
+      --traffic-green: hsl(120 70% 42%);
+      --traffic-amber: hsl(38 92% 48%);
+      --traffic-red: hsl(0 72% 55%);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 36px;
+      background: var(--sky);
+      color: var(--ink);
+      font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    header { max-width: 1160px; margin: 0 auto 26px; }
+    header p { margin: 8px 0 0; color: #5d6874; line-height: 1.5; }
+    h1 { margin: 0; font-size: 25px; letter-spacing: -.03em; }
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 20px;
+      max-width: 1160px;
+      margin: auto;
+    }
+    .shot {
+      aspect-ratio: 390 / 844;
+      min-width: 0;
+      overflow: hidden;
+      position: relative;
+      border-radius: 28px;
+      background: var(--sky);
+      box-shadow: 0 12px 36px #2231441c;
+      padding: 9.6% 7.2% 5%;
+    }
+    .eyebrow {
+      margin: 0 0 3%;
+      color: var(--muted);
+      font-size: clamp(9px, 1.05vw, 13px);
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+    .headline {
+      margin: 0;
+      max-width: 96%;
+      font-size: clamp(25px, 3.15vw, 40px);
+      line-height: 1.04;
+      letter-spacing: -.045em;
+      font-weight: 750;
+    }
+    .subhead {
+      margin: 2.5% 0 0;
+      max-width: 94%;
+      color: var(--muted);
+      font-size: clamp(11px, 1.35vw, 16px);
+      line-height: 1.36;
+    }
+    .device {
+      position: absolute;
+      top: 34%;
+      left: 7%;
+      width: 86%;
+      height: 68%;
+      overflow: hidden;
+      border: 5px solid #19212b;
+      border-bottom-width: 0;
+      border-radius: 31px 31px 0 0;
+      background: var(--sky);
+      box-shadow: 0 10px 24px #26384a24;
+    }
+    .island {
+      position: absolute;
+      z-index: 2;
+      top: 7px;
+      left: 50%;
+      width: 28%;
+      height: 15px;
+      transform: translateX(-50%);
+      border-radius: 12px;
+      background: var(--ink);
+    }
+    .status {
+      height: 31px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 4px 15px 0;
+      color: var(--ink);
+      font-size: 10px;
+      font-weight: 700;
+    }
+    .appbar {
+      height: 46px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 17px;
+      font-size: 20px;
+      font-weight: 750;
+      letter-spacing: -.06em;
+    }
+    .avatar {
+      width: 32px;
+      height: 32px;
+      display: inline-grid;
+      place-items: center;
+      flex: 0 0 auto;
+      border-radius: 50%;
+      background: var(--avatar);
+      color: var(--ink);
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .avatar.blue, .avatar.rose, .avatar.green { background: var(--avatar); color: var(--ink); }
+    .content { padding: 5px 14px 22px; }
+    .card {
+      margin: 0 0 10px;
+      padding: 13px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--paper);
+      box-shadow: 0 2px 12px #202a3609;
+    }
+    .card-title { margin: 0; font-size: 13px; font-weight: 700; }
+    .muted { color: var(--muted); font-size: 10px; line-height: 1.4; }
+    .tiny { color: var(--muted); font-size: 9px; }
+    .primary {
+      border-radius: 11px;
+      padding: 9px 12px;
+      background: var(--ink);
+      color: white;
+      text-align: center;
+      font-size: 11px;
+      font-weight: 650;
+    }
+    .checkin {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 13px;
+      border-radius: 16px;
+      background: #fff;
+    }
+    .wave {
+      display: grid;
+      width: 31px;
+      height: 31px;
+      place-items: center;
+      flex: 0 0 auto;
+      border-radius: 50%;
+      background: hsl(36 100% 93%);
+      font-size: 15px;
+    }
+    .check-copy { min-width: 0; flex: 1; }
+    .check-copy b { display: block; font-size: 11px; }
+    .check-copy span { color: var(--muted); font-size: 9px; }
+    .checkin-page .appbar {
+      justify-content: center;
+      height: 70px;
+    }
+    .checkin-page-content {
+      padding: 38px 16px 24px;
+      text-align: center;
+      background: radial-gradient(ellipse at center, hsl(33 90% 58% / .07), transparent 70%);
+    }
+    .checkin-date {
+      margin: 0 0 28px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+    .checkin-circle {
+      width: 218px;
+      height: 218px;
+      max-width: 100%;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      border-radius: 50%;
+      background: var(--ink);
+      color: hsl(36 20% 97%);
+      box-shadow: 0 8px 40px hsl(215 28% 13% / .18);
+      font-size: 18px;
+      font-weight: 600;
+    }
+    .checkin-circle .checkin-emoji { font-size: 42px; }
+    .checkin-help {
+      margin: 24px auto 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    .small-button {
+      padding: 8px 10px;
+      border-radius: 10px;
+      background: var(--ink);
+      color: white;
+      font-size: 9px;
+      font-weight: 650;
+    }
+    .section-line {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 16px 1px 8px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .row {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 9px 0;
+      border-bottom: 1px solid #f0ede8;
+    }
+    .row:last-child { border-bottom: 0; }
+    .row-main { min-width: 0; flex: 1; }
+    .row-main b { display: block; font-size: 10px; }
+    .row-main span { display: block; margin-top: 2px; color: var(--muted); font-size: 9px; }
+    .dot {
+      width: 7px;
+      height: 7px;
+      display: inline-block;
+      margin-right: 4px;
+      border-radius: 50%;
+      background: var(--traffic-green);
+      vertical-align: 1px;
+    }
+    .dot.green { background: var(--traffic-green); }
+    .dot.amber { background: var(--traffic-amber); }
+    .dot.red { background: var(--traffic-red); }
+    .meetup {
+      margin-top: 8px;
+      padding: 11px;
+      border-radius: 13px;
+      background: var(--wash);
+    }
+    .tag {
+      color: var(--muted);
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+    }
+    .meetup h3 { margin: 4px 0 3px; font-size: 11px; }
+    .meetup p { margin: 0; color: var(--muted); font-size: 9px; line-height: 1.4; }
+    .people { display: flex; align-items: center; margin-top: 8px; }
+    .people .avatar { width: 24px; height: 24px; margin-right: -5px; border: 2px solid var(--wash); font-size: 8px; }
+    .count { margin-left: auto; color: var(--muted); font-size: 8px; }
+    .group-head { display: flex; align-items: center; gap: 10px; }
+    .group-icon {
+      width: 38px; height: 38px; display: grid; place-items: center;
+      border-radius: 12px; background: hsl(208 75% 96%); font-size: 18px;
+    }
+    .group-head b { display: block; font-size: 12px; }
+    .group-head span { color: var(--muted); font-size: 9px; }
+    .group-summary {
+      margin: 4px 1px 10px;
+      color: var(--muted);
+      font-size: 9px;
+    }
+    .group-screen .card { margin-bottom: 7px; padding: 10px; }
+    .group-screen .row { padding: 6px 0; }
+    .invite-box { margin-top: 11px; padding-top: 10px; border-top: 1px solid var(--line); }
+    .invite-label { margin: 0 0 5px; font-size: 10px; font-weight: 700; }
+    .code-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 9px 10px; border-radius: 10px; background: var(--wash);
+      font-size: 9px; font-weight: 600;
+    }
+    .copy { color: #69747d; font-size: 13px; }
+    .share {
+      display: inline-block; margin-top: 9px; padding: 8px 10px;
+      border: 1px solid #dedbd5; border-radius: 10px;
+      font-size: 9px; font-weight: 650;
+    }
+    .mates-count { display: flex; align-items: baseline; gap: 5px; margin: 4px 1px 12px; }
+    .mates-count b { font-size: 20px; letter-spacing: -.04em; }
+    .mates-count span { color: var(--muted); font-size: 10px; }
+    .filter {
+      margin: 0 0 9px; padding: 9px 11px; border-radius: 12px;
+      background: var(--paper); color: var(--muted); font-size: 9px;
+    }
+    .divider-label {
+      margin: 12px 0 5px;
+      color: #6c7781;
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+    .illustrative {
+      max-width: 1160px;
+      margin: 18px auto 0;
+      color: #65717d;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    @media (max-width: 600px) {
+      body { padding: 18px; }
+      .gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+      .shot { border-radius: 18px; }
+      .device { border-width: 3px; border-bottom-width: 0; border-radius: 20px 20px 0 0; }
+      .island { height: 9px; top: 4px; }
+      .status { height: 21px; }
+      .appbar { height: 34px; }
+      .content { padding: 3px 9px 18px; }
+      .card { padding: 9px; margin-bottom: 6px; border-radius: 11px; }
+      .checkin { padding: 8px; gap: 6px; }
+      .wave { width: 24px; height: 24px; font-size: 12px; }
+      .section-line { margin: 10px 1px 5px; }
+      .row { gap: 5px; padding: 6px 0; }
+      .avatar { width: 25px; height: 25px; font-size: 9px; }
+      .meetup { padding: 8px; margin-top: 5px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>NUJ</h1>
+    <p>Join me on NUJ - an easy way to stay connected.</p>
+  </header>
+
+  <main class="gallery">
+    <article class="shot" aria-label="Check in">
+      <p class="eyebrow">NUJ</p>
+      <h2 class="headline">Check in</h2>
+      <p class="subhead">Tap once to say you're around. It takes a second. Nothing more needed.</p>
+      <div class="device checkin-page">
+        <div class="island"></div>
+        <div class="status"><span>9:41</span><span>●●● &nbsp; Wi-Fi &nbsp; ▰</span></div>
+        <div class="appbar">NUJ</div>
+        <div class="checkin-page-content">
+          <p class="checkin-date">Wednesday 21 October</p>
+          <div class="checkin-circle">
+            <span class="checkin-emoji">👍</span>
+            <span>You good?</span>
+          </div>
+          <p class="checkin-help">A quick tap so your mates know you’re there</p>
+        </div>
+      </div>
+    </article>
+
+    <article class="shot" aria-label="See who's around">
+      <p class="eyebrow">Mates</p>
+      <h2 class="headline">See who's around</h2>
+      <p class="subhead">Set a reminder so you don't forget. See when your mates last checked in.</p>
+      <div class="device">
+        <div class="island"></div>
+        <div class="status"><span>9:41</span><span>●●● &nbsp; Wi-Fi &nbsp; ▰</span></div>
+        <div class="appbar"><span style="font-size:12px;letter-spacing:0">‹ &nbsp; Back</span><span style="font-size:19px">Mates</span><span style="font-size:19px">＋</span></div>
+        <div class="content">
+          <div class="filter">5 not checked in for 0 days &nbsp; ━━━━━●━━━━━━━</div>
+          <div class="card">
+            <div class="row"><span class="avatar">JM</span><div class="row-main"><b>Jamie Morgan</b><span><i class="dot green"></i>Today</span></div><span class="muted">›</span></div>
+            <div class="row"><span class="avatar green">RK</span><div class="row-main"><b>Riley Khan</b><span><i class="dot amber"></i>7 days ago</span></div><span class="muted">›</span></div>
+            <div class="row"><span class="avatar blue">AP</span><div class="row-main"><b>Alex Parker</b><span><i class="dot red"></i>over a month ago</span></div><span class="muted">›</span></div>
+            <div class="row"><span class="avatar rose">TS</span><div class="row-main"><b>Taylor Smith</b><span><i class="dot green"></i>1 day ago</span></div><span class="muted">›</span></div>
+            <div class="row"><span class="avatar">SC</span><div class="row-main"><b>Sam Carter</b><span><i class="dot green"></i>A few days ago</span></div><span class="muted">›</span></div>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <article class="shot" aria-label="Meet-Ups">
+      <p class="eyebrow">NUJ</p>
+      <h2 class="headline">Meet-Ups</h2>
+      <p class="subhead">Shared experiences for reconnected friends.</p>
+      <div class="device">
+        <div class="island"></div>
+        <div class="status"><span>9:41</span><span>●●● &nbsp; Wi-Fi &nbsp; ▰</span></div>
+        <div class="appbar"><span style="font-size:12px;letter-spacing:0">‹ &nbsp; Back</span><span style="font-size:17px;letter-spacing:-.04em">Meet-Ups</span><span style="font-size:10px;letter-spacing:0;color:#69747d">Filter</span></div>
+        <div class="content">
+          <p class="muted" style="margin:0 0 12px">Shared experiences for reconnected friends.</p>
+          <div class="card">
+            <div class="section-line" style="margin:0 0 7px"><span>Joined meet-ups</span><span class="muted">2⌄</span></div>
+            <div class="meetup">
+              <span class="tag">Drinks</span><h3>Post-match pint</h3>
+              <p>Head to The Crown after Saturday five-a-side</p>
+              <div class="people"><span class="avatar">JM</span><span class="avatar blue">AP</span><span class="count">2 of 3 in</span></div>
+            </div>
+            <div class="meetup">
+              <span class="tag">Live music</span><h3>Live at Brixton Academy</h3>
+              <p>2-for-1 tickets to Friday's show for reconnected friends</p>
+              <div class="people"><span class="avatar rose">TS</span><span class="count">1 of 2 in</span></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="section-line" style="margin:0 0 5px"><span>Not joined meet-ups</span><span class="muted">⌄</span></div>
+            <div class="meetup">
+              <span class="tag">Coffee</span><h3>Coffee catch-up</h3>
+              <p>Quick morning coffee before work</p>
+              <div class="people"><span class="avatar green">RK</span><span class="count">+1</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <article class="shot" aria-label="Groups">
+      <p class="eyebrow">NUJ</p>
+      <h2 class="headline">Groups</h2>
+      <p class="subhead">See names and check-in status together. Create personal groups for mates or shared groups for less known connections</p>
+      <div class="device">
+        <div class="island"></div>
+        <div class="status"><span>9:41</span><span>●●● &nbsp; Wi-Fi &nbsp; ▰</span></div>
+        <div class="appbar"><span style="font-size:12px;letter-spacing:0">‹ &nbsp; Back</span><span style="font-size:14px;letter-spacing:-.03em">Saturday crew</span><span style="font-size:15px">✎</span></div>
+        <div class="content group-screen">
+          <p class="group-summary">Group · Owned by you</p>
+          <div class="card">
+            <div class="section-line" style="margin:0 0 6px"><span>Members · 5</span><span class="muted">⌄</span></div>
+            <div class="row"><span class="avatar">JM</span><div class="row-main"><b>Jamie Morgan <span class="tiny">Owner</span></b><span><i class="dot green"></i>Checked in</span></div></div>
+            <div class="row"><span class="avatar blue">AP</span><div class="row-main"><b>Alex Parker</b><span><i class="dot green"></i>2 days ago</span></div></div>
+            <div class="row"><span class="avatar rose">TS</span><div class="row-main"><b>Taylor Smith</b><span><i class="dot amber"></i>5 days ago</span></div></div>
+            <div class="row"><span class="avatar green">RK</span><div class="row-main"><b>Riley Khan</b><span><i class="dot amber"></i>14 days ago</span></div></div>
+            <div class="row"><span class="avatar">SC</span><div class="row-main"><b>Sam Carter</b><span><i class="dot red"></i>21 days ago</span></div></div>
+          </div>
+          <div class="card">
+            <div class="invite-label">Invite</div>
+            <div class="invite-box">
+              <p class="invite-label">Group code</p>
+              <div class="code-row"><span>S7K4LQ2</span><span class="copy">▢</span></div>
+              <span class="share">↗ &nbsp; Share invite</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </article>
+  </main>
+
+</body>
+</html>

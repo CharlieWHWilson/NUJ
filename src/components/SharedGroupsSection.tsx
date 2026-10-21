@@ -82,7 +82,7 @@ export const SharedGroupsSection = ({ groups, loading, error, refresh }: Props) 
         <DialogContent className="max-w-sm rounded-lg">
           <DialogHeader>
             <DialogTitle>{mode === "join" ? "Join a shared group" : "Create a shared group"}</DialogTitle>
-            <DialogDescription>Members can see names and whether each person has checked in within the group's cadence. Personal notes stay private. Joining does not add individual mates.</DialogDescription>
+            <DialogDescription>Members can see names and whether each person has checked in within the group's cadence. Joining does not add individual mates.</DialogDescription>
           </DialogHeader>
           <form onSubmit={(event) => void submit(event)} className="space-y-4">
             {mode === "join" ? (

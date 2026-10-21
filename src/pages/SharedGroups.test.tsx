@@ -52,7 +52,8 @@ describe("shared-group screens", () => {
   it("previews privacy terms without joining and preserves the invite before sign-in", async () => {
     mount(<JoinSharedGroup authenticated={false} />, `/join/${code}`, "/join/:code");
     expect(await screen.findByRole("heading", { name: "School mates" })).toBeInTheDocument();
-    expect(screen.getByText(/personal notes and check-in history stay private/i)).toBeInTheDocument();
+    expect(screen.getByText(/Your check-in history stays private/)).toBeInTheDocument();
+    expect(screen.queryByText(/personal notes/i)).not.toBeInTheDocument();
     expect(mocks.join).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "Sign in or sign up to join" }));
     expect(mocks.save).toHaveBeenCalledWith(code);
@@ -116,6 +117,7 @@ describe("shared-group screens", () => {
   it("creates a shared group without requiring existing mates", async () => {
     mount(<SharedGroupsSection groups={[]} loading={false} error={null} refresh={vi.fn()} />, "/dashboard", "/dashboard");
     fireEvent.click(screen.getByRole("button", { name: "Shared group" }));
+    expect(screen.queryByText(/personal notes/i)).not.toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("Group name"), { target: { value: "School mates" } });
     const cadence = screen.getByRole("slider");
     for (let step = 0; step < 6; step++) fireEvent.keyDown(cadence, { key: "ArrowRight" });

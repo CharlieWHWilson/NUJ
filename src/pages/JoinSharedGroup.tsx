@@ -65,7 +65,7 @@ const JoinSharedGroup = ({ authenticated }: { authenticated: boolean }) => {
       <h1 className="mt-2 text-2xl font-bold break-words">{preview.name}</h1>
       <p className="mt-2 text-sm text-muted-foreground">Owner: {preview.ownerName}</p>
       <p className="mt-1 text-sm text-muted-foreground">{preview.memberCount} members · {formatCheckinCadence(preview.cadenceDays)}</p>
-      <p className="mt-6 text-sm">Members can see your name and whether you've checked in within this group's cadence. Your personal notes and check-in history stay private. Joining does not add individual mates.</p>
+      <p className="mt-6 text-sm">Members can see your name and whether you've checked in within this group's cadence. Your check-in history stays private. Joining does not add individual mates.</p>
       <button onClick={() => void join()} disabled={busy} className="mt-6 w-full nuj-btn-primary h-12 disabled:opacity-50">
         {busy ? "Joining..." : authenticated ? "Join group" : "Sign in or sign up to join"}
       </button>

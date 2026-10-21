@@ -281,10 +281,11 @@ export const fetchCurrentUserMates = async (): Promise<Mate[]> => {
   }
 
   const profileLastCheckinByUserId = new Map<string, string>();
+  const profileNamesByUserId = new Map<string, string>();
   if (mateUserIds.length > 0) {
     const { data: profileCheckins, error: profileCheckinsError } = await supabase
       .from("profiles")
-      .select("id, last_checkin_at")
+      .select("id, username, last_checkin_at")
       .in("id", mateUserIds);
 
     if (profileCheckinsError) {
@@ -294,6 +295,7 @@ export const fetchCurrentUserMates = async (): Promise<Mate[]> => {
       }
     } else {
       for (const row of (profileCheckins || []) as ProfileCheckinRow[]) {
+        if (row.username?.trim()) profileNamesByUserId.set(row.id, row.username.trim());
         if (row.last_checkin_at) {
           profileLastCheckinByUserId.set(row.id, row.last_checkin_at);
         }
@@ -346,12 +348,13 @@ export const fetchCurrentUserMates = async (): Promise<Mate[]> => {
     const presenceStatus = checkedInAt
       ? derivePresenceStatus(checkedInAt)
       : fallbackPresence.status;
+    const currentName = row.mate_user_id ? profileNamesByUserId.get(row.mate_user_id) : undefined;
 
     return {
       id: row.id,
       mateUserId: row.mate_user_id ?? undefined,
-      name: row.name,
-      initials: row.initials,
+      name: currentName ?? row.name,
+      initials: currentName ? buildMateInitials(currentName) : row.initials,
       lastCheckin: presenceStatus,
       daysSinceCheckin,
       lastCheckinAt: checkedInAt ?? undefined,

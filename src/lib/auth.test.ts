@@ -7,6 +7,9 @@ const getSessionMock = vi.hoisted(() => vi.fn());
 const profileRows = vi.hoisted(() => ({
   current: null as null | { username?: string | null; user_code?: string | null },
   upserts: [] as Array<{ payload: unknown; options: unknown }>,
+  updates: [] as Array<{ username: string }>,
+  filters: [] as Array<{ field: string; value: string }>,
+  updateError: null as null | { code: string; message: string },
 }));
 
 vi.mock("@/lib/pushNotifications", () => ({
@@ -30,8 +33,16 @@ vi.mock("@/lib/supabase", () => ({
         select() {
           return this;
         },
-        eq() {
+        eq(field: string, value: string) {
+          profileRows.filters.push({ field, value });
           return this;
+        },
+        update(payload: { username: string }) {
+          profileRows.updates.push(payload);
+          return this;
+        },
+        single() {
+          return Promise.resolve({ data: profileRows.updateError ? null : profileRows.updates.at(-1), error: profileRows.updateError });
         },
         maybeSingle() {
           return Promise.resolve({ data: profileRows.current, error: null });
@@ -45,13 +56,17 @@ vi.mock("@/lib/supabase", () => ({
   },
 }));
 
-import { getCurrentUser, registerUser } from "./auth";
+import { getCurrentUser, registerUser, updateCurrentUsername } from "./auth";
 
 describe("auth registration", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     profileRows.current = null;
     profileRows.upserts = [];
+    profileRows.updates = [];
+    profileRows.filters = [];
+    profileRows.updateError = null;
+    getUserMock.mockResolvedValue({ data: { user: { id: "user-1", email_confirmed_at: "2026-01-01T00:00:00Z" } }, error: null });
   });
 
   it("sends the display name under both metadata keys and upserts the profile", async () => {
@@ -159,5 +174,31 @@ describe("auth registration", () => {
       message:
         "Signup failed because your Supabase profiles trigger/schema is out of date. Run migrations 026_harden_profile_signup_trigger.sql and 027_remove_phone_storage.sql, then try again.",
     });
+  });
+
+  it("saves a normalized username only on the authenticated user's profile", async () => {
+    await expect(updateCurrentUsername("  Charlie   Wilson  ")).resolves.toBe("Charlie Wilson");
+    expect(profileRows.updates).toEqual([{ username: "Charlie Wilson" }]);
+    expect(profileRows.filters).toEqual([{ field: "id", value: "user-1" }]);
+    expect(profileRows.upserts).toEqual([]);
+  });
+
+  it("rejects empty or overly long usernames without writing", async () => {
+    await expect(updateCurrentUsername("   ")).rejects.toThrow("Enter a username");
+    await expect(updateCurrentUsername("x".repeat(81))).rejects.toThrow("80 characters");
+    expect(profileRows.updates).toEqual([]);
+  });
+
+  it("does not update a profile without verified authentication", async () => {
+    getUserMock.mockResolvedValueOnce({ data: { user: null }, error: null });
+    await expect(updateCurrentUsername("Charlie")).rejects.toThrow("sign in again");
+    expect(profileRows.updates).toEqual([]);
+  });
+
+  it("keeps duplicate-name and database failures actionable", async () => {
+    profileRows.updateError = { code: "23505", message: "duplicate username" };
+    await expect(updateCurrentUsername("Charlie")).rejects.toThrow("already in use");
+    profileRows.updateError = { code: "42501", message: "permission denied" };
+    await expect(updateCurrentUsername("Charlie")).rejects.toThrow("Couldn't save");
   });
 });

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { ClipboardCopy, Copy, MessageSquare, Share2, Trash2 } from "lucide-react";
+import { useState, type FormEvent } from "react";
+import { Check, Copy, MessageSquare, Pencil, Share2, Trash2, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -19,9 +19,8 @@ import {
   scheduleDailyReminderNotification,
 } from "@/lib/dailyReminder";
 import { initializeAttentionBadge } from "@/lib/attentionBadge";
-import { logoutUser } from "@/lib/auth";
+import { logoutUser, updateCurrentUsername } from "@/lib/auth";
 import { clearAppStorage } from "@/lib/utils";
-import { CHECKIN_STORAGE_KEY } from "@/hooks/useCheckin";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { supabase } from "@/lib/supabase";
 import { APP_STORE_URL, buildAddMateLink, buildInviteMessage } from "@/lib/mateInvite";
@@ -37,9 +36,33 @@ const Profile = () => {
   const [resetRequested, setResetRequested] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [savedUsername, setSavedUsername] = useState<string | null>(null);
+  const [usernameDraft, setUsernameDraft] = useState("");
+  const [editingUsername, setEditingUsername] = useState(false);
+  const [savingUsername, setSavingUsername] = useState(false);
+  const [usernameError, setUsernameError] = useState<string | null>(null);
+  const [usernameSaved, setUsernameSaved] = useState(false);
   const shareUserCode = user?.userCode ?? "";
   const hasShareUserCode = shareUserCode.trim().length > 0;
   const shareInviteMessage = buildInviteMessage(shareUserCode);
+
+  const handleSaveUsername = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!user || savingUsername) return;
+    setSavingUsername(true);
+    setUsernameError(null);
+    setUsernameSaved(false);
+    try {
+      const username = await updateCurrentUsername(usernameDraft);
+      setSavedUsername(username);
+      setEditingUsername(false);
+      setUsernameSaved(true);
+    } catch (failure) {
+      setUsernameError(failure instanceof Error ? failure.message : "Couldn't save your username. Please try again.");
+    } finally {
+      setSavingUsername(false);
+    }
+  };
 
   const persistReminderSettings = (nextEnabled: boolean, nextTime: string, nextIntervalDays = reminderIntervalDays) => {
     saveDailyReminderSettings({
@@ -213,8 +236,26 @@ const Profile = () => {
       <div className="px-5 space-y-4 nuj-safe-bottom-page">
         <div className="nuj-card p-4 space-y-4">
           <div>
-            <Label>Username</Label>
-            <Input value={user.username} readOnly className="mt-2" />
+            <Label htmlFor="profile-username">Username</Label>
+            {editingUsername ? (
+              <form onSubmit={(event) => void handleSaveUsername(event)} className="mt-2 space-y-3">
+                <Input id="profile-username" value={usernameDraft} onChange={(event) => setUsernameDraft(event.target.value)}
+                  autoFocus autoComplete="nickname" maxLength={80} required disabled={savingUsername}
+                  aria-invalid={Boolean(usernameError)} aria-describedby={usernameError ? "username-error" : undefined} />
+                <div className="flex items-center gap-4">
+                  <button type="submit" disabled={savingUsername || !usernameDraft.trim()} className="flex items-center gap-1.5 text-sm font-medium disabled:opacity-50"><Check size={16} />{savingUsername ? "Saving..." : "Save"}</button>
+                  <button type="button" disabled={savingUsername} onClick={() => { setEditingUsername(false); setUsernameError(null); }} className="flex items-center gap-1.5 text-sm text-muted-foreground disabled:opacity-50"><X size={16} />Cancel</button>
+                </div>
+                {usernameError && <p id="username-error" role="alert" className="text-xs text-destructive">{usernameError}</p>}
+              </form>
+            ) : (
+              <div className="mt-2 flex items-center gap-2">
+                <Input id="profile-username" value={savedUsername ?? user.username} readOnly className="min-w-0 flex-1" />
+                <button type="button" aria-label="Edit username" title="Edit username" className="shrink-0 p-2 text-muted-foreground hover:text-foreground"
+                  onClick={() => { setUsernameDraft(savedUsername ?? user.username); setUsernameError(null); setUsernameSaved(false); setEditingUsername(true); }}><Pencil size={17} /></button>
+              </div>
+            )}
+            {usernameSaved && <p role="status" className="mt-2 text-xs text-muted-foreground">Username saved.</p>}
           </div>
           {user.email && (
             <div>

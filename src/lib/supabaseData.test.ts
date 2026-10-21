@@ -287,6 +287,16 @@ describe("fetchCurrentUserMates", () => {
     expect(mates[0].lastCheckinAt).toBeUndefined();
   });
 
+  it("displays a mate's current profile name and initials after they rename themselves", async () => {
+    supabaseState.matesByUserId = {
+      "user-a": [{ id: "mate-lyra", user_id: "user-a", mate_user_id: "user-b", name: "Old name", initials: "ON", last_checkin: "few-days" }],
+    };
+    supabaseState.profilesById = { "user-b": { id: "user-b", username: "Lyra Wilson", last_checkin_at: null } };
+    const mates = await fetchCurrentUserMates();
+    expect(mates[0]).toMatchObject({ id: "mate-lyra", mateUserId: "user-b", name: "Lyra Wilson", initials: "LW" });
+    expect(supabaseState.mateUpdates).toEqual([]);
+  });
+
   it("uses profiles.last_checkin_at when checkins rows are unavailable", async () => {
     const latest = new Date().toISOString();
     supabaseState.matesByUserId = {

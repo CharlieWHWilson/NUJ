@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const isAuthenticatedMock = vi.hoisted(() => vi.fn<() => Promise<boolean>>());
@@ -91,5 +91,20 @@ describe("App integration routing", () => {
     await waitFor(() => {
       expect(window.location.pathname).toBe("/dashboard");
     });
+    const header = screen.getByRole("banner", { name: "App header" });
+    const content = screen.getByRole("main", { name: "Dashboard content" });
+    const footer = screen.getByRole("contentinfo", { name: "App footer" });
+    expect(within(footer).getByText("Stay connected")).toHaveClass("text-black");
+    expect(content).not.toContainElement(footer);
+    expect(header).toContainElement(screen.getByText("Not checked in yet"));
+    expect(within(header).getByRole("button", { name: "Profile" })).toBeInTheDocument();
+    expect(within(header).getByRole("button", { name: "What is NUJ?" })).toBeInTheDocument();
+    expect(within(header).getByRole("button", { name: "Get in touch" })).toBeInTheDocument();
+    expect(content).not.toContainElement(header);
+    const groups = within(content).getByRole("button", { name: /Groups/ });
+    fireEvent.click(groups);
+    expect(groups).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("banner", { name: "App header" })).toBe(header);
+    expect(screen.getByRole("contentinfo", { name: "App footer" })).toBe(footer);
   });
 });

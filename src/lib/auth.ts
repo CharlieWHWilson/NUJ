@@ -130,6 +130,32 @@ export const loginUser = async (input: {
   }
 };
 
+export const updateCurrentUsername = async (value: string): Promise<string> => {
+  const username = normalizeDisplayName(value);
+  if (!username) throw new Error("Enter a username.");
+  if (username.length > 80) throw new Error("Keep your username to 80 characters or fewer.");
+
+  const { data, error: authError } = await supabase.auth.getUser();
+  if (authError || !data.user || !isVerifiedAuthUser(data.user)) {
+    throw new Error("Please sign in again to change your username.");
+  }
+
+  const { data: profile, error } = await supabase
+    .from("profiles")
+    .update({ username })
+    .eq("id", data.user.id)
+    .select("username")
+    .single();
+
+  if (error) {
+    throw new Error(error.code === "23505"
+      ? "That username is already in use. Try another."
+      : "Couldn't save your username. Please try again.");
+  }
+  if (!profile?.username) throw new Error("Couldn't save your username. Please try again.");
+  return profile.username;
+};
+
 export const getCurrentUser = async (): Promise<AuthUser | null> => {
   try {
     const { data } = await supabase.auth.getUser();

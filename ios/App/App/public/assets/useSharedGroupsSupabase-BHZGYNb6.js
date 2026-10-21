@@ -1,1 +1,0 @@
-import{a as e}from"./MateConnectionAction-CH-vibAs.js";import{u as a}from"./useCurrentUser-bhy7yjpe.js";import{a3 as s}from"./index-BJVbQPTn.js";const p=()=>{const r=a();return e({queryKey:["shared-groups",r==null?void 0:r.id],queryFn:s,enabled:!!(r!=null&&r.id),retry:!1,staleTime:0})};export{p as u};

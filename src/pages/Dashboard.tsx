@@ -165,10 +165,11 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background max-w-md mx-auto flex flex-col justify-center">
+    <div className="h-dvh bg-background max-w-md mx-auto flex flex-col overflow-hidden">
+      <header className="shrink-0 bg-background" aria-label="App header">
       <div className="px-5 nuj-safe-top-dashboard">
         <div
-          className={`nuj-card p-4 ${checkedIn ? "cursor-pointer bg-emerald-50/60 border-emerald-200/70" : ""}`}
+          className={`nuj-card min-h-[108px] min-[360px]:min-h-[88px] flex items-center p-4 ${checkedIn ? "cursor-pointer bg-emerald-50/60 border-emerald-200/70" : ""}`}
           onClick={checkedIn ? () => navigate("/") : undefined}
           role={checkedIn ? "button" : undefined}
           tabIndex={checkedIn ? 0 : undefined}
@@ -181,11 +182,11 @@ const Dashboard = () => {
             }
             : undefined}
         >
-          <div className={`flex items-center gap-2.5 ${checkedIn ? "justify-center" : ""}`}>
-            <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "hsl(var(--nuj-amber-light))" }}>
+          <div className={`w-full flex items-center gap-2.5 ${checkedIn ? "justify-center" : ""}`}>
+            <div className="w-8 h-8 shrink-0 rounded-full flex items-center justify-center" style={{ background: "hsl(var(--nuj-amber-light))" }}>
               <span className="text-base">👋</span>
             </div>
-            <div className={checkedIn ? "text-center" : ""}>
+            <div className={checkedIn ? "min-w-0 text-center" : "min-w-0 flex-1"}>
               {checkedIn ? (
                 <p className="font-medium text-sm text-foreground">
                   You're here today
@@ -202,7 +203,7 @@ const Dashboard = () => {
             {!checkedIn && (
               <button
                 onClick={() => navigate("/")}
-                className="ml-auto nuj-btn-primary px-3 py-1.5 text-xs"
+                className="ml-auto shrink-0 nuj-btn-primary px-3 py-1.5 text-xs"
               >
                 Check in
               </button>
@@ -276,9 +277,9 @@ const Dashboard = () => {
           </Dialog>
         </div>
       </div>
+      </header>
 
-
-      <div className="px-5 space-y-3 nuj-safe-bottom-page">
+      <main className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-5 pb-4 space-y-3" aria-label="Dashboard content">
         {/* Side-by-side NUJ boxes */}
         {(nujsReceived.length > 0 || nujsSent.length > 0) && (
           <div className="flex gap-4">
@@ -636,10 +637,11 @@ const Dashboard = () => {
           </Collapsible>
         </div>
 
-        <p className="text-center text-xs text-muted-foreground/70 py-2">
-          Stay connected
-        </p>
-      </div>
+      </main>
+
+      <footer className="shrink-0 bg-background px-5 pt-3 pb-[calc(var(--nuj-safe-bottom)+0.75rem)]" aria-label="App footer">
+        <p className="text-center text-xs text-black">Stay connected</p>
+      </footer>
 
       <AddMateSheet open={addMateOpen} onClose={() => setAddMateOpen(false)} onMateAdded={() => void refreshMates()} />
       {selectedNujCard && selectedNujMate && (

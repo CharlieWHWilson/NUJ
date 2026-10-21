@@ -4,6 +4,7 @@ const signUpMock = vi.hoisted(() => vi.fn());
 const signInWithPasswordMock = vi.hoisted(() => vi.fn());
 const getUserMock = vi.hoisted(() => vi.fn());
 const getSessionMock = vi.hoisted(() => vi.fn());
+const resetPasswordMock = vi.hoisted(() => vi.fn());
 const profileRows = vi.hoisted(() => ({
   current: null as null | { username?: string | null; user_code?: string | null },
   upserts: [] as Array<{ payload: unknown; options: unknown }>,
@@ -23,6 +24,7 @@ vi.mock("@/lib/supabase", () => ({
       signInWithPassword: signInWithPasswordMock,
       getUser: getUserMock,
       getSession: getSessionMock,
+      resetPasswordForEmail: resetPasswordMock,
     },
     from: vi.fn((table: string) => {
       if (table !== "profiles") {
@@ -56,7 +58,7 @@ vi.mock("@/lib/supabase", () => ({
   },
 }));
 
-import { getCurrentUser, registerUser, updateCurrentUsername } from "./auth";
+import { getCurrentUser, registerUser, requestPasswordReset, updateCurrentUsername } from "./auth";
 
 describe("auth registration", () => {
   beforeEach(() => {
@@ -66,6 +68,7 @@ describe("auth registration", () => {
     profileRows.updates = [];
     profileRows.filters = [];
     profileRows.updateError = null;
+    resetPasswordMock.mockResolvedValue({ error: null });
     getUserMock.mockResolvedValue({ data: { user: { id: "user-1", email_confirmed_at: "2026-01-01T00:00:00Z" } }, error: null });
   });
 
@@ -181,6 +184,14 @@ describe("auth registration", () => {
     expect(profileRows.updates).toEqual([{ username: "Charlie Wilson" }]);
     expect(profileRows.filters).toEqual([{ field: "id", value: "user-1" }]);
     expect(profileRows.upserts).toEqual([]);
+  });
+
+  it("requests password recovery using a supported app route and reports failures", async () => {
+    await requestPasswordReset(" friend@example.test ");
+    expect(resetPasswordMock).toHaveBeenCalledWith("friend@example.test", { redirectTo: "http://localhost:3000/account/update-password" });
+    await expect(requestPasswordReset("not-an-email")).rejects.toThrow("valid email");
+    resetPasswordMock.mockResolvedValueOnce({ error: { message: "network unavailable" } });
+    await expect(requestPasswordReset("friend@example.test")).rejects.toThrow("try again");
   });
 
   it("rejects empty or overly long usernames without writing", async () => {

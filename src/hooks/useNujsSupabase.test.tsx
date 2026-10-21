@@ -321,6 +321,19 @@ describe("useNujsSupabase", () => {
     expect(result.current.nujsSent).toHaveLength(1);
   });
 
+  it("uses current profile names for NUJ cards and notification preparation", async () => {
+    state.profilesById["user-a"].username = "Current Sender";
+    state.profilesById["user-b"].username = "Current Mate";
+    const { result } = renderHook(() => useNujsSupabase());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    await act(async () => { await result.current.sendNuj("user-b"); });
+    expect(result.current.nujsSent[0].toMateName).toBe("Current Mate");
+    expect(result.current.nujsSent[0].toMateInitials).toBe("CM");
+    await waitFor(() => expect(supabaseMock.functions.invoke).toHaveBeenCalledWith("send-nuj-push", {
+      body: expect.objectContaining({ title: "Current Sender sent a NUJ" }),
+    }));
+  });
+
   it("blocks sending a second active NUJ to the same recipient", async () => {
     state.nujs = [
       {

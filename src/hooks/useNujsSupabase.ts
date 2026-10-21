@@ -38,23 +38,15 @@ const toInitials = (name: string) =>
     .join("")
     .toUpperCase();
 
+const getPushDisplayName = async (userId: string, fallback?: unknown) => {
+  const { data } = await supabase.from("profiles").select("id, username").in("id", [userId]);
+  const profile = ((data as ProfileLookupRow[] | null) || [])[0];
+  return profile?.username?.trim() || (typeof fallback === "string" ? fallback.trim() : "") || "Your mate";
+};
+
 const sendNewNujPush = async (sender: User, recipientUserId: string, nujId?: string) => {
   try {
-    let senderDisplayName = "Someone";
-    const metadataUsername = sender.user_metadata?.username;
-    if (typeof metadataUsername === "string" && metadataUsername.trim().length > 0) {
-      senderDisplayName = metadataUsername.trim();
-    } else {
-      const { data: senderProfileRows } = await supabase
-        .from("profiles")
-        .select("id, username")
-        .in("id", [sender.id]);
-
-      const senderProfile = ((senderProfileRows as ProfileLookupRow[] | null) || [])[0];
-      if (senderProfile?.username?.trim()) {
-        senderDisplayName = senderProfile.username.trim();
-      }
-    }
+    const senderDisplayName = await getPushDisplayName(sender.id, sender.user_metadata?.username);
 
     const { data: pushResult, error: pushError } = await supabase.functions.invoke("send-nuj-push", {
       body: {
@@ -137,8 +129,7 @@ export const useNujsSupabase = () => {
 
       const profileUserIds = Array.from(
         new Set(
-          [...receivedRows.map((row) => row.sender_user_id), ...sentRows.map((row) => row.recipient_user_id)]
-            .filter((userId) => !matesByUserId.has(userId))
+          [...matesByUserId.keys(), ...receivedRows.map((row) => row.sender_user_id), ...sentRows.map((row) => row.recipient_user_id)]
         )
       );
 
@@ -153,6 +144,10 @@ export const useNujsSupabase = () => {
 
         for (const profile of (profilesData || []) as ProfileLookupRow[]) {
           profilesById.set(profile.id, profile);
+          const mate = matesByUserId.get(profile.id);
+          if (mate && profile.username?.trim()) {
+            matesByUserId.set(profile.id, { ...mate, name: profile.username.trim(), initials: toInitials(profile.username.trim()) });
+          }
         }
       }
 
@@ -161,7 +156,7 @@ export const useNujsSupabase = () => {
         .map((row) => {
         const mate = matesByUserId.get(row.sender_user_id);
         const profile = profilesById.get(row.sender_user_id);
-        const resolvedName = mate?.name ?? profile?.username ?? "Unknown mate";
+        const resolvedName = profile?.username?.trim() || mate?.name || "Unknown mate";
         const resolvedInitials = mate?.initials ?? toInitials(resolvedName);
 
         return {
@@ -178,7 +173,7 @@ export const useNujsSupabase = () => {
         .map((row) => {
         const mate = matesByUserId.get(row.recipient_user_id);
         const profile = profilesById.get(row.recipient_user_id);
-        const resolvedName = mate?.name ?? profile?.username ?? "Unknown mate";
+        const resolvedName = profile?.username?.trim() || mate?.name || "Unknown mate";
         const resolvedInitials = mate?.initials ?? toInitials(resolvedName);
 
         return {
@@ -318,22 +313,8 @@ export const useNujsSupabase = () => {
 
       const acknowledgedRow = acknowledgedNuj as Pick<NujRow, "id" | "sender_user_id" | "recipient_user_id"> | null;
       if (acknowledgedRow?.sender_user_id && acknowledgedRow.sender_user_id !== acknowledgedRow.recipient_user_id) {
-        let acknowledgerDisplayName = "Someone";
         const { data: userData } = await supabase.auth.getUser();
-        const metadataUsername = userData.user?.user_metadata?.username;
-        if (typeof metadataUsername === "string" && metadataUsername.trim().length > 0) {
-          acknowledgerDisplayName = metadataUsername.trim();
-        } else {
-          const { data: acknowledgerProfileRows } = await supabase
-            .from("profiles")
-            .select("id, username")
-            .in("id", [acknowledgedRow.recipient_user_id]);
-
-          const acknowledgerProfile = ((acknowledgerProfileRows as ProfileLookupRow[] | null) || [])[0];
-          if (acknowledgerProfile?.username?.trim()) {
-            acknowledgerDisplayName = acknowledgerProfile.username.trim();
-          }
-        }
+        const acknowledgerDisplayName = await getPushDisplayName(acknowledgedRow.recipient_user_id, userData.user?.user_metadata?.username);
 
         const { error: pushError } = await supabase.functions.invoke("send-nuj-push", {
           body: {

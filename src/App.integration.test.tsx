@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const isAuthenticatedMock = vi.hoisted(() => vi.fn<() => Promise<boolean>>());
 const getCurrentUserMock = vi.hoisted(() => vi.fn());
 const supabaseGetUserMock = vi.hoisted(() => vi.fn());
+const resetPasswordMock = vi.hoisted(() => vi.fn());
 const onAuthStateChangeMock = vi.hoisted(() =>
   vi.fn(() => ({
     data: {
@@ -17,6 +18,7 @@ const onAuthStateChangeMock = vi.hoisted(() =>
 vi.mock("./lib/auth", () => ({
   isAuthenticated: isAuthenticatedMock,
   getCurrentUser: getCurrentUserMock,
+  requestPasswordReset: resetPasswordMock,
 }));
 
 vi.mock("./lib/supabase", () => ({
@@ -43,6 +45,8 @@ describe("App integration routing", () => {
     window.history.pushState({}, "", "/");
     getCurrentUserMock.mockResolvedValue(null);
     supabaseGetUserMock.mockResolvedValue({ data: { user: null } });
+    resetPasswordMock.mockReset();
+    resetPasswordMock.mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -67,6 +71,19 @@ describe("App integration routing", () => {
     await waitFor(() => {
       expect(window.location.pathname).toBe("/check-in");
     });
+  });
+
+  it("lets a logged-out user request password recovery and retry a failed request", async () => {
+    isAuthenticatedMock.mockResolvedValue(false);
+    render(<App />);
+    fireEvent.click(await screen.findByRole("button", { name: "Forgot password?" }));
+    fireEvent.change(screen.getByLabelText("Reset email"), { target: { value: "friend@example.test" } });
+    resetPasswordMock.mockRejectedValueOnce(new Error("Couldn't send a reset email. Please try again."));
+    fireEvent.click(screen.getByRole("button", { name: "Send reset link" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("try again");
+    fireEvent.click(screen.getByRole("button", { name: "Send reset link" }));
+    expect(await screen.findByRole("status")).toHaveTextContent("If an account exists");
+    expect(resetPasswordMock).toHaveBeenCalledTimes(2);
   });
 
   it("redirects logged-out users from /dashboard to /auth", async () => {

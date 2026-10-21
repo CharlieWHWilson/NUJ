@@ -19,7 +19,7 @@ const GroupDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { mates } = useMatesSupabase();
-  const { groups, updateGroup, updateGroupCadence, removeGroup } = useGroupsSupabase();
+  const { groups, loading, error, updateGroup, updateGroupCadence, removeGroup } = useGroupsSupabase();
   const group = groups.find((g) => g.id === id);
   const [isEditing, setIsEditing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -28,13 +28,15 @@ const GroupDetail = () => {
   const [matesDayRange, setMatesDayRange] = useState<[number, number]>([0, 31]);
   const [cadenceDays, setCadenceDays] = useState(group?.checkinCadenceDays ?? DEFAULT_CHECKIN_CADENCE_DAYS);
   const [cadenceError, setCadenceError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!group) return;
+    if (!group || isEditing) return;
     setGroupName(group.name);
     setGroupMateIds(group.mates);
     setCadenceDays(group.checkinCadenceDays ?? DEFAULT_CHECKIN_CADENCE_DAYS);
-  }, [group]);
+  }, [group, isEditing]);
 
   const groupMates = useMemo(
     () => mates.filter((mate) => groupMateIds.includes(mate.id)),
@@ -74,7 +76,7 @@ const GroupDetail = () => {
 
       return mate.name.toLowerCase().includes(query);
     });
-  }, [groupMateIds, searchQuery]);
+  }, [groupMateIds, searchQuery, mates]);
 
   const removeMateFromGroup = (mateId: string) => {
     setGroupMateIds((currentIds) => currentIds.filter((id) => id !== mateId));
@@ -106,11 +108,22 @@ const GroupDetail = () => {
     const confirmed = window.confirm(`Delete ${group.name}?`);
     if (!confirmed) return;
 
-    await removeGroup(group.id);
-    navigate("/dashboard");
+    setSaving(true);
+    setSaveError(null);
+    try {
+      await removeGroup(group.id);
+      navigate("/dashboard");
+    } catch (failure) {
+      setSaveError(failure instanceof Error ? failure.message : "Couldn't delete this group.");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  if (!group) return null;
+  if (!group) return <div className="max-w-md mx-auto px-5 nuj-safe-top-section">
+    <button onClick={() => navigate("/dashboard")} className="flex items-center gap-2 text-sm text-muted-foreground"><ArrowLeft size={18} />Back</button>
+    <p role={error ? "alert" : "status"} className="mt-6 text-sm text-muted-foreground">{loading ? "Loading group..." : error || "This group is unavailable."}</p>
+  </div>;
 
   return (
     <div className="min-h-screen bg-background max-w-md mx-auto">
@@ -129,6 +142,7 @@ const GroupDetail = () => {
               onChange={(event) => setGroupName(event.target.value)}
               placeholder="Group name"
               aria-label="Edit group name"
+              disabled={saving}
               className="h-9 text-lg font-semibold"
             />
           ) : (
@@ -136,18 +150,31 @@ const GroupDetail = () => {
           )}
           <button
             onClick={async () => {
-              if (isEditing) {
-                await persistGroupEdits();
+              setSaveError(null);
+              if (!isEditing) {
+                setIsEditing(true);
+                setSearchQuery("");
+                return;
               }
-              setIsEditing((editing) => !editing);
-              setSearchQuery("");
+              setSaving(true);
+              try {
+                await persistGroupEdits();
+                setIsEditing(false);
+                setSearchQuery("");
+              } catch (failure) {
+                setSaveError(failure instanceof Error ? failure.message : "Couldn't save this group. Please try again.");
+              } finally {
+                setSaving(false);
+              }
             }}
+            disabled={saving}
             className="text-sm font-medium text-primary hover:text-primary/80 transition-colors"
           >
-            {isEditing ? "Done" : "Edit"}
+            {saving ? "Saving..." : isEditing ? "Done" : "Edit"}
           </button>
         </div>
         <p className="text-muted-foreground text-sm mt-1 flex items-center gap-1.5"><UserRound size={14} />Personal group · {groupMates.length} mates</p>
+        {saveError && <p role="alert" className="mt-3 text-sm text-destructive">{saveError}</p>}
       </div>
 
       <div className="px-5 space-y-4 nuj-safe-bottom-page">

@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/lib/supabase";
+import { establishRecoverySession } from "@/lib/passwordRecovery";
 
 const UpdatePassword = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [canUpdate, setCanUpdate] = useState(false);
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState("Follow the reset link from your email first.");
@@ -23,29 +25,35 @@ const UpdatePassword = () => {
   };
 
   useEffect(() => {
-    const { data } = supabase.auth.onAuthStateChange(async (event) => {
-      if (event !== "PASSWORD_RECOVERY" && event !== "SIGNED_IN") {
-        return;
-      }
-
-      await resolveRecoverySession();
+    let active = true;
+    let pending: ReturnType<typeof setTimeout> | undefined;
+    setCanUpdate(false);
+    const { data } = supabase.auth.onAuthStateChange((event) => {
+      if (event !== "PASSWORD_RECOVERY" && event !== "SIGNED_IN") return;
+      pending = setTimeout(() => { if (active) void resolveRecoverySession(); }, 0);
     });
 
     void (async () => {
-      const isRecoveryLink = window.location.hash.includes("type=recovery")
-        || window.location.search.includes("type=recovery");
-
-      const hasSession = await resolveRecoverySession();
-
-      if (!hasSession && isRecoveryLink) {
-        setStatus("This reset link is missing, invalid, or expired. Request a new password reset email.");
+      try {
+        await establishRecoverySession(window.location.href);
+        if (!active) return;
+        const hasSession = await resolveRecoverySession();
+        if (!hasSession && active) setStatus("This reset link is missing, invalid, or expired. Request a new password reset email.");
+      } catch (failure) {
+        if (pending) clearTimeout(pending);
+        if (active) {
+          setCanUpdate(false);
+          setStatus(failure instanceof Error ? failure.message : "Unable to verify this reset link.");
+        }
       }
     })();
 
     return () => {
+      active = false;
+      if (pending) clearTimeout(pending);
       data.subscription.unsubscribe();
     };
-  }, []);
+  }, [location.key]);
 
   async function handleSave() {
     if (!canUpdate) {
@@ -73,6 +81,7 @@ const UpdatePassword = () => {
     }
 
     setStatus("Password updated ✅ You can now sign in.");
+    await supabase.auth.signOut({ scope: "local" });
     setTimeout(() => {
       navigate("/auth");
     }, 1200);
@@ -82,10 +91,10 @@ const UpdatePassword = () => {
     <div className="min-h-screen bg-background max-w-md mx-auto px-5 nuj-safe-top-section nuj-safe-bottom-page">
       <div className="mb-8">
         <button
-          onClick={() => navigate("/profile")}
+          onClick={() => navigate("/auth")}
           className="text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
-          Back to profile
+          Back to login
         </button>
         <h2 className="mt-4 text-3xl font-bold tracking-tight">Reset password</h2>
         <p className="mt-2 text-sm text-muted-foreground">Enter a new password after opening the email link.</p>

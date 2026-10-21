@@ -8,17 +8,17 @@
  * AFTER: Uses useMatesSupabase hook with real Supabase data
  */
 
-import React, { useState } from "react";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useMatesSupabase } from "@/hooks/useMatesSupabase";
-import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { TopNav } from "@/components/TopNav";
 import { MateRow } from "@/components/MateComponents";
 import { AddMateSheet } from "@/components/AddMateSheet";
 
 export const MatesHubSupabase = () => {
   // Get mates from Supabase
-  const { mates, loading, error, removeMate } = useMatesSupabase();
-  const user = useCurrentUser();
+  const { mates, loading, error } = useMatesSupabase();
+  const navigate = useNavigate();
   const [addMateOpen, setAddMateOpen] = useState(false);
 
   // Handle loading state
@@ -56,7 +56,7 @@ export const MatesHubSupabase = () => {
             Add your first mate
           </button>
         </div>
-        <AddMateSheet open={addMateOpen} onOpenChange={setAddMateOpen} />
+        <AddMateSheet open={addMateOpen} onClose={() => setAddMateOpen(false)} />
       </div>
     );
   }
@@ -74,14 +74,13 @@ export const MatesHubSupabase = () => {
             <MateRow
               key={mate.id}
               mate={mate}
-              onRemove={() => removeMate(mate.id)}
-              clickable={true}
+              onClick={() => navigate(`/mate/${mate.id}`)}
             />
           ))}
         </div>
       </div>
 
-      <AddMateSheet open={addMateOpen} onOpenChange={setAddMateOpen} />
+      <AddMateSheet open={addMateOpen} onClose={() => setAddMateOpen(false)} />
     </div>
   );
 };

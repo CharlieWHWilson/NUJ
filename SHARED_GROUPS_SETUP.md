@@ -148,6 +148,43 @@ The database tests use embedded PostgreSQL, never your live Supabase database.
 
 ## Ship the app
 
+### Appraisal follow-up fixes
+
+Apply `supabase/migrations/038_atomic_personal_groups.sql` once after migration
+037 before deploying the follow-up frontend. Personal-group creation, renaming
+and membership replacement now use one owner-checked transaction. Failed saves
+leave the old name and membership intact; the editor retains the draft and shows
+an error. Archived one-sided mate rows already present in a personal group are
+preserved as private links until accepted or explicitly removed.
+
+Deploy the updated account-deletion function as well:
+
+```sh
+supabase functions deploy delete-account
+```
+
+The Profile screen checks shared groups before its deletion confirmation. Owners
+are warned that deletion also removes owned groups for every member, and can cancel
+to transfer ownership first. The server independently requires the explicit
+`deleteOwnedSharedGroups: true` confirmation when groups are owned. Older clients
+that omit this confirmation are blocked from accidentally deleting owned groups.
+
+The login screen now has **Forgot password?**; Profile reset failures remain
+retryable and display an error instead of silently disabling the button. Supabase
+Auth must allow `https://nuj.social/account/update-password` as a redirect URL, plus
+the exact local development origin/path used for testing. Native email recovery
+uses the HTTPS universal link rather than `capacitor://localhost`. Implicit token
+fragments and PKCE codes are consumed on the recovery page and removed from the URL.
+Test recovery in the same app/browser that initiated the request when using PKCE.
+
+NUJ cards and legacy notification preparation now prefer current profile names;
+the secured push function continues to derive its own canonical name server-side.
+No usernames are copied to other users' rows just to update their display.
+
+Use two agreed test accounts to verify failed/successful group saves, a renamed
+mate's NUJ labels, password recovery on web/iOS, and cancelling account deletion as
+a group owner. Automated account-deletion tests never delete production users.
+
 ### Priority notification and freshness fixes
 
 Apply `supabase/migrations/037_authorize_nuj_push.sql` once after migration 036,

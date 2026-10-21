@@ -2,7 +2,7 @@ import { FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { MessageCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { getRegistrationNameError, registerUser, loginUser } from "@/lib/auth";
+import { getRegistrationNameError, registerUser, loginUser, requestPasswordReset } from "@/lib/auth";
 import {
   Dialog,
   DialogContent,
@@ -12,7 +12,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-type AuthMode = "login" | "register";
+type AuthMode = "login" | "register" | "reset";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -29,6 +29,22 @@ const Auth = () => {
 
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+
+  const submitReset = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (loading) return;
+    setLoading(true);
+    setErrorMessage("");
+    setSuccessMessage("");
+    try {
+      await requestPasswordReset(loginEmail);
+      setSuccessMessage("If an account exists for that email, you'll receive a password reset link.");
+    } catch (failure) {
+      setErrorMessage(failure instanceof Error ? failure.message : "Couldn't send a reset email. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const submitLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -102,6 +118,7 @@ const Auth = () => {
             onClick={() => {
               setMode("login");
               setErrorMessage("");
+              setSuccessMessage("");
             }}
             className={`h-10 rounded-xl text-sm font-medium transition-colors ${mode === "login" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}
           >
@@ -111,6 +128,7 @@ const Auth = () => {
             onClick={() => {
               setMode("register");
               setErrorMessage("");
+              setSuccessMessage("");
             }}
             className={`h-10 rounded-xl text-sm font-medium transition-colors ${mode === "register" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}
           >
@@ -119,14 +137,21 @@ const Auth = () => {
         </div>
 
         {errorMessage && (
-          <p className="text-sm text-destructive mb-4">{errorMessage}</p>
+          <p role="alert" className="text-sm text-destructive mb-4">{errorMessage}</p>
         )}
 
         {successMessage && (
-          <p className="text-sm text-success mb-4">{successMessage}</p>
+          <p role="status" className="text-sm text-success mb-4">{successMessage}</p>
         )}
 
-        {mode === "login" ? (
+        {mode === "reset" ? (
+          <form className="space-y-3" onSubmit={(event) => void submitReset(event)}>
+            <h2 className="text-base font-semibold">Reset password</h2>
+            <Input type="email" aria-label="Reset email" placeholder="Email" value={loginEmail} onChange={(event) => setLoginEmail(event.target.value)} required disabled={loading} />
+            <button type="submit" disabled={loading} className="w-full h-11 nuj-btn-primary disabled:opacity-50">{loading ? "Sending..." : "Send reset link"}</button>
+            <button type="button" onClick={() => { setMode("login"); setErrorMessage(""); setSuccessMessage(""); }} className="text-xs text-muted-foreground underline">Back to login</button>
+          </form>
+        ) : mode === "login" ? (
           <form className="space-y-3" onSubmit={submitLogin}>
             <Input
               type="email"
@@ -145,6 +170,7 @@ const Auth = () => {
             <button type="submit" className="w-full h-11 nuj-btn-primary">
               Log in
             </button>
+            <button type="button" onClick={() => { setMode("reset"); setErrorMessage(""); setSuccessMessage(""); }} className="text-xs text-muted-foreground underline">Forgot password?</button>
           </form>
         ) : (
           <form className="space-y-3" onSubmit={submitRegister}>

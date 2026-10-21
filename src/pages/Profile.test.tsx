@@ -3,15 +3,16 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import Profile from "./Profile";
 
-const mocks = vi.hoisted(() => ({ update: vi.fn(), user: { id: "user", username: "Charlie", email: "charlie@example.test", userCode: "ABC1234" } }));
+const mocks = vi.hoisted(() => ({ update: vi.fn(), reset: vi.fn(), groups: vi.fn(), user: { id: "user", username: "Charlie", email: "charlie@example.test", userCode: "ABC1234" } }));
 vi.mock("@/hooks/useCurrentUser", () => ({ useCurrentUser: () => mocks.user }));
-vi.mock("@/lib/auth", () => ({ updateCurrentUsername: mocks.update, logoutUser: vi.fn() }));
+vi.mock("@/lib/auth", () => ({ updateCurrentUsername: mocks.update, requestPasswordReset: mocks.reset, logoutUser: vi.fn() }));
 vi.mock("@/lib/dailyReminder", () => ({
   REMINDER_INTERVAL_OPTIONS: [1, 2, 3, 4, 5, 6, 7],
   loadDailyReminderSettings: () => ({ enabled: false, time: "08:00", intervalDays: 1 }),
   requestDailyReminderPermission: vi.fn(), saveDailyReminderSettings: vi.fn(), scheduleDailyReminderNotification: vi.fn(),
 }));
 vi.mock("@/lib/attentionBadge", () => ({ initializeAttentionBadge: vi.fn() }));
+vi.mock("@/lib/sharedGroups", () => ({ listSharedGroups: mocks.groups }));
 
 function mount() { render(<MemoryRouter><Profile /></MemoryRouter>); }
 
@@ -19,6 +20,10 @@ describe("profile username editing", () => {
   beforeEach(() => {
     mocks.update.mockReset();
     mocks.update.mockResolvedValue("Charlie Wilson");
+    mocks.reset.mockReset();
+    mocks.reset.mockResolvedValue(undefined);
+    mocks.groups.mockReset();
+    mocks.groups.mockResolvedValue([]);
   });
 
   it("starts read-only and keeps the NUJ code unchanged after saving", async () => {
@@ -41,6 +46,28 @@ describe("profile username editing", () => {
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
     expect(mocks.update).not.toHaveBeenCalled();
     expect(screen.getByLabelText("Username")).toHaveValue("Charlie");
+  });
+
+  it("warns owners about group deletion and lets them cancel before deleting", async () => {
+    mocks.groups.mockResolvedValueOnce([{ id: "group", isOwner: true }]);
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+    mount();
+    fireEvent.click(screen.getByRole("button", { name: "Delete account" }));
+    await waitFor(() => expect(confirm).toHaveBeenCalledWith(expect.stringContaining("cancel and transfer ownership")));
+    expect(confirm).toHaveBeenCalledWith(expect.stringContaining("for every member"));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Delete account" })).toBeEnabled());
+    confirm.mockRestore();
+  });
+
+  it("allows retry after a password reset failure and only confirms successful sending", async () => {
+    mocks.reset.mockRejectedValueOnce(new Error("Couldn't send a reset email. Please try again."));
+    mount();
+    fireEvent.click(screen.getByRole("button", { name: "reset password" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("try again");
+    expect(screen.getByRole("button", { name: "reset password" })).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: "reset password" }));
+    expect(await screen.findByRole("status")).toHaveTextContent("Reset link sent");
+    expect(mocks.reset).toHaveBeenCalledTimes(2);
   });
 
   it("disables blank saves and retains errors without claiming success", async () => {

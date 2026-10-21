@@ -19,11 +19,12 @@ import {
   scheduleDailyReminderNotification,
 } from "@/lib/dailyReminder";
 import { initializeAttentionBadge } from "@/lib/attentionBadge";
-import { logoutUser, updateCurrentUsername } from "@/lib/auth";
+import { logoutUser, requestPasswordReset, updateCurrentUsername } from "@/lib/auth";
 import { clearAppStorage } from "@/lib/utils";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { supabase } from "@/lib/supabase";
 import { APP_STORE_URL, buildAddMateLink, buildInviteMessage } from "@/lib/mateInvite";
+import { listSharedGroups } from "@/lib/sharedGroups";
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -35,6 +36,7 @@ const Profile = () => {
   const [reminderIntervalDays, setReminderIntervalDays] = useState(initialReminderSettings.intervalDays);
   const [resetRequested, setResetRequested] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [resetError, setResetError] = useState<string | null>(null);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [savedUsername, setSavedUsername] = useState<string | null>(null);
   const [usernameDraft, setUsernameDraft] = useState("");
@@ -116,36 +118,17 @@ const Profile = () => {
       return;
     }
 
-    setResetRequested(true);
     setIsSending(true);
-
-    const { data, error: userError } = await supabase.auth.getUser();
-
-    if (userError) {
-      console.error(userError.message);
+    setResetError(null);
+    try {
+      if (!user?.email) throw new Error("Your email could not be loaded. Please sign in again.");
+      await requestPasswordReset(user.email);
+      setResetRequested(true);
+    } catch (failure) {
+      setResetError(failure instanceof Error ? failure.message : "Couldn't send a reset email. Please try again.");
+    } finally {
       setIsSending(false);
-      return;
     }
-
-    const email = data.user?.email;
-
-    if (!email) {
-      console.error("No email found for this account.");
-      setIsSending(false);
-      return;
-    }
-
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/account/update-password`,
-    });
-
-    if (error) {
-      console.error(error.message);
-      setIsSending(false);
-      return;
-    }
-
-    setIsSending(false);
   };
 
   const handleDeleteAccount = async () => {
@@ -153,14 +136,14 @@ const Profile = () => {
       return;
     }
 
-    const confirmed = window.confirm("This will permanently delete your account. Are you sure?");
-    if (!confirmed) {
-      return;
-    }
-
     setIsDeletingAccount(true);
 
     try {
+      const ownedGroups = (await listSharedGroups()).filter((group) => group.isOwner);
+      const warning = ownedGroups.length > 0
+        ? `This permanently deletes your account and the ${ownedGroups.length} shared ${ownedGroups.length === 1 ? "group you own" : "groups you own"} for every member. To keep these groups, cancel and transfer ownership in Groups first. Delete anyway?`
+        : "This will permanently delete your account. Are you sure?";
+      if (!window.confirm(warning)) return;
       const { data: refreshedData, error: refreshError } = await supabase.auth.refreshSession();
       const accessToken = refreshedData.session?.access_token;
 
@@ -173,6 +156,7 @@ const Profile = () => {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
+        body: { deleteOwnedSharedGroups: ownedGroups.length > 0 },
       });
 
       if (error) {
@@ -296,6 +280,8 @@ const Profile = () => {
           >
             {isSending ? "sending..." : "reset password"}
           </button>
+          {resetRequested && <p role="status" className="text-xs text-muted-foreground">Reset link sent. Check your email.</p>}
+          {resetError && <p role="alert" className="text-xs text-destructive">{resetError}</p>}
           {/* Share Dialog */}
           <Dialog open={shareOpen} onOpenChange={setShareOpen}>
             <DialogContent className="max-w-sm">

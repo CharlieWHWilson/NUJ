@@ -61,6 +61,7 @@ describe("mate request consent and privacy", () => {
     await database.exec(readFileSync("supabase/migrations/035_short_shared_group_invites.sql", "utf8"));
     await database.exec(readFileSync("supabase/migrations/036_mate_requests.sql", "utf8"));
     await database.exec(readFileSync("supabase/migrations/037_authorize_nuj_push.sql", "utf8"));
+    await database.exec(readFileSync("supabase/migrations/038_atomic_personal_groups.sql", "utf8"));
     migrated = (await database.query<typeof migrated[number]>("select user_id, mate_user_id, connection_accepted from public.mates")).rows;
   }, 30000);
 
@@ -76,6 +77,35 @@ describe("mate request consent and privacy", () => {
     expect(migrated.filter((mate) => mate.connection_accepted)).toHaveLength(2);
     expect(migrated.find((mate) => mate.mate_user_id === third)?.connection_accepted).toBe(false);
     expect(await scalar("select count(*)::int as value from public.mate_requests")).toBe(0);
+  });
+
+  it("saves personal-group names and membership atomically and blocks other users", async () => {
+    const { mateId } = await requestAndAccept();
+    const id = await scalar<string>(`select public.save_personal_group(null, ' School ', array['${mateId}'::uuid]) as value`);
+    await expect(database.query(`select public.save_personal_group('${id}', 'Changed', array['${third}'::uuid])`)).rejects.toThrow("own mates");
+    expect(await scalar(`select name as value from public.groups where id = '${id}'`)).toBe("School");
+    expect(await scalar(`select count(*)::int as value from public.group_mates where group_id = '${id}'`)).toBe(1);
+    await database.query(`select public.save_personal_group('${id}', 'New name', array['${mateId}'::uuid, '${mateId}'::uuid])`);
+    expect(await scalar(`select name as value from public.groups where id = '${id}'`)).toBe("New name");
+    expect(await scalar(`select count(*)::int as value from public.group_mates where group_id = '${id}'`)).toBe(1);
+    await asUser(first);
+    await expect(database.query(`select public.save_personal_group('${id}', 'Stolen', '{}'::uuid[])`)).rejects.toThrow("unavailable");
+  });
+
+  it("rolls back a personal-group rename and deleted links when an insert fails", async () => {
+    const { mateId } = await requestAndAccept();
+    const id = await scalar<string>(`select public.save_personal_group(null, 'School', array['${mateId}'::uuid]) as value`);
+    await database.exec(`reset role;
+      create function public.reject_group_test_insert() returns trigger language plpgsql as $$ begin raise exception 'Simulated link failure'; end; $$;
+      create trigger reject_group_test_insert before insert on public.group_mates for each row execute function public.reject_group_test_insert();`);
+    try {
+      await asUser(second);
+      await expect(database.query(`select public.save_personal_group('${id}', 'Changed', array['${mateId}'::uuid])`)).rejects.toThrow("Simulated link failure");
+      expect(await scalar(`select name as value from public.groups where id = '${id}'`)).toBe("School");
+      expect(await scalar(`select count(*)::int as value from public.group_mates where group_id = '${id}'`)).toBe(1);
+    } finally {
+      await database.exec("reset role; drop trigger reject_group_test_insert on public.group_mates; drop function public.reject_group_test_insert();");
+    }
   });
 
   it("keeps pending requests private and blocks direct mate writes and check-in access", async () => {

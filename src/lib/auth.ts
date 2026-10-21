@@ -1,5 +1,6 @@
 import { supabase } from "./supabase";
 import { removeCurrentPushToken } from "./pushNotifications";
+import { Capacitor } from "@capacitor/core";
 
 export interface AuthUser {
   id: string;
@@ -30,7 +31,16 @@ const buildEmailRedirectUrl = (path: string): string | undefined => {
   const base = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
 
-  return `${window.location.origin}${base}${normalizedPath}`;
+  return Capacitor.isNativePlatform()
+    ? `https://nuj.social${normalizedPath}`
+    : `${window.location.origin}${base}${normalizedPath}`;
+};
+
+export const requestPasswordReset = async (value: string): Promise<void> => {
+  const email = value.trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error("Enter a valid email address.");
+  const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: buildEmailRedirectUrl("/account/update-password") });
+  if (error) throw new Error("Couldn't send a reset email. Please try again.");
 };
 
 export const getRegistrationNameError = (value: string): string | null => {
@@ -174,7 +184,7 @@ export const getCurrentUser = async (): Promise<AuthUser | null> => {
         .from("profiles")
         .select(selection)
         .eq("id", authUser.id)
-        .maybeSingle()
+        .maybeSingle<{ username: string | null; user_code?: string | null }>()
     );
 
     let { data: profile, error: profileError } = await fetchProfile("username, user_code");

@@ -18,7 +18,7 @@ const supabaseState = vi.hoisted(() => ({
   mateUpdates: [] as Array<{ id?: string; user_id?: string; mate_user_id?: string }>,
 }));
 
-const rpcMock = vi.hoisted(() => vi.fn(async (fnName: string, params: any) => {
+const rpcMock = vi.hoisted(() => vi.fn(async (fnName: string, params: Record<string, unknown>): Promise<{ data: unknown; error: null }> => {
   if (fnName === "get_profile_by_user_code") {
     return { data: null, error: null };
   }

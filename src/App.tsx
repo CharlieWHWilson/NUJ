@@ -104,6 +104,7 @@ const DeepLinkHandler = ({ authState }: { authState: AuthState }) => {
 
   useEffect(() => {
     if (authState !== "authenticated") return;
+    if (window.location.pathname.endsWith("/account/update-password")) return;
 
     // Deferred so this wins over the post-login redirect to /check-in.
     const timeoutId = window.setTimeout(() => {

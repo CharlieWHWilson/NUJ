@@ -21,7 +21,7 @@ export const getInAppPathFromUrl = (url: string): string | null => {
     const parsed = new URL(url);
     const host = parsed.hostname.replace(/^www\./, "");
     if (host !== "nuj.social") return null;
-    return `${parsed.pathname}${parsed.search}` || "/";
+    return `${parsed.pathname}${parsed.search}${parsed.hash}` || "/";
   } catch {
     return null;
   }

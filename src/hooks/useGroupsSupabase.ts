@@ -29,6 +29,15 @@ export const isWithinCheckinCadence = (
 const toCadenceDays = (value: unknown) =>
   CHECKIN_CADENCE_OPTIONS.includes(value as number) ? (value as number) : DEFAULT_CHECKIN_CADENCE_DAYS;
 
+const persistPersonalGroup = async (id: string | null, name: string, mateIds: string[]): Promise<string> => {
+  const { data, error } = await supabase.rpc("save_personal_group", { p_group_id: id, p_name: name, p_mate_ids: mateIds });
+  if (error) throw new Error(error.code === "PGRST202"
+    ? "Personal group saving needs Supabase migration 038_atomic_personal_groups.sql."
+    : error.message || "Couldn't save this personal group.");
+  if (typeof data !== "string") throw new Error("Couldn't confirm the saved personal group.");
+  return data;
+};
+
 const isMissingGroupMatesTableError = (error: unknown) => {
   if (!error || typeof error !== "object") return false;
 
@@ -70,7 +79,7 @@ export const useGroupsSupabase = () => {
       if (groupsError) throw groupsError;
 
       const groupsWithMates: Group[] = await Promise.all(
-        (groupsData || []).map(async (group: any) => {
+        (groupsData || []).map(async (group: { id: string; name: string; checkin_cadence_days?: number }) => {
           const { data: mateIds, error: matesError } = await supabase
             .from("group_mates")
             .select("mate_id")
@@ -91,7 +100,7 @@ export const useGroupsSupabase = () => {
           return {
             id: group.id,
             name: group.name,
-            mates: (mateIds || []).map((m: any) => m.mate_id),
+            mates: (mateIds || []).map((mate: { mate_id: string }) => mate.mate_id),
             checkinCadenceDays: toCadenceDays(group.checkin_cadence_days),
           };
         })
@@ -115,40 +124,13 @@ export const useGroupsSupabase = () => {
 
   const addGroup = async (groupName: string, mateIds: string[]) => {
     try {
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user) throw new Error("Not authenticated");
-
-      // Create group
-      const { data: groupData, error: createError } = await supabase
-        .from("groups")
-        .insert({
-          user_id: userData.user.id,
-          name: groupName,
-        })
-        .select()
-        .single();
-
-      if (createError) throw createError;
-
-      // Add mates to group
-      if (mateIds.length > 0) {
-        const { error: linkError } = await supabase
-          .from("group_mates")
-          .insert(
-            mateIds.map((mateId) => ({
-              group_id: groupData.id,
-              mate_id: mateId,
-            }))
-          );
-
-        if (linkError) throw toGroupError(linkError);
-      }
+      const groupId = await persistPersonalGroup(null, groupName, mateIds);
 
       const newGroup: Group = {
-        id: groupData.id,
-        name: groupData.name,
-        mates: mateIds,
-        checkinCadenceDays: toCadenceDays(groupData.checkin_cadence_days),
+        id: groupId,
+        name: groupName.trim(),
+        mates: [...new Set(mateIds)],
+        checkinCadenceDays: DEFAULT_CHECKIN_CADENCE_DAYS,
       };
 
       setGroups((prev) => [...prev, newGroup]);
@@ -176,67 +158,16 @@ export const useGroupsSupabase = () => {
     }
   };
 
-  const updateGroupMates = async (groupId: string, mateIds: string[]) => {
-    try {
-      // Delete existing mate links
-      const { error: deleteError } = await supabase
-        .from("group_mates")
-        .delete()
-        .eq("group_id", groupId);
-
-      if (deleteError) throw deleteError;
-
-      // Add new mate links
-      if (mateIds.length > 0) {
-        const { error: insertError } = await supabase
-          .from("group_mates")
-          .insert(
-            mateIds.map((mateId) => ({
-              group_id: groupId,
-              mate_id: mateId,
-            }))
-          );
-
-        if (insertError) throw toGroupError(insertError);
-      }
-
-      setGroups((prev) =>
-        prev.map((g) => (g.id === groupId ? { ...g, mates: mateIds } : g))
-      );
-    } catch (err) {
-      const normalizedError = toGroupError(err);
-      console.error("Error updating group mates:", normalizedError);
-      throw normalizedError;
-    }
-  };
-
   const updateGroup = async (groupId: string, updates: { name?: string; mateIds?: string[] }) => {
-    try {
-      if (updates.name !== undefined) {
-        const { error: nameError } = await supabase
-          .from("groups")
-          .update({ name: updates.name })
-          .eq("id", groupId);
-
-        if (nameError) throw nameError;
-      }
-
-      if (updates.mateIds !== undefined) {
-        await updateGroupMates(groupId, updates.mateIds);
-      } else {
-        setGroups((prev) =>
-          prev.map((group) =>
-            group.id === groupId
-              ? { ...group, ...(updates.name !== undefined ? { name: updates.name } : {}) }
-              : group
-          )
-        );
-      }
-    } catch (err) {
-      console.error("Error updating group:", err);
-      throw err;
-    }
+    const existing = groups.find((group) => group.id === groupId);
+    if (!existing) throw new Error("This personal group is unavailable.");
+    const name = (updates.name ?? existing.name).trim();
+    const mateIds = [...new Set(updates.mateIds ?? existing.mates)];
+    await persistPersonalGroup(groupId, name, mateIds);
+    setGroups((previous) => previous.map((group) => group.id === groupId ? { ...group, name, mates: mateIds } : group));
   };
+
+  const updateGroupMates = (groupId: string, mateIds: string[]) => updateGroup(groupId, { mateIds });
 
   const updateGroupCadence = async (groupId: string, cadenceDays: number) => {
     const { error: cadenceError } = await supabase

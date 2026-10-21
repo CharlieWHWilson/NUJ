@@ -46,9 +46,10 @@ export const useJoinedMeetups = () => {
         }
 
         const { data, error: fetchError } = await supabase
-          .from<MeetupAttendeeRow>("meetup_attendees")
+          .from("meetup_attendees")
           .select("meetup_id")
-          .eq("user_id", userData.user.id);
+          .eq("user_id", userData.user.id)
+          .returns<MeetupAttendeeRow[]>();
 
         if (fetchError) throw fetchError;
 

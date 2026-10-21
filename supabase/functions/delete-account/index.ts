@@ -61,6 +61,19 @@ Deno.serve(async (req) => {
     }
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
+    const { count: ownedGroups, error: groupsError } = await adminClient.from("shared_groups")
+      .select("id", { count: "exact", head: true }).eq("owner_id", user.id);
+    if (groupsError) {
+      return new Response(JSON.stringify({ error: "Unable to check group ownership. Please try again." }), {
+        status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const confirmation = await req.json().catch(() => null) as { deleteOwnedSharedGroups?: unknown } | null;
+    if ((ownedGroups ?? 0) > 0 && confirmation?.deleteOwnedSharedGroups !== true) {
+      return new Response(JSON.stringify({ error: "Transfer ownership of your shared groups before deleting your account, or explicitly confirm their deletion." }), {
+        status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     const { error: deleteError } = await adminClient.auth.admin.deleteUser(user.id);
 
     if (deleteError) {

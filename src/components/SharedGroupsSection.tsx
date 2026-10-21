@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { ChevronRight, Link, Plus, UsersRound } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { CHECKIN_CADENCE_OPTIONS, formatCheckinCadence } from "@/hooks/useGroupsSupabase";
+import { Slider } from "@/components/ui/slider";
+import { CHECKIN_CADENCE_OPTIONS, DEFAULT_CHECKIN_CADENCE_DAYS, formatCheckinCadence } from "@/hooks/useGroupsSupabase";
 import { createSharedGroup, parseGroupInvite, type SharedGroup } from "@/lib/sharedGroups";
 
 type Props = {
@@ -69,7 +70,7 @@ export const SharedGroupsSection = ({ groups, loading, error, refresh }: Props) 
           <ChevronRight size={14} className="shrink-0 text-muted-foreground" />
         </button>
       ))}
-      <div className="flex flex-wrap justify-end gap-x-4 gap-y-3 border-t border-border pt-3">
+      <div className="flex flex-wrap justify-end gap-x-4 gap-y-3">
         <button onClick={() => open("join")} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
           <Link size={14} /> Join group
         </button>
@@ -92,11 +93,16 @@ export const SharedGroupsSection = ({ groups, loading, error, refresh }: Props) 
               <label className="block text-sm">Group name
                 <Input value={name} onChange={(event) => setName(event.target.value)} maxLength={80} required className="mt-2" />
               </label>
-              <label className="block text-sm">Check-in cadence
-                <select value={cadence} onChange={(event) => setCadence(Number(event.target.value))} className="mt-2 h-10 w-full rounded-md border border-input bg-background px-3">
-                  {CHECKIN_CADENCE_OPTIONS.map((days) => <option key={days} value={days}>{formatCheckinCadence(days)}</option>)}
-                </select>
-              </label>
+              <div>
+                <div className="flex items-center justify-between gap-3 mb-2">
+                  <p className="text-sm font-medium">Check-in cadence</p>
+                  <span className="text-xs text-muted-foreground">{formatCheckinCadence(cadence)}</span>
+                </div>
+                <Slider value={[Math.max(0, CHECKIN_CADENCE_OPTIONS.indexOf(cadence))]}
+                  min={0} max={CHECKIN_CADENCE_OPTIONS.length - 1} step={1} disabled={busy}
+                  aria-label="Check-in cadence"
+                  onValueChange={(value) => setCadence(CHECKIN_CADENCE_OPTIONS[value[0] ?? 0] ?? DEFAULT_CHECKIN_CADENCE_DAYS)} />
+              </div>
             </>}
             {message && <p role="alert" className="text-sm text-destructive">{message}</p>}
             <button type="submit" disabled={busy || (mode === "create" && !name.trim())} className="w-full nuj-btn-primary h-11 disabled:opacity-50">

@@ -5,7 +5,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { MateAvatar } from "@/components/MateComponents";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { CHECKIN_CADENCE_OPTIONS, formatCheckinCadence } from "@/hooks/useGroupsSupabase";
+import { Slider } from "@/components/ui/slider";
+import { CHECKIN_CADENCE_OPTIONS, DEFAULT_CHECKIN_CADENCE_DAYS, formatCheckinCadence } from "@/hooks/useGroupsSupabase";
 import { useSharedGroupsSupabase } from "@/hooks/useSharedGroupsSupabase";
 import { buildMateInitials } from "@/lib/supabaseData";
 import { buildGroupInviteLink, buildGroupInviteMessage, manageSharedGroup, type SharedGroupAction } from "@/lib/sharedGroups";
@@ -136,11 +137,16 @@ const SharedGroupDetail = () => {
             if (await perform("update", { name: name.trim(), cadenceDays: cadence })) setEditing(false);
           }}>
             <label className="block text-sm">Group name<Input className="mt-2" value={name} onChange={(event) => setName(event.target.value)} required maxLength={80} /></label>
-            <label className="block text-sm">Check-in cadence
-              <select value={cadence} onChange={(event) => setCadence(Number(event.target.value))} className="mt-2 h-10 w-full rounded-md border border-input bg-background px-3">
-                {CHECKIN_CADENCE_OPTIONS.map((days) => <option key={days} value={days}>{formatCheckinCadence(days)}</option>)}
-              </select>
-            </label>
+            <div>
+              <div className="flex items-center justify-between gap-3 mb-2">
+                <p className="text-sm font-medium">Check-in cadence</p>
+                <span className="text-xs text-muted-foreground">{formatCheckinCadence(cadence)}</span>
+              </div>
+              <Slider value={[Math.max(0, CHECKIN_CADENCE_OPTIONS.indexOf(cadence))]}
+                min={0} max={CHECKIN_CADENCE_OPTIONS.length - 1} step={1} disabled={busy}
+                aria-label="Check-in cadence"
+                onValueChange={(value) => setCadence(CHECKIN_CADENCE_OPTIONS[value[0] ?? 0] ?? DEFAULT_CHECKIN_CADENCE_DAYS)} />
+            </div>
             {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
             <button disabled={busy || !name.trim()} className="w-full nuj-btn-primary h-11 disabled:opacity-50">{busy ? "Saving..." : "Save changes"}</button>
           </form>

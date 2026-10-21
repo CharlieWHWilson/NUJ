@@ -122,6 +122,7 @@ describe("App integration routing", () => {
     const groups = within(content).getByRole("button", { name: /Groups/ });
     fireEvent.click(groups);
     expect(groups).toHaveAttribute("aria-expanded", "true");
+    expect(within(content).getByRole("separator", { name: "Personal and shared groups" })).toBeInTheDocument();
     expect(screen.getByRole("banner", { name: "App header" })).toBe(header);
     expect(screen.getByRole("contentinfo", { name: "App footer" })).toBe(footer);
   });

@@ -493,9 +493,10 @@ const Dashboard = () => {
                   className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
                 >
                   <Plus size={13} />
-                  {isAddingGroup ? "Cancel" : "New personal group"}
+                  {isAddingGroup ? "Cancel" : "Personal group"}
                 </button>
               </div>
+              <hr className="mt-4 border-0 border-t border-border/60" aria-label="Personal and shared groups" />
               <SharedGroupsSection groups={sharedGroups.data ?? []} loading={sharedGroups.isLoading}
                 error={sharedGroups.error} refresh={sharedGroups.refetch} />
             </CollapsibleContent>

@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import JoinSharedGroup from "./JoinSharedGroup";
@@ -37,6 +37,7 @@ function mount(element: JSX.Element, route: string, path: string) {
 
 describe("shared-group screens", () => {
   beforeEach(() => {
+    vi.stubGlobal("ResizeObserver", class { observe = vi.fn(); unobserve = vi.fn(); disconnect = vi.fn(); });
     vi.clearAllMocks();
     mocks.preview.mockResolvedValue({ id: group.id, name: group.name, ownerName: "Charlie", cadenceDays: 7, memberCount: 2 });
     mocks.join.mockResolvedValue(group.id);
@@ -46,6 +47,7 @@ describe("shared-group screens", () => {
     mocks.connections.mockReturnValue({ userId: "owner", mates: [], incoming: [], outgoing: [], previous: [], loading: false, error: null, refresh: vi.fn(), send: vi.fn(), respond: vi.fn() });
     vi.spyOn(window, "confirm").mockReturnValue(true);
   });
+  afterEach(() => vi.unstubAllGlobals());
 
   it("previews privacy terms without joining and preserves the invite before sign-in", async () => {
     mount(<JoinSharedGroup authenticated={false} />, `/join/${code}`, "/join/:code");
@@ -115,10 +117,25 @@ describe("shared-group screens", () => {
     mount(<SharedGroupsSection groups={[]} loading={false} error={null} refresh={vi.fn()} />, "/dashboard", "/dashboard");
     fireEvent.click(screen.getByRole("button", { name: "Shared group" }));
     fireEvent.change(screen.getByLabelText("Group name"), { target: { value: "School mates" } });
-    fireEvent.change(screen.getByLabelText("Check-in cadence"), { target: { value: "7" } });
+    const cadence = screen.getByRole("slider");
+    for (let step = 0; step < 6; step++) fireEvent.keyDown(cadence, { key: "ArrowRight" });
+    expect(screen.getByText("Every week")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Create shared group" }));
     expect(await screen.findByText("Destination: /shared-group/group-id")).toBeInTheDocument();
     expect(mocks.create).toHaveBeenCalledWith("School mates", 7);
+  });
+
+  it("uses the personal-group slider style when editing and only saves on confirmation", async () => {
+    mount(<SharedGroupDetail />, "/shared-group/group-id", "/shared-group/:id");
+    fireEvent.click(screen.getByRole("button", { name: "Edit group" }));
+    const cadence = screen.getByRole("slider");
+    expect(cadence).toHaveAttribute("aria-valuenow", "6");
+    expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+    fireEvent.keyDown(cadence, { key: "End" });
+    expect(screen.getByText("Every month")).toBeInTheDocument();
+    expect(mocks.manage).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+    await waitFor(() => expect(mocks.manage).toHaveBeenCalledWith("group-id", "update", { name: "School mates", cadenceDays: 30 }));
   });
 
   it("accepts a pasted invite link and takes the user to a preview", async () => {

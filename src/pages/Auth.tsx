@@ -1,16 +1,8 @@
 import { FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { MessageCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { getRegistrationNameError, registerUser, loginUser, requestPasswordReset } from "@/lib/auth";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { WhatIsNujDialog } from "@/components/WhatIsNujDialog";
 
 type AuthMode = "login" | "register" | "reset";
 
@@ -215,64 +207,12 @@ const Auth = () => {
         )}
       </div>
 
-      <div className="mt-4 text-center">
-        <Dialog>
-          <DialogTrigger asChild>
-            <button className="inline-flex items-center justify-center rounded-full border border-muted-foreground/40 px-5 py-3 text-base font-medium text-muted-foreground shadow-sm transition-colors hover:border-foreground/30 hover:text-foreground">
+      <div className="mt-4 flex items-center justify-center gap-3">
+        <WhatIsNujDialog trigger={
+            <button type="button" className="inline-flex items-center justify-center rounded-full border border-muted-foreground/40 px-5 py-3 text-base font-medium text-muted-foreground shadow-sm transition-colors hover:border-foreground/30 hover:text-foreground">
               What is NUJ?
             </button>
-          </DialogTrigger>
-          <DialogContent className="max-w-md">
-            <Dialog>
-              <DialogTrigger asChild>
-                <button
-                  className="absolute left-4 top-4 inline-flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                  aria-label="Get in touch"
-                >
-                  <MessageCircle size={16} />
-                </button>
-              </DialogTrigger>
-              <DialogContent className="max-w-sm">
-                <DialogHeader className="text-center">
-                  <DialogTitle className="text-center">Get in touch</DialogTitle>
-                  <DialogDescription className="text-sm text-muted-foreground pt-1 text-center">
-                    If you have any questions or would like to share feedback I'd love to hear from you
-                  </DialogDescription>
-                </DialogHeader>
-                <p className="text-sm font-medium text-foreground text-center">charlie@nuj.social</p>
-                <div className="pt-3 border-t border-border/60 text-xs text-muted-foreground flex items-center justify-center gap-3">
-                  <Link to="/support" className="underline underline-offset-2">Support</Link>
-                  <Link to="/privacy" className="underline underline-offset-2">Privacy Policy</Link>
-                  <Link to="/terms" className="underline underline-offset-2">Terms of Use</Link>
-                </div>
-              </DialogContent>
-            </Dialog>
-
-            <DialogHeader>
-              <DialogTitle className="text-center">What is NUJ?</DialogTitle>
-            </DialogHeader>
-
-            <div className="text-sm text-muted-foreground space-y-4 max-h-[70vh] overflow-y-auto pr-1">
-              <p>NUJ is the easy way to stay connected with mates. No pressure, guilt or obligation to send a message.</p>
-              <p>Life gets busy, contact drifts and keeping in touch gets harder.</p>
-              <p>NUJ removes that barrier by making it easy to acknowledge each other regularly, even when nothing needs to be said.</p>
-
-              <div>
-                <p className="font-medium text-foreground mb-2"><strong>How it works</strong></p>
-                <div className="space-y-3">
-                  <p><strong>Add mates</strong> – Share your NUJ code (in your profile) with friends, or enter theirs to connect.</p>
-                  <p><strong>Groups</strong> – Create groups to keep track of your mates.</p>
-                  <p><strong>Check in</strong> – Tap once to say “you’re around”. It takes a second. Nothing more needed. Set a reminder so you don’t forget.</p>
-                  <p><strong>See who’s around</strong> – See when your mates last checked in.</p>
-                  <p><strong>Gentle nudges</strong> – If someone’s been quiet, send a small NUJ to let them know you’re thinking of them.</p>
-                  <p><strong>Meet-ups (coming soon)</strong> – Check in together regularly to unlock deals on real-world activities. A chance to catch up and spend time together. Win-win.</p>
-                </div>
-              </div>
-
-              <p className="text-foreground text-center"><strong>Stay connected</strong></p>
-            </div>
-          </DialogContent>
-        </Dialog>
+        } />
       </div>
     </div>
   );

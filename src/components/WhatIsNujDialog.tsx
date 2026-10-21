@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactElement } from "react";
+import { Link } from "react-router-dom";
 import {
-  Check, Crown, HelpCircle, Share2, UserRound, UserRoundPlus, UsersRound, type LucideIcon,
+  Check, Crown, HelpCircle, MessageCircle, Share2, UserRound, UserRoundPlus, UsersRound, type LucideIcon,
 } from "lucide-react";
 import {
   Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger,
@@ -69,7 +70,7 @@ const slides: ExplainerSlide[] = [
   },
 ];
 
-export const WhatIsNujDialog = () => {
+export const WhatIsNujDialog = ({ trigger }: { trigger?: ReactElement } = {}) => {
   const [api, setApi] = useState<CarouselApi>();
   const [selected, setSelected] = useState(0);
 
@@ -87,15 +88,33 @@ export const WhatIsNujDialog = () => {
 
   return <Dialog onOpenChange={() => setSelected(0)}>
     <DialogTrigger asChild>
-      <button className="w-9 h-9 flex items-center justify-center rounded-full bg-muted text-foreground hover:bg-secondary transition-colors" aria-label="What is NUJ?">
+      {trigger ?? <button className="w-9 h-9 flex items-center justify-center rounded-full bg-muted text-foreground hover:bg-secondary transition-colors" aria-label="What is NUJ?">
         <HelpCircle size={21} />
-      </button>
+      </button>}
     </DialogTrigger>
     <DialogContent className="w-[calc(100%-2rem)] max-w-md rounded-lg p-0 gap-0 overflow-hidden max-h-[calc(100dvh-2rem)] flex flex-col">
       <DialogHeader className="shrink-0 px-6 pt-6 pb-3 text-left">
-        <DialogTitle className="text-black">What is NUJ?</DialogTitle>
+        <DialogTitle className="pr-16 text-black">What is NUJ?</DialogTitle>
         <DialogDescription className="sr-only">A quick introduction to check-ins, mates, personal groups, shared groups and NUJs.</DialogDescription>
       </DialogHeader>
+      <Dialog>
+        <DialogTrigger asChild>
+          <button type="button" className="absolute right-10 top-2 inline-flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            aria-label="Get in touch" title="Get in touch"><MessageCircle size={16} /></button>
+        </DialogTrigger>
+        <DialogContent className="w-[calc(100%-2rem)] max-w-sm rounded-lg">
+          <DialogHeader>
+            <DialogTitle>Get in touch</DialogTitle>
+            <DialogDescription>If you have any questions or would like to share feedback I'd love to hear from you</DialogDescription>
+          </DialogHeader>
+          <p className="text-sm font-medium text-foreground text-center">charlie@nuj.social</p>
+          <div className="pt-3 border-t border-border/60 text-xs text-muted-foreground flex items-center justify-center gap-3">
+            <Link to="/support" className="underline underline-offset-2">Support</Link>
+            <Link to="/privacy" className="underline underline-offset-2">Privacy Policy</Link>
+            <Link to="/terms" className="underline underline-offset-2">Terms of Use</Link>
+          </div>
+        </DialogContent>
+      </Dialog>
       <Carousel setApi={setApi} opts={{ align: "start", loop: false }} className="min-h-0 flex-1 overflow-y-auto" aria-label="About NUJ">
         <CarouselContent className="items-stretch">
           {slides.map((slide, index) => {

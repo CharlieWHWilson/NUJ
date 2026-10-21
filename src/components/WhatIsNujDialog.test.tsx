@@ -1,4 +1,5 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { WhatIsNujDialog } from "./WhatIsNujDialog";
 
@@ -31,7 +32,7 @@ const carousel = vi.hoisted(() => {
 vi.mock("embla-carousel-react", () => ({ default: () => [() => undefined, carousel.api] }));
 
 function open() {
-  render(<WhatIsNujDialog />);
+  render(<MemoryRouter><WhatIsNujDialog /></MemoryRouter>);
   fireEvent.click(screen.getByRole("button", { name: "What is NUJ?" }));
 }
 
@@ -51,6 +52,15 @@ describe("What is NUJ carousel", () => {
     expect(screen.getAllByText("👉").length).toBeGreaterThan(0);
   });
 
+  it("opens the same carousel from a text-button trigger", () => {
+    render(<MemoryRouter><WhatIsNujDialog trigger={<button type="button">What is NUJ?</button>} /></MemoryRouter>);
+    fireEvent.click(screen.getByRole("button", { name: "What is NUJ?" }));
+    expect(screen.getByRole("region", { name: "About NUJ" })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /Go to slide/ })).toHaveLength(6);
+    fireEvent.click(screen.getByRole("button", { name: "Go to slide 5: Shared groups" }));
+    expect(screen.getByRole("heading", { name: "Shared groups" })).toBeInTheDocument();
+  });
+
   it("moves forward and backward using arrows and announces the active slide", () => {
     open();
     fireEvent.click(screen.getByRole("button", { name: "Next slide" }));
@@ -58,6 +68,20 @@ describe("What is NUJ carousel", () => {
     expect(screen.getByRole("status")).toHaveTextContent("Slide 2 of 6");
     fireEvent.click(screen.getByRole("button", { name: "Previous slide" }));
     expect(screen.getByRole("heading", { name: "Stay connected" })).toBeInTheDocument();
+  });
+
+  it("keeps contact available on every slide and returns to the current slide after closing it", () => {
+    open();
+    for (const button of screen.getAllByRole("button", { name: /Go to slide/ })) {
+      fireEvent.click(button);
+      expect(screen.getByRole("button", { name: "Get in touch" })).toBeInTheDocument();
+    }
+    fireEvent.click(screen.getByRole("button", { name: "Get in touch" }));
+    const contact = screen.getByRole("dialog", { name: "Get in touch" });
+    expect(within(contact).getByText("charlie@nuj.social")).toBeInTheDocument();
+    expect(within(contact).getByRole("link", { name: "Support" })).toHaveAttribute("href", "/support");
+    fireEvent.click(within(contact).getByRole("button", { name: "Close" }));
+    expect(screen.getByRole("heading", { name: "Gentle nudges" })).toBeInTheDocument();
   });
 
   it("explains shared-group joining and its separation from individual mates", () => {

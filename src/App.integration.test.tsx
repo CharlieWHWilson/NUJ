@@ -60,6 +60,7 @@ describe("App integration routing", () => {
 
     expect(await screen.findByText("Sign in or create an account")).toBeInTheDocument();
     expect(window.location.pathname).toBe("/auth");
+    expect(screen.queryByRole("button", { name: "Get in touch" })).not.toBeInTheDocument();
   });
 
   it("lands on check-in from / when authenticated", async () => {

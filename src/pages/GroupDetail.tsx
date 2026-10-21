@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, X } from "lucide-react";
+import { ArrowLeft, Plus, UserRound, X } from "lucide-react";
 import { MateAvatar, MateRow } from "@/components/MateComponents";
 import { useParams } from "react-router-dom";
 import { Input } from "@/components/ui/input";
@@ -147,7 +147,7 @@ const GroupDetail = () => {
             {isEditing ? "Done" : "Edit"}
           </button>
         </div>
-        <p className="text-muted-foreground text-sm mt-1">{groupMates.length} mates</p>
+        <p className="text-muted-foreground text-sm mt-1 flex items-center gap-1.5"><UserRound size={14} />Personal group · {groupMates.length} mates</p>
       </div>
 
       <div className="px-5 space-y-4 nuj-safe-bottom-page">

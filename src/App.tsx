@@ -22,6 +22,9 @@ const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfUse = lazy(() => import("./pages/TermsOfUse"));
 const Support = lazy(() => import("./pages/Support"));
 const AddMateFromLink = lazy(() => import("./pages/AddMateFromLink"));
+const JoinSharedGroup = lazy(() => import("./pages/JoinSharedGroup"));
+const SharedGroupDetail = lazy(() => import("./pages/SharedGroupDetail"));
+import { takePendingGroupInvite } from "./lib/sharedGroups";
 import {
   getInAppPathFromUrl,
   normalizeInviteCode,
@@ -104,11 +107,16 @@ const DeepLinkHandler = ({ authState }: { authState: AuthState }) => {
 
     // Deferred so this wins over the post-login redirect to /check-in.
     const timeoutId = window.setTimeout(() => {
+      const pendingGroup = takePendingGroupInvite();
+      if (pendingGroup) {
+        navigateRef.current(`/join/${pendingGroup}`);
+        return;
+      }
       const pendingCode = takePendingInviteCode();
-      if (pendingCode) navigate(`/add/${pendingCode}`);
+      if (pendingCode) navigateRef.current(`/add/${pendingCode}`);
     }, 0);
     return () => window.clearTimeout(timeoutId);
-  }, [authState, navigate]);
+  }, [authState]);
 
   return null;
 };
@@ -240,6 +248,8 @@ const App = () => {
               <Route path="/meetups" element={<ProtectedRoute authState={authState}><MeetUpsHub /></ProtectedRoute>} />
               <Route path="/meetup/:id" element={<ProtectedRoute authState={authState}><MeetUpDetail /></ProtectedRoute>} />
               <Route path="/group/:id" element={<ProtectedRoute authState={authState}><GroupDetail /></ProtectedRoute>} />
+              <Route path="/shared-group/:id" element={<ProtectedRoute authState={authState}><SharedGroupDetail /></ProtectedRoute>} />
+              <Route path="/join/:code" element={<JoinSharedGroup authenticated={authState === "authenticated"} />} />
               <Route path="/add/:code" element={<InviteRoute authState={authState} />} />
               <Route path="/profile" element={<ProtectedRoute authState={authState}><Profile /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />

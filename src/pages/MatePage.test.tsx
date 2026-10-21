@@ -74,7 +74,17 @@ describe("MatePage", () => {
     });
 
     expect(
-      screen.getByText("Ava Chen hasn’t added you as a mate yet. Send them your NUJ code so you can NUJ each other.")
+      screen.getByText("Your mate connection with Ava Chen is no longer active. Open Mates to check its status.")
     ).toBeInTheDocument();
+  });
+
+  it("explains reciprocal removal and keeps failures visible without navigating", async () => {
+    mockRemoveMate.mockRejectedValueOnce(new Error("Unable to remove this connection."));
+    render(<MatePage />);
+    fireEvent.click(screen.getByRole("button", { name: "Remove mate" }));
+    expect(screen.getByText(/Ends your mate connection for both of you/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Remove mate" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Unable to remove");
+    expect(mockNavigate).not.toHaveBeenCalled();
   });
 });

@@ -4,6 +4,8 @@
 
 NUJ is a Vite + React app that helps people stay connected with mates.
 
+Shared-group database migration and release steps: [Shared Groups Setup](SHARED_GROUPS_SETUP.md).
+
 ## Local Development
 
 ```sh

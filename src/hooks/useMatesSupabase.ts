@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import type { Mate } from "@/data/mockData";
 import { addCurrentUserMate, fetchCurrentUserMates } from "@/lib/supabaseData";
+import { MATES_UPDATED_EVENT, removeMateConnection } from "@/lib/mateRequests";
 
 export const useMatesSupabase = () => {
   const [mates, setMates] = useState<Mate[]>([]);
@@ -33,9 +34,11 @@ export const useMatesSupabase = () => {
     };
 
     window.addEventListener("nuj:checkin-updated", handleCheckinUpdated);
+    window.addEventListener(MATES_UPDATED_EVENT, handleCheckinUpdated);
 
     return () => {
       window.removeEventListener("nuj:checkin-updated", handleCheckinUpdated);
+      window.removeEventListener(MATES_UPDATED_EVENT, handleCheckinUpdated);
     };
   }, [refresh]);
 
@@ -66,23 +69,11 @@ export const useMatesSupabase = () => {
 
   const addMate = async (mate: Omit<Mate, "id"> & { mateUserId: string }) => {
     try {
-      const newMateRow = await addCurrentUserMate({
+      return await addCurrentUserMate({
         mateUserId: mate.mateUserId,
         name: mate.name,
         initials: mate.initials,
       });
-
-      const newMate: Mate = {
-        id: newMateRow.id,
-        mateUserId: newMateRow.mate_user_id ?? undefined,
-        name: newMateRow.name,
-        initials: newMateRow.initials,
-        lastCheckin: newMateRow.last_checkin ?? "few-days",
-        daysSinceCheckin: newMateRow.days_since_checkin ?? undefined,
-      };
-
-      setMates((prev) => [...prev, newMate]);
-      return newMate;
     } catch (err) {
       console.error("Error adding mate:", err);
       throw err;
@@ -91,12 +82,7 @@ export const useMatesSupabase = () => {
 
   const removeMate = async (mateId: string) => {
     try {
-      const { error: deleteError } = await supabase
-        .from("mates")
-        .delete()
-        .eq("id", mateId);
-
-      if (deleteError) throw deleteError;
+      await removeMateConnection(mateId);
 
       setMates((prev) => prev.filter((m) => m.id !== mateId));
     } catch (err) {

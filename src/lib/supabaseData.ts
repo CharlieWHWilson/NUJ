@@ -1,5 +1,6 @@
 import { supabase } from "./supabase";
 import type { Mate, PresenceStatus } from "@/data/mockData";
+import { sendMateRequest } from "./mateRequests";
 
 interface MateRow {
   id: string;
@@ -363,30 +364,7 @@ export const addCurrentUserMate = async (params: {
   name: string;
   initials: string;
 }) => {
-  const userId = await getCurrentUserId();
-  if (!userId) {
-    throw new Error("Not authenticated");
-  }
-
-  const { data, error } = await supabase
-    .from("mates")
-    .insert({
-      id: crypto.randomUUID(),
-      user_id: userId,
-      mate_user_id: params.mateUserId,
-      name: params.name,
-      initials: params.initials,
-      last_checkin: "few-days",
-      days_since_checkin: 3,
-    })
-    .select()
-    .single();
-
-  if (error) {
-    throw error;
-  }
-
-  return data as MateRow;
+  return sendMateRequest(params.mateUserId);
 };
 
 export const upsertCurrentUserCheckin = async (): Promise<void> => {

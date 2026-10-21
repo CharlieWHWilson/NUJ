@@ -13,6 +13,8 @@ const MatePage = () => {
   const navigate = useNavigate();
   const [showRemovePrompt, setShowRemovePrompt] = useState(false);
   const [showMutualMateBlockDialog, setShowMutualMateBlockDialog] = useState(false);
+  const [removing, setRemoving] = useState(false);
+  const [removeError, setRemoveError] = useState<string | null>(null);
   const { mates, removeMate } = useMatesSupabase();
   const { sendNuj, nujsSent } = useNujsSupabase();
   const [sendState, setSendState] = useState<"idle" | "sending" | "sent">("idle");
@@ -99,8 +101,17 @@ const MatePage = () => {
   ];
 
   const handleRemoveMate = async () => {
-    await removeMate(mate.id);
-    navigate("/mates");
+    if (removing) return;
+    setRemoving(true);
+    setRemoveError(null);
+    try {
+      await removeMate(mate.id);
+      navigate("/mates");
+    } catch (failure) {
+      setRemoveError(failure instanceof Error ? failure.message : "Unable to remove this connection.");
+    } finally {
+      setRemoving(false);
+    }
   };
 
   return (
@@ -187,19 +198,25 @@ const MatePage = () => {
               <Trash2 size={16} />
             </button>
           ) : (
-            <div className="flex items-center gap-2 rounded-xl border border-border bg-muted/40 px-3 py-2">
+            <div className="max-w-full rounded-lg border border-border bg-muted/40 px-3 py-2">
+              <p className="mb-3 text-xs text-muted-foreground">Ends your mate connection for both of you. Shared groups are unchanged.</p>
+              <div className="flex items-center gap-3">
               <button
                 onClick={handleRemoveMate}
+                disabled={removing}
                 className="text-xs font-semibold text-destructive hover:text-destructive/80 transition-colors"
               >
-                Remove mate
+                {removing ? "Removing..." : "Remove mate"}
               </button>
               <button
                 onClick={() => setShowRemovePrompt(false)}
+                disabled={removing}
                 className="text-xs text-muted-foreground hover:text-foreground transition-colors"
               >
                 Cancel
               </button>
+              </div>
+              {removeError && <p role="alert" className="mt-2 text-xs text-destructive">{removeError}</p>}
             </div>
           )}
         </div>
@@ -210,7 +227,7 @@ const MatePage = () => {
           <DialogHeader>
             <DialogTitle>Unable to send NUJ</DialogTitle>
             <DialogDescription>
-              {mate.name} hasn’t added you as a mate yet. Send them your NUJ code so you can NUJ each other.
+              Your mate connection with {mate.name} is no longer active. Open Mates to check its status.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

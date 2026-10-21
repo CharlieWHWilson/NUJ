@@ -2,15 +2,15 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { MateAvatar } from "@/components/MateComponents";
-import { supabase } from "@/lib/supabase";
 import {
-  addCurrentUserMate,
   buildMateInitials,
   getCurrentUserId,
   searchProfileById,
 } from "@/lib/supabaseData";
 import { normalizeInviteCode } from "@/lib/mateInvite";
 import { toast } from "@/components/ui/sonner";
+import { useMateConnections } from "@/hooks/useMateConnections";
+import { MateConnectionAction } from "@/components/MateConnectionAction";
 
 type InviteProfile = { id: string; name: string; userCode: string };
 
@@ -18,14 +18,13 @@ type LookupState =
   | { status: "loading" }
   | { status: "error"; message: string }
   | { status: "self" }
-  | { status: "ready"; profile: InviteProfile; existingMateId: string | null };
+  | { status: "ready"; profile: InviteProfile };
 
 const AddMateFromLink = () => {
   const { code } = useParams();
   const navigate = useNavigate();
   const [state, setState] = useState<LookupState>({ status: "loading" });
-  const [isAdding, setIsAdding] = useState(false);
-  const [addError, setAddError] = useState<string | null>(null);
+  const connections = useMateConnections();
 
   useEffect(() => {
     let active = true;
@@ -54,18 +53,9 @@ const AddMateFromLink = () => {
           return;
         }
 
-        const { data: existingMate } = await supabase
-          .from("mates")
-          .select("id")
-          .eq("user_id", currentUserId)
-          .eq("mate_user_id", profile.id)
-          .maybeSingle();
-        if (!active) return;
-
         setState({
           status: "ready",
           profile: { id: profile.id, name: profile.username, userCode: profile.user_code },
-          existingMateId: (existingMate as { id: string } | null)?.id ?? null,
         });
       } catch {
         if (active) setState({ status: "error", message: "Something went wrong. Please try again." });
@@ -84,24 +74,6 @@ const AddMateFromLink = () => {
     if (state.status === "error") toast(state.message);
     navigate("/check-in", { replace: true });
   }, [state, navigate]);
-
-  const handleAdd = async () => {
-    if (state.status !== "ready" || isAdding) return;
-
-    setIsAdding(true);
-    setAddError(null);
-    try {
-      const row = await addCurrentUserMate({
-        mateUserId: state.profile.id,
-        name: state.profile.name,
-        initials: buildMateInitials(state.profile.name),
-      });
-      navigate(`/mate/${row.id}`, { replace: true });
-    } catch (err) {
-      setAddError(err instanceof Error ? err.message : "Unable to add mate right now.");
-      setIsAdding(false);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-background max-w-md mx-auto">
@@ -137,23 +109,8 @@ const AddMateFromLink = () => {
             </div>
 
             <div className="mt-8">
-              {state.existingMateId ? (
-                <button
-                  onClick={() => navigate(`/mate/${state.existingMateId}`, { replace: true })}
-                  className="w-full nuj-btn-primary h-12 rounded-2xl"
-                >
-                  Already mates · View
-                </button>
-              ) : (
-                <button
-                  onClick={() => void handleAdd()}
-                  disabled={isAdding}
-                  className="w-full nuj-btn-primary h-12 rounded-2xl disabled:opacity-60"
-                >
-                  {isAdding ? "Adding…" : "Add mate"}
-                </button>
-              )}
-              {addError && <p className="mt-3 text-sm text-destructive">{addError}</p>}
+              <MateConnectionAction userId={state.profile.id} name={state.profile.name} connections={connections} onConnected={() => navigate("/mates")} />
+              {connections.error && <p role="alert" className="mt-3 text-sm text-destructive">{connections.error}</p>}
             </div>
           </>
         )}

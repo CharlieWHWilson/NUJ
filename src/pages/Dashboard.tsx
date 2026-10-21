@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { ChevronDown, ChevronRight, Plus, MapPin, HelpCircle, MessageCircle, X } from "lucide-react";
+import { ChevronDown, ChevronRight, Plus, MapPin, HelpCircle, MessageCircle, UserRound, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -16,7 +16,8 @@ import { AddMateSheet } from "@/components/AddMateSheet";
 import { NujActionSheet } from "@/components/NujActionSheet";
 import { useCheckin } from "@/hooks/useCheckin";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
-import { useMatesSupabase } from "@/hooks/useMatesSupabase";
+import { useMateConnections } from "@/hooks/useMateConnections";
+import { MateRequestsPanel } from "@/components/MateRequestsPanel";
 import { useNujsSupabase } from "@/hooks/useNujsSupabase";
 import {
   DEFAULT_CHECKIN_CADENCE_DAYS,
@@ -27,6 +28,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
+import { SharedGroupsSection } from "@/components/SharedGroupsSection";
+import { useSharedGroupsSupabase } from "@/hooks/useSharedGroupsSupabase";
 
 type SectionKey = "nuj" | "mates" | "groups" | "meetups";
 
@@ -49,8 +52,10 @@ const Dashboard = () => {
   const shouldExpandNuj = Boolean((location.state as { expandNuj?: boolean } | null)?.expandNuj);
   const currentUser = useCurrentUser();
   const { checkedIn } = useCheckin(currentUser?.id);
-  const { mates, refresh: refreshMates } = useMatesSupabase();
+  const connections = useMateConnections();
+  const { mates, refresh: refreshMates } = connections;
   const { groups: groupsList, addGroup } = useGroupsSupabase();
+  const sharedGroups = useSharedGroupsSupabase();
   const {
     nujsReceived,
     nujsSent,
@@ -409,7 +414,7 @@ const Dashboard = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   {openSections.groups && (
-                    <span className="text-xs text-muted-foreground">{groupsList.length}</span>
+                    <span className="text-xs text-muted-foreground">{groupsList.length + (sharedGroups.data?.length ?? 0)}</span>
                   )}
                   <ChevronDown
                     size={16}
@@ -427,6 +432,7 @@ const Dashboard = () => {
                   return (
                     <button
                       key={group.id}
+                      title="Personal group"
                       onClick={() => navigate(`/group/${group.id}`)}
                       className="w-full flex items-center gap-3 py-2.5 px-3 bg-muted/40 hover:bg-muted rounded-xl transition-colors text-left"
                     >
@@ -436,7 +442,7 @@ const Dashboard = () => {
                         ))}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium">{group.name}</p>
+                        <p className="text-sm font-medium flex items-center gap-1.5"><UserRound size={14} className="shrink-0 text-muted-foreground" aria-hidden="true" /><span className="break-words min-w-0">{group.name}</span><span className="sr-only">Personal group</span></p>
                         <p className="text-xs text-muted-foreground">{checkedInWithinCadence}/{groupMates.length} checked in</p>
                       </div>
                       <ChevronRight size={14} className="text-muted-foreground shrink-0" />
@@ -444,7 +450,7 @@ const Dashboard = () => {
                   );
                 })}
 
-                {groupsList.length === 0 && (
+                {groupsList.length === 0 && !sharedGroups.data?.length && (
                   <p className="text-xs text-muted-foreground px-1 py-1">
                     No groups yet. Tap "New group" below to create one.
                   </p>
@@ -516,9 +522,11 @@ const Dashboard = () => {
                   className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
                 >
                   <Plus size={13} />
-                  {isAddingGroup ? "Cancel" : "New group"}
+                  {isAddingGroup ? "Cancel" : "New personal group"}
                 </button>
               </div>
+              <SharedGroupsSection groups={sharedGroups.data ?? []} loading={sharedGroups.isLoading}
+                error={sharedGroups.error} refresh={sharedGroups.refetch} />
             </CollapsibleContent>
           </Collapsible>
         </div>
@@ -553,6 +561,8 @@ const Dashboard = () => {
                   Add mate
                 </button>
               </div>
+
+              <MateRequestsPanel connections={connections} />
 
               <div className="divide-y divide-border/50 max-h-[190px] overflow-y-auto pr-1">
                 {filteredMates.map((mate) => (

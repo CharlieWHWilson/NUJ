@@ -1,8 +1,9 @@
 import { Share2, MessageSquare, ClipboardCopy } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
-import { addCurrentUserMate, buildMateInitials, searchProfileById } from "@/lib/supabaseData";
-import { supabase } from "@/lib/supabase";
+import { searchProfileById } from "@/lib/supabaseData";
+import { useMateConnections } from "@/hooks/useMateConnections";
+import { MateConnectionAction } from "./MateConnectionAction";
 import { APP_STORE_URL, buildAddMateLink, buildInviteMessage } from "@/lib/mateInvite";
 
 interface AddMateSheetProps {
@@ -15,10 +16,10 @@ export const AddMateSheet = ({ open, onClose, onMateAdded }: AddMateSheetProps) 
   const [tab, setTab] = useState<'share' | 'find'>('share');
   const [searchId, setSearchId] = useState('');
   const [searchResult, setSearchResult] = useState<null | { name: string; id: string; userCode?: string }>(null);
-  const [addSuccess, setAddSuccess] = useState(false);
   const [searchError, setSearchError] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const user = useCurrentUser();
+  const connections = useMateConnections();
   const originalViewportContent = useRef<string | null>(null);
 
   useEffect(() => {
@@ -81,54 +82,11 @@ export const AddMateSheet = ({ open, onClose, onMateAdded }: AddMateSheetProps) 
       setSearchResult({ name: data.username, id: data.id, userCode: data.user_code ?? undefined });
     } catch (err) {
       const message = err instanceof Error && err.message.includes('permission')
-        ? 'Profile lookup blocked by Supabase RLS. Please allow public SELECT on profiles.'
+        ? 'Unable to look up that code. Please try again after signing in.'
         : 'Search failed. Please try again.';
       setSearchError(message);
     } finally {
       setIsSearching(false);
-    }
-  };
-
-  const handleAddMate = async () => {
-    setAddSuccess(false);
-    if (!searchResult) return;
-
-    if (user?.id && searchResult.id === user.id) {
-      setSearchError('You cannot add yourself as a mate.');
-      return;
-    }
-
-    try {
-      const { data: existingMate } = await supabase
-        .from('mates')
-        .select('id')
-        .eq('user_id', user?.id)
-        .eq('mate_user_id', searchResult.id)
-        .maybeSingle();
-
-      if (existingMate) {
-        setSearchError('Mate already added.');
-        return;
-      }
-
-      await addCurrentUserMate({
-        mateUserId: searchResult.id,
-        name: searchResult.name,
-        initials: buildMateInitials(searchResult.name),
-      });
-
-      setAddSuccess(true);
-      setSearchError('');
-      onMateAdded?.();
-      setTimeout(() => {
-        setSearchResult(null);
-        setSearchId('');
-        setAddSuccess(false);
-        onClose();
-      }, 1000);
-    } catch (err) {
-      console.error('Error adding mate:', err);
-      setSearchError(err instanceof Error ? err.message : 'Unable to add mate right now.');
     }
   };
 
@@ -176,8 +134,8 @@ export const AddMateSheet = ({ open, onClose, onMateAdded }: AddMateSheetProps) 
                 </a>
                 . Stay connected.
               </p>
-              <p className="mt-3 break-all">Tap to add me as a mate: <span className="underline underline-offset-2">{addMateLink}</span></p>
-              <p className="mt-3">Or add me using my NUJ code: <span className="font-semibold">{shareMsg}</span></p>
+              <p className="mt-3 break-all">Send me a mate request: <span className="underline underline-offset-2">{addMateLink}</span></p>
+              <p className="mt-3">Or use my NUJ code: <span className="font-semibold">{shareMsg}</span></p>
             </div>
             <button
               onClick={() => { navigator.clipboard.writeText(shareInviteMessage); }}
@@ -225,17 +183,10 @@ export const AddMateSheet = ({ open, onClose, onMateAdded }: AddMateSheetProps) 
                 {searchResult.userCode && (
                   <p className="text-xs text-muted-foreground mb-3">Code: {searchResult.userCode}</p>
                 )}
-                <button
-                  onClick={handleAddMate}
-                  className="w-full nuj-btn-primary px-4 py-2 rounded-lg text-sm"
-                >
-                  Add mate
-                </button>
+                <MateConnectionAction userId={searchResult.id} name={searchResult.name} connections={connections} onConnected={onMateAdded} />
               </div>
             )}
-            {addSuccess && (
-              <div className="mt-2 text-sm text-green-600">Mate added!</div>
-            )}
+            {searchResult && connections.error && <p role="alert" className="mt-2 text-sm text-destructive">{connections.error}</p>}
             {searchError && (
               <div className="mt-2 text-sm text-red-500">{searchError}</div>
             )}

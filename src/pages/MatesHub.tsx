@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Plus } from "lucide-react";
 import { MateRow } from "@/components/MateComponents";
 import { Slider } from "@/components/ui/slider";
 import { AddMateSheet } from "@/components/AddMateSheet";
-import { useMatesSupabase } from "@/hooks/useMatesSupabase";
+import { useMateConnections } from "@/hooks/useMateConnections";
+import { MateRequestsPanel } from "@/components/MateRequestsPanel";
 
 const getDaysSinceCheckin = (mate: { lastCheckin: "today" | "yesterday" | "few-days"; daysSinceCheckin?: number }) => {
   if (typeof mate.daysSinceCheckin === "number") return mate.daysSinceCheckin;
@@ -16,7 +17,8 @@ const getDaysSinceCheckin = (mate: { lastCheckin: "today" | "yesterday" | "few-d
 const MatesHub = () => {
   const navigate = useNavigate();
   const [matesDayRange, setMatesDayRange] = useState<[number, number]>([0, 31]);
-  const { mates, refresh: refreshMates } = useMatesSupabase();
+  const connections = useMateConnections();
+  const { mates, refresh: refreshMates } = connections;
   const [addMateOpen, setAddMateOpen] = useState(false);
 
   const sortedMates = [...mates].sort((a, b) => getDaysSinceCheckin(a) - getDaysSinceCheckin(b));
@@ -45,12 +47,13 @@ const MatesHub = () => {
             className="w-7 h-7 flex items-center justify-center rounded-full bg-muted text-foreground hover:bg-secondary transition-colors"
             aria-label="Add mate"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            <Plus size={14} />
           </button>
         </div>
       </div>
 
       <div className="px-5 nuj-safe-bottom-page">
+        <MateRequestsPanel connections={connections} />
         <div className="mb-3">
           <div className="flex justify-start mb-2">
             <span className="text-xs text-muted-foreground">{filteredMates.length} not checked in for {matesDayRange[0]} days</span>

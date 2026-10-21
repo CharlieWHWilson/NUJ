@@ -86,26 +86,30 @@ const SharedGroupDetail = () => {
       {connections.error && <div role="alert" className="mt-4 text-xs text-destructive">{connections.error}<button onClick={() => void connections.refresh()} className="ml-2 underline">Retry</button></div>}
 
       <section className="mt-6 border-t border-border pt-4" aria-label="Group members">
-        <h2 className="text-sm font-semibold mb-2">Members · {group.members.length}</h2>
-        {group.members.map((member) => <div key={member.id} className="flex items-center gap-3 py-3 border-b border-border/50">
-          <MateAvatar initials={buildMateInitials(member.name)} size="sm" />
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium break-words">{connections.mates.some((mate) => mate.mateUserId === member.id)
-              ? <Link to={`/mate/${connections.mates.find((mate) => mate.mateUserId === member.id)?.id}`}>{member.name}</Link>
-              : member.name}{member.id === group.ownerId && <span className="ml-2 text-xs text-muted-foreground">Owner</span>}</p>
-            <p className="text-xs text-muted-foreground">{member.checkedIn ? "Checked in" : "Not checked in within cadence"}</p>
+        <div className="nuj-card p-4">
+          <h2 className="text-sm font-semibold mb-2">Members · {group.members.length}</h2>
+          <div className="divide-y divide-border/50">
+            {group.members.map((member) => <div key={member.id} className="flex items-center gap-3 py-3">
+              <MateAvatar initials={buildMateInitials(member.name)} size="sm" />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium break-words">{connections.mates.some((mate) => mate.mateUserId === member.id)
+                  ? <Link to={`/mate/${connections.mates.find((mate) => mate.mateUserId === member.id)?.id}`}>{member.name}</Link>
+                  : member.name}{member.id === group.ownerId && <span className="ml-2 text-xs text-muted-foreground">Owner</span>}</p>
+                <p className="text-xs text-muted-foreground">{member.checkedIn ? "Checked in" : "Not checked in within cadence"}</p>
+              </div>
+              <div className="flex max-w-[45%] shrink-0 items-center gap-1">
+                <MateConnectionAction userId={member.id} name={member.name} connections={connections} />
+                {group.isOwner && member.id !== group.ownerId && <DropdownMenu>
+                  <DropdownMenuTrigger asChild><button disabled={busy} className="p-2 text-muted-foreground" title={`Options for ${member.name}`} aria-label={`Options for ${member.name}`}><Ellipsis size={16} /></button></DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onSelect={() => { if (window.confirm(`Transfer ownership to ${member.name}? You will no longer manage this group.`)) void perform("transfer", { memberId: member.id }); }}><Crown size={14} className="mr-2" />Make {member.name} owner</DropdownMenuItem>
+                    <DropdownMenuItem className="text-destructive" onSelect={() => { if (window.confirm(`Remove ${member.name}? They won't be able to rejoin this group.`)) void perform("remove_member", { memberId: member.id }); }}><X size={14} className="mr-2" />Remove {member.name}</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>}
+              </div>
+            </div>)}
           </div>
-          <div className="flex max-w-[45%] shrink-0 items-center gap-1">
-            <MateConnectionAction userId={member.id} name={member.name} connections={connections} />
-            {group.isOwner && member.id !== group.ownerId && <DropdownMenu>
-              <DropdownMenuTrigger asChild><button disabled={busy} className="p-2 text-muted-foreground" title={`Options for ${member.name}`} aria-label={`Options for ${member.name}`}><Ellipsis size={16} /></button></DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onSelect={() => { if (window.confirm(`Transfer ownership to ${member.name}? You will no longer manage this group.`)) void perform("transfer", { memberId: member.id }); }}><Crown size={14} className="mr-2" />Make {member.name} owner</DropdownMenuItem>
-                <DropdownMenuItem className="text-destructive" onSelect={() => { if (window.confirm(`Remove ${member.name}? They won't be able to rejoin this group.`)) void perform("remove_member", { memberId: member.id }); }}><X size={14} className="mr-2" />Remove {member.name}</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>}
-          </div>
-        </div>)}
+        </div>
       </section>
 
       {group.isOwner && group.inviteCode && <section className="mt-6 border-t border-border pt-4" aria-label="Group invitation">

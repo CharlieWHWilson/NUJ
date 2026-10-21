@@ -56,7 +56,7 @@ const slides: ExplainerSlide[] = [
     title: "Shared groups",
     icon: UsersRound,
     tone: "bg-secondary",
-    description: "Create a shared group and share a link or group code so your mates can join.",
+    description: "Create a shared group and share a link or group code so others can join.",
     details: "See names and check-in status together. Joining a group doesn't automatically add individual mates.",
     features: [{ icon: Share2, label: "Share invite" }, { icon: Crown, label: "Group owner" }],
   },

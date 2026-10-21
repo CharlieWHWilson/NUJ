@@ -87,6 +87,7 @@ describe("shared-group screens", () => {
     expect(screen.getByText("Owned by you")).toBeInTheDocument();
     const information = screen.getByRole("contentinfo", { name: "Group information" });
     expect(information).toHaveTextContent("Members can see names and check-in status. Group membership does not add individual mates. To leave, transfer ownership to another member first, or delete the group.");
+    expect(screen.getByRole("heading", { name: "Members · 2" }).parentElement).toHaveClass("nuj-card", "p-4");
     expect(screen.getByText(`Group code: ${code}`)).toBeInTheDocument();
     expect(screen.queryByText(`https://nuj.social/join/${code}`)).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Copy link" })).not.toHaveTextContent("Copy link");

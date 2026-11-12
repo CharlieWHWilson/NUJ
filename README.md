@@ -10,7 +10,7 @@ Shared-group database migration and release steps: [Shared Groups Setup](SHARED_
 
 The public `/explainer` page explains NUJ's purpose: small, regular connections that
 make real-life meet-ups easier. It is available without signing in and linked
-from the website's sign-in page. Its original copy is informed by, and links to,
+from the website's sign-in page. Its original copy is informed by
 Marmalade Trust's loneliness guidance; no partnership or treatment claim is made.
 The page emphasises maintaining connections between community activities and
 invites exploratory pilots, without claiming proven impact or live venue offers.

@@ -18,9 +18,12 @@ describe("Mission", () => {
       expect(link).toHaveAttribute("href", "https://apps.apple.com/gb/app/nuj-social/id6789114237");
     }
     expect(document.querySelector('a[href="/auth"]')).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Explore a community pilot" })).toHaveAttribute("href", "mailto:charlie@nuj.social?subject=Community%20pilot");
-    expect(screen.getByRole("link", { name: "Marmalade Trust's loneliness resources" })).toHaveAttribute("href", "https://www.marmaladetrust.org/loneliness");
-    expect(screen.getByText(/not proven outcomes or announced partnerships/)).toBeInTheDocument();
+    const emailLinks = screen.getAllByRole("link", { name: "Email - charlie@nuj.social" });
+    expect(emailLinks).toHaveLength(2);
+    for (const link of emailLinks) {
+      expect(link).toHaveAttribute("href", "mailto:charlie@nuj.social");
+    }
+    expect(screen.getByText(/these ideas aren't proven yet, and no partnerships have been agreed/)).toBeInTheDocument();
     expect(screen.getByText(/NUJ is not a mental health service/)).toBeInTheDocument();
     expect(screen.queryByRole("banner", { name: "App header" })).not.toBeInTheDocument();
   });
@@ -40,15 +43,16 @@ describe("Mission", () => {
 
     const groups = screen.getByRole("region", { name: "Keep your group connected between meet-ups." });
     expect(groups).toHaveAttribute("id", "community-groups");
-    expect(within(groups).getByText(/Walk-and-talk groups, loneliness charities/)).toBeInTheDocument();
+    expect(within(groups).getByText("Organised meet-up groups with a leader, host or organiser.")).toBeInTheDocument();
+    expect(within(groups).getByText(/If you run or host a group, invite members to a shared NUJ group/)).toBeInTheDocument();
     expect(within(groups).queryByText(/safeguarding/)).not.toBeInTheDocument();
-    expect(within(groups).getByRole("link", { name: "Explore a community pilot" })).toHaveAttribute("href", "mailto:charlie@nuj.social?subject=Community%20pilot");
+    expect(within(groups).getByRole("link", { name: "Email - charlie@nuj.social" })).toHaveAttribute("href", "mailto:charlie@nuj.social");
 
     const businesses = screen.getByRole("region", { name: "Give people a reason to meet at your venue." });
     expect(businesses).toHaveAttribute("id", "businesses");
     expect(within(businesses).getByText(/Join NUJ as a venue partner/)).toBeInTheDocument();
     expect(within(businesses).getByText(/Venue offers are not live yet/)).toBeInTheDocument();
-    expect(within(businesses).getByRole("link", { name: "Join NUJ as a venue" })).toHaveAttribute("href", "mailto:charlie@nuj.social?subject=Venue%20pilot");
+    expect(within(businesses).getByRole("link", { name: "Email - charlie@nuj.social" })).toHaveAttribute("href", "mailto:charlie@nuj.social");
     expect(screen.queryByText(/^0[123]( \/|$)/)).not.toBeInTheDocument();
   });
 

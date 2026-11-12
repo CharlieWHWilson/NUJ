@@ -27,8 +27,8 @@ const Mission = () => {
           <div>
             <span className="mission-symbol bg-secondary" aria-hidden="true"><Hand /></span>
             <h1 id="mission-title">Stay connected between meet-ups.</h1>
-            <p className="mission-intro">NUJ lets you check in with mates without starting a messaging conversation.</p>
-            <p>NUJ supports small, regular contact to help maintain relationships and make meeting again in person easier.</p>
+            <p className="mission-intro">NUJ lets you check in with mates without needing to think of something to say.</p>
+            <p>It's a simple way to keep in touch, so catching up in person feels a little easier.</p>
             <a className="mission-button" href={APP_STORE_URL}>Download on the App Store <ArrowRight size={18} aria-hidden="true" /></a>
             <p className="mt-3 text-xs text-muted-foreground">Available for iPhone.</p>
           </div>
@@ -49,8 +49,8 @@ const Mission = () => {
         <section id="why" className="mission-why" aria-labelledby="why-title">
           <div className="mission-container">
             <h2 id="why-title">What NUJ is for</h2>
-            <p className="mission-section-intro">Friendships can drift when routines change. Groups and activities help people meet, but maintaining contact between meet-ups can be harder. NUJ is designed to support that contact, not replace meeting in person.</p>
-            <p className="mission-section-intro mt-4">Loneliness can affect anyone when their social needs aren't met. It isn't the same as being alone, and everyone's needs are different. NUJ addresses one part of this: making regular contact easier.</p>
+            <p className="mission-section-intro">Life gets busy, and it's easy to lose touch with people you care about. You might meet through a group or activity, then not hear from each other until the next meet-up. NUJ gives you a simple way to stay in touch in between.</p>
+            <p className="mission-section-intro mt-4">Anyone can feel lonely, even with friends and family around. Sometimes you'd just like a little more company or to hear from someone. NUJ makes it easier to let a mate know you're there, without the pressure of a conversation.</p>
           </div>
         </section>
 
@@ -66,7 +66,7 @@ const Mission = () => {
             </div>
             <div>
               <p>Create a shared group, check in with one tap and see when your mates last checked in. Send a NUJ to let someone know you're thinking of them. No group-chat conversation to keep up with.</p>
-              <p className="mission-audience-value">Keep in touch between games, quizzes or reunions, so it's easier to arrange the next one.</p>
+              <p className="mission-audience-value">Keep in touch between meet-ups, so it's easier to spend time together in person.</p>
               <a href={APP_STORE_URL} className="mission-text-link">Get NUJ for iPhone <ArrowRight size={18} aria-hidden="true" /></a>
             </div>
           </section>
@@ -76,12 +76,12 @@ const Mission = () => {
               <span className="mission-symbol bg-emerald-50" aria-hidden="true"><Heart /></span>
               <p className="mission-eyebrow">Community and support groups</p>
               <h3 id="community-groups-title">Keep your group connected between meet-ups.</h3>
-              <p>Walk-and-talk groups, loneliness charities, community organisations and social care groups.</p>
+              <p>Organised meet-up groups with a leader, host or organiser.</p>
             </div>
             <div>
-              <p>Invite participants to an optional NUJ shared group. They can check in, see who's around and stay in touch without needing to start a conversation.</p>
-              <p className="mission-audience-value">You bring people together. NUJ helps them maintain those connections until the next meet-up.</p>
-              <a href="mailto:charlie@nuj.social?subject=Community%20pilot" className="mission-text-link">Explore a community pilot <ArrowRight size={18} aria-hidden="true" /></a>
+              <p>If you run or host a group, invite members to a shared NUJ group. They can check in with each other and keep in touch between the meet-ups you organise, without needing to start a conversation.</p>
+              <p className="mission-audience-value">A way for the people you bring together to stay connected beyond the meet-up. Joining NUJ is optional for members.</p>
+              <a href="mailto:charlie@nuj.social" className="mission-text-link">Email - charlie@nuj.social</a>
             </div>
           </section>
 
@@ -96,11 +96,11 @@ const Mission = () => {
               <p>Join NUJ as a venue partner to help people meet up at your venue. Offer an incentive, such as discounted coffee for a group, to make choosing your venue easier.</p>
               <p className="mission-audience-value">Give mates a reason to meet. Bring more people through your door.</p>
               <p>Venues can take part in a trial. Venue offers are not live yet.</p>
-              <a href="mailto:charlie@nuj.social?subject=Venue%20pilot" className="mission-text-link">Join NUJ as a venue <ArrowRight size={18} aria-hidden="true" /></a>
+              <a href="mailto:charlie@nuj.social" className="mission-text-link">Email - charlie@nuj.social</a>
             </div>
           </section>
 
-          <p className="mission-section-intro">Trials will test whether NUJ helps people stay connected and meet up. These are not proven outcomes or announced partnerships.</p>
+          <p className="mission-section-intro">Groups and venues can try NUJ and share what helps. It's still early days: these ideas aren't proven yet, and no partnerships have been agreed.</p>
         </section>
 
         <section className="mission-belief" aria-labelledby="belief-title">
@@ -112,7 +112,6 @@ const Mission = () => {
 
         <aside className="mission-sources mission-container" aria-labelledby="sources-title">
           <h2 id="sources-title">About loneliness</h2>
-          <p>Informed by <a href="https://www.marmaladetrust.org/loneliness">Marmalade Trust's loneliness resources</a> and their <a href="https://www.marmaladetrust.org/quickguidetoloneliness">quick guide to loneliness</a>. No partnership or endorsement is implied.</p>
           <p>NUJ is not a mental health service or a treatment for loneliness. If loneliness is affecting your wellbeing, consider talking to someone you trust or a health professional.</p>
         </aside>
       </main>

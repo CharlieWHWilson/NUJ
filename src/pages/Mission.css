@@ -380,8 +380,7 @@
 }
 
 .mission-sources a,
-.mission-footer a:hover,
-.mission-header nav > a:first-child:hover {
+.mission-footer a:hover {
   text-decoration: underline;
   text-underline-offset: 3px;
 }
@@ -413,10 +412,6 @@
   .mission-why,
   .mission-belief {
     padding-block: 3.5rem;
-  }
-
-  .mission-header nav > a:first-child {
-    display: none;
   }
 
   .mission-footer {

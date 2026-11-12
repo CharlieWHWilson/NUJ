@@ -17,7 +17,6 @@ const Mission = () => {
       <header className="mission-header mission-container">
         <Link to="/" aria-label="NUJ home" className="text-3xl font-bold tracking-tight">NUJ</Link>
         <nav aria-label="Website navigation">
-          <a href="#why">Why connection matters</a>
           <a href={APP_STORE_URL} className="mission-button mission-button-small">Get NUJ for iPhone <ArrowRight size={16} aria-hidden="true" /></a>
         </nav>
       </header>
@@ -65,7 +64,7 @@ const Mission = () => {
               <p>Sports teams. Pub quiz teams. School mates.</p>
             </div>
             <div>
-              <p>Create a shared group, check in with one tap and see when your mates last checked in. Send a NUJ to let someone know you're thinking of them. No group-chat conversation to keep up with.</p>
+              <p>Create a group, check in with one tap and see when your mates last checked in. Send a NUJ to let someone know you're thinking of them. No group-chat conversation to keep up with.</p>
               <p className="mission-audience-value">Keep in touch between meet-ups, so it's easier to spend time together in person.</p>
               <a href={APP_STORE_URL} className="mission-text-link">Get NUJ for iPhone <ArrowRight size={18} aria-hidden="true" /></a>
             </div>
@@ -110,8 +109,7 @@ const Mission = () => {
           </div>
         </section>
 
-        <aside className="mission-sources mission-container" aria-labelledby="sources-title">
-          <h2 id="sources-title">About loneliness</h2>
+        <aside className="mission-sources mission-container" aria-label="Disclaimer">
           <p>NUJ is not a mental health service or a treatment for loneliness. If loneliness is affecting your wellbeing, consider talking to someone you trust or a health professional.</p>
         </aside>
       </main>

@@ -101,6 +101,19 @@ describe("App integration routing", () => {
     });
   });
 
+  it("opens registration directly from the explainer's online signup link", async () => {
+    window.history.pushState({}, "", "/explainer");
+    isAuthenticatedMock.mockResolvedValue(false);
+    render(<App />);
+
+    const links = await screen.findAllByRole("link", { name: /create an account online/i });
+    fireEvent.click(links[0]);
+
+    expect(await screen.findByPlaceholderText("Confirm password")).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/auth");
+    expect(window.location.search).toBe("?mode=register");
+  });
+
   it("lets a logged-out user request password recovery and retry a failed request", async () => {
     isAuthenticatedMock.mockResolvedValue(false);
     render(<App />);

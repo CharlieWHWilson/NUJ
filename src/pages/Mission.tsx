@@ -28,8 +28,9 @@ const Mission = () => {
             <h1 id="mission-title">Stay connected between meet-ups.</h1>
             <p className="mission-intro">NUJ lets you check in with mates without needing to think of something to say.</p>
             <p>It's a simple way to keep in touch, so catching up in person feels a little easier.</p>
+            <p>NUJ is designed to be used as an app: turn on notifications for nudges and reminders, check in, then get on with your day. There's no need to keep it open or spend time browsing.</p>
             <a className="mission-button" href={APP_STORE_URL}>Download on the App Store <ArrowRight size={18} aria-hidden="true" /></a>
-            <p className="mt-3 text-xs text-muted-foreground">Available for iPhone.</p>
+            <p className="mt-3 text-xs text-muted-foreground">Available for iPhone. You can also <Link to="/auth?mode=register" className="underline underline-offset-4">create an account online</Link>, then sign in to the app with the same account.</p>
           </div>
           <div id="how" className="mission-rhythm" aria-labelledby="how-title">
             <h2 id="how-title">How NUJ works</h2>
@@ -104,8 +105,10 @@ const Mission = () => {
 
         <section className="mission-belief" aria-labelledby="belief-title">
           <div className="mission-container">
-            <h2 id="belief-title">Get NUJ for iPhone</h2>
+            <h2 id="belief-title">Get started with NUJ</h2>
+            <p>Create an account online or get started in the iPhone app. Use the same account in both.</p>
             <a href={APP_STORE_URL} className="mission-button">Download on the App Store <ArrowRight size={18} aria-hidden="true" /></a>
+            <p className="mt-4"><Link to="/auth?mode=register" className="mission-text-link">Create an account online <ArrowRight size={18} aria-hidden="true" /></Link></p>
           </div>
         </section>
 

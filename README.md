@@ -20,8 +20,10 @@ Community use is optional; the venue proposition invites businesses to join a
 trial offering incentives to meet at their venue, with offers not yet live.
 The page uses the app's design tokens and the "What is NUJ?" carousel's soft
 icon circles, restrained typography and rounded surfaces.
-App calls to action link directly to NUJ's iPhone App Store listing using the
-shared `APP_STORE_URL`, rather than directing visitors to web sign-in.
+App download calls to action use the shared `APP_STORE_URL`. Online signup links
+open registration directly at `/auth?mode=register`. The copy explains that the
+app is intended for quick check-ins and optional notifications, not browsing,
+and that the same account works on the website and in the app.
 
 The explainer route redirects to the normal home flow on native Capacitor platforms,
 and its sign-in link is hidden there. Publishing this website page does not require

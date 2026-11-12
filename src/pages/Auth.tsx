@@ -1,5 +1,5 @@
 import { FormEvent, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { getRegistrationNameError, registerUser, loginUser, requestPasswordReset } from "@/lib/auth";
 import { WhatIsNujDialog } from "@/components/WhatIsNujDialog";
@@ -9,7 +9,8 @@ type AuthMode = "login" | "register" | "reset";
 
 const Auth = () => {
   const navigate = useNavigate();
-  const [mode, setMode] = useState<AuthMode>("login");
+  const [searchParams] = useSearchParams();
+  const [mode, setMode] = useState<AuthMode>(() => searchParams.get("mode") === "register" ? "register" : "login");
   const [errorMessage, setErrorMessage] = useState("");
 
   const [loginEmail, setLoginEmail] = useState("");

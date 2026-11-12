@@ -17,7 +17,12 @@ describe("Mission", () => {
     for (const link of downloads) {
       expect(link).toHaveAttribute("href", "https://apps.apple.com/gb/app/nuj-social/id6789114237");
     }
-    expect(document.querySelector('a[href="/auth"]')).not.toBeInTheDocument();
+    const signups = screen.getAllByRole("link", { name: /create an account online/i });
+    expect(signups).toHaveLength(2);
+    for (const link of signups) {
+      expect(link).toHaveAttribute("href", "/auth?mode=register");
+    }
+    expect(screen.getByText(/There's no need to keep it open or spend time browsing/)).toBeInTheDocument();
     const emailLinks = screen.getAllByRole("link", { name: "Email - charlie@nuj.social" });
     expect(emailLinks).toHaveLength(2);
     for (const link of emailLinks) {

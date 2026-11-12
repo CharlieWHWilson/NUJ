@@ -21,6 +21,7 @@ const UpdatePassword = lazy(() => import("./pages/UpdatePassword"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfUse = lazy(() => import("./pages/TermsOfUse"));
 const Support = lazy(() => import("./pages/Support"));
+const Mission = lazy(() => import("./pages/Mission"));
 const AddMateFromLink = lazy(() => import("./pages/AddMateFromLink"));
 const JoinSharedGroup = lazy(() => import("./pages/JoinSharedGroup"));
 const SharedGroupDetail = lazy(() => import("./pages/SharedGroupDetail"));
@@ -233,6 +234,7 @@ const App = () => {
             </div>
           )}>
             <Routes>
+              <Route path="/explainer" element={Capacitor.isNativePlatform() ? <Navigate to="/" replace /> : <Mission />} />
               <Route path="/privacy" element={<PrivacyPolicy />} />
               <Route path="/terms" element={<TermsOfUse />} />
               <Route path="/support" element={<Support />} />

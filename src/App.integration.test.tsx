@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { Capacitor } from "@capacitor/core";
 
 const isAuthenticatedMock = vi.hoisted(() => vi.fn<() => Promise<boolean>>());
 const getCurrentUserMock = vi.hoisted(() => vi.fn());
@@ -51,6 +52,31 @@ describe("App integration routing", () => {
 
   afterEach(() => {
     vi.clearAllMocks();
+    vi.restoreAllMocks();
+  });
+
+  it("opens the website explainer without waiting for authentication", async () => {
+    window.history.pushState({}, "", "/explainer");
+    isAuthenticatedMock.mockImplementation(() => new Promise<boolean>(() => {}));
+
+    render(<App />);
+
+    expect(await screen.findByRole("heading", { level: 1 })).toHaveTextContent("Stay connected between meet-ups.");
+    expect(window.location.pathname).toBe("/explainer");
+    expect(screen.queryByText("Sign in or create an account")).not.toBeInTheDocument();
+  });
+
+  it("keeps the explainer out of the native app and hides its sign-in link", async () => {
+    vi.spyOn(Capacitor, "isNativePlatform").mockReturnValue(true);
+    vi.spyOn(Capacitor, "getPlatform").mockReturnValue("android");
+    window.history.pushState({}, "", "/explainer");
+    isAuthenticatedMock.mockResolvedValue(false);
+
+    render(<App />);
+
+    expect(await screen.findByText("Sign in or create an account")).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/auth");
+    expect(screen.queryByRole("link", { name: "About NUJ" })).not.toBeInTheDocument();
   });
 
   it("lands on auth from / when unauthenticated", async () => {
@@ -61,6 +87,7 @@ describe("App integration routing", () => {
     expect(await screen.findByText("Sign in or create an account")).toBeInTheDocument();
     expect(window.location.pathname).toBe("/auth");
     expect(screen.queryByRole("button", { name: "Get in touch" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "About NUJ" })).toHaveAttribute("href", "/explainer");
   });
 
   it("lands on check-in from / when authenticated", async () => {

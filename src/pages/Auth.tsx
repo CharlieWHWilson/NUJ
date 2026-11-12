@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { getRegistrationNameError, registerUser, loginUser, requestPasswordReset } from "@/lib/auth";
 import { WhatIsNujDialog } from "@/components/WhatIsNujDialog";
+import { Capacitor } from "@capacitor/core";
 
 type AuthMode = "login" | "register" | "reset";
 
@@ -214,6 +215,11 @@ const Auth = () => {
             </button>
         } />
       </div>
+      {!Capacitor.isNativePlatform() && (
+        <p className="mt-5 text-center text-sm">
+          <Link to="/explainer" className="underline underline-offset-4">About NUJ</Link>
+        </p>
+      )}
     </div>
   );
 };

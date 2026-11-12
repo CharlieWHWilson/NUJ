@@ -6,6 +6,27 @@ NUJ is a Vite + React app that helps people stay connected with mates.
 
 Shared-group database migration and release steps: [Shared Groups Setup](SHARED_GROUPS_SETUP.md).
 
+## Website explainer page
+
+The public `/explainer` page explains NUJ's purpose: small, regular connections that
+make real-life meet-ups easier. It is available without signing in and linked
+from the website's sign-in page. Its original copy is informed by, and links to,
+Marmalade Trust's loneliness guidance; no partnership or treatment claim is made.
+The page emphasises maintaining connections between community activities and
+invites exploratory pilots, without claiming proven impact or live venue offers.
+Separate, directly linked sections explain the value for groups of mates,
+organised community/support groups, and businesses encouraging in-person visits.
+Community use is optional; the venue proposition invites businesses to join a
+trial offering incentives to meet at their venue, with offers not yet live.
+The page uses the app's design tokens and the "What is NUJ?" carousel's soft
+icon circles, restrained typography and rounded surfaces.
+App calls to action link directly to NUJ's iPhone App Store listing using the
+shared `APP_STORE_URL`, rather than directing visitors to web sign-in.
+
+The explainer route redirects to the normal home flow on native Capacitor platforms,
+and its sign-in link is hidden there. Publishing this website page does not require
+a native sync, build or App Store release.
+
 ## Local Development
 
 ```sh

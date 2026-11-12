@@ -1,0 +1,443 @@
+#root:has(.mission-page) {
+  max-width: none;
+}
+
+.mission-page {
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-size: 0.875rem;
+  line-height: 1.625;
+}
+
+.mission-page svg {
+  stroke-width: 1.5;
+}
+
+.mission-page a:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 5px;
+}
+
+.mission-container {
+  width: min(960px, calc(100% - 3rem));
+  margin-inline: auto;
+}
+
+.mission-skip {
+  position: absolute;
+  left: 1rem;
+  top: -5rem;
+  z-index: 10;
+  padding: 0.75rem 1rem;
+  background: hsl(var(--card));
+}
+
+.mission-skip:focus {
+  top: 1rem;
+}
+
+.mission-header,
+.mission-header nav,
+.mission-footer,
+.mission-footer nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+
+.mission-header {
+  padding-block: 1.5rem;
+  border-bottom: 1px solid hsl(var(--foreground) / 0.12);
+}
+
+.mission-header nav,
+.mission-footer {
+  font-size: 0.875rem;
+}
+
+.mission-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  border-radius: var(--radius);
+  padding: 0.8rem 1.25rem;
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.mission-button:hover {
+  opacity: 0.9;
+}
+
+.mission-button-small {
+  padding: 0.65rem 1.1rem;
+}
+
+.mission-hero,
+.mission-how {
+  display: grid;
+  grid-template-columns: 1.25fr 1fr;
+  align-items: center;
+  gap: 3rem;
+  padding-block: 3.5rem;
+}
+
+.mission-eyebrow {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: hsl(var(--muted-foreground));
+  margin-bottom: 1rem;
+}
+
+.mission-page h1 {
+  font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  margin-bottom: 1.25rem;
+}
+
+.mission-page h1 span {
+  color: inherit;
+}
+
+.mission-page h2 {
+  font-size: clamp(1.25rem, 2.5vw, 1.75rem);
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+  margin-bottom: 1.25rem;
+}
+
+.mission-page h3 {
+  font-size: 1.125rem;
+  line-height: 1.4;
+  margin-bottom: 0.65rem;
+}
+
+.mission-hero p:not(.mission-eyebrow),
+.mission-how p {
+  margin-bottom: 1.5rem;
+}
+
+.mission-intro {
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.mission-rhythm {
+  padding: 1.75rem;
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  box-shadow: var(--nuj-card-shadow);
+}
+
+.mission-rhythm-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding-block: 1.5rem;
+  border-bottom: 1px solid hsl(var(--border));
+}
+
+.mission-rhythm-row > span {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 50%;
+  background: hsl(var(--secondary));
+}
+
+.mission-rhythm-row:nth-of-type(2) > span {
+  background: hsl(var(--nuj-amber-light));
+}
+
+.mission-rhythm-row:nth-of-type(3) > span {
+  background: hsl(152 81% 96%);
+}
+
+.mission-rhythm-row p,
+.mission-rhythm-note {
+  font-size: 0.75rem;
+  color: hsl(var(--muted-foreground));
+  margin-bottom: 0 !important;
+}
+
+.mission-rhythm-note {
+  margin-top: 1.5rem;
+}
+
+.mission-why {
+  padding-block: 3rem;
+  background: hsl(var(--card) / 0.5);
+}
+
+.mission-section-intro {
+  max-width: 43rem;
+}
+
+.mission-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.mission-between,
+.mission-community {
+  padding-block: 3rem;
+}
+
+.mission-between {
+  border-bottom: 1px solid hsl(var(--foreground) / 0.12);
+}
+
+.mission-between .mission-section-intro + p {
+  margin-top: 1rem;
+}
+
+.mission-connection-loop {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  margin-block: 2rem;
+}
+
+.mission-connection-loop > div {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  box-shadow: var(--nuj-card-shadow);
+  padding: 1.5rem;
+}
+
+.mission-between-note {
+  max-width: 43rem;
+  font-weight: 600;
+}
+
+.mission-community .mission-section-intro {
+  margin-block: 2rem 1rem;
+}
+
+.mission-audience-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding-bottom: 2rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.mission-audience-nav a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid hsl(var(--border));
+  border-radius: 999px;
+  background: hsl(var(--card));
+  padding: 0.65rem 1rem;
+}
+
+.mission-audience-nav a:hover {
+  background: hsl(var(--secondary));
+}
+
+.mission-audience {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 2.5rem;
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  background: hsl(var(--card));
+  box-shadow: var(--nuj-card-shadow);
+  margin-top: 1.5rem;
+  padding: 2rem;
+  scroll-margin-top: 2rem;
+}
+
+.mission-audience h3 {
+  font-size: 1.25rem;
+  line-height: 1.4;
+  letter-spacing: -0.02em;
+  margin-bottom: 1rem;
+}
+
+.mission-audience p + p,
+.mission-audience .mission-text-link {
+  margin-top: 1rem;
+}
+
+.mission-text-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.mission-audience-value {
+  background: hsl(var(--secondary));
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+}
+
+.mission-grid article {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  box-shadow: var(--nuj-card-shadow);
+  padding: 1.5rem;
+}
+
+.mission-number {
+  display: block;
+  color: hsl(var(--muted-foreground));
+  font-size: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.mission-symbol {
+  display: grid;
+  place-items: center;
+  width: 6rem;
+  height: 6rem;
+  border-radius: 50%;
+  margin: 0 auto 1.25rem;
+}
+
+.mission-symbol svg {
+  width: 2.75rem;
+  height: 2.75rem;
+}
+
+.mission-audience > div:first-child {
+  text-align: center;
+}
+
+.mission-audience > div:first-child > p:last-child {
+  color: hsl(var(--muted-foreground));
+  font-size: 0.75rem;
+}
+
+.mission-steps {
+  list-style: none;
+  padding: 2rem;
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  background: hsl(var(--card));
+  box-shadow: var(--nuj-card-shadow);
+}
+
+.mission-steps li {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding-block: 1rem;
+}
+
+.mission-steps svg {
+  flex-shrink: 0;
+  margin-top: 0.2rem;
+}
+
+.mission-steps p {
+  font-size: 0.875rem;
+  margin-bottom: 0;
+}
+
+.mission-belief {
+  background: hsl(var(--secondary));
+  text-align: center;
+  padding-block: 3rem;
+}
+
+.mission-belief p:not(.mission-eyebrow) {
+  max-width: 40rem;
+  margin: 0 auto 2rem;
+}
+
+.mission-sources {
+  padding-block: 2.5rem;
+  max-width: 50rem;
+  font-size: 0.75rem;
+  color: hsl(var(--muted-foreground));
+}
+
+.mission-sources h2 {
+  font-size: 1.25rem;
+  letter-spacing: -0.02em;
+}
+
+.mission-sources p + p {
+  margin-top: 1rem;
+}
+
+.mission-sources a,
+.mission-footer a:hover,
+.mission-header nav > a:first-child:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.mission-footer {
+  border-top: 1px solid hsl(var(--foreground) / 0.12);
+  padding-block: 1.5rem;
+}
+
+.mission-footer span {
+  margin-left: 1rem;
+}
+
+@media (max-width: 800px) {
+  .mission-hero,
+  .mission-how {
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+    padding-block: 3.5rem;
+  }
+
+  .mission-grid,
+  .mission-connection-loop,
+  .mission-audience {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .mission-why,
+  .mission-belief {
+    padding-block: 3.5rem;
+  }
+
+  .mission-header nav > a:first-child {
+    display: none;
+  }
+
+  .mission-footer {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 400px) {
+  .mission-container {
+    width: calc(100% - 2rem);
+  }
+
+  .mission-rhythm,
+  .mission-steps,
+  .mission-audience {
+    padding: 1.5rem;
+  }
+
+  .mission-footer span {
+    display: block;
+    margin-left: 0;
+  }
+}

@@ -139,6 +139,13 @@ Deactivation is not revocation of previously selected offers/rewards.
   not the internal "attempt" terminology.
   Joined groups have an Offer terms button below the member list. It opens the
   original saved terms in a pop-out, separate from the current listing's T&Cs.
+  Migration 044 adds private admin-set redemption codes. Active offers require a
+  nonblank code (up to 100 characters). Migration 044 pauses existing listings until
+  an admin sets their codes and reactivates them; saved groups and rewards are unchanged.
+  Codes never appear in the member catalogue or saved snapshots. Only the reward owner,
+  still opted in and in the group, can retrieve the current code for an unexpired,
+  unredeemed reward. Code changes also apply to existing rewards. The code is shared
+  per offer, not a unique voucher; member-confirmed single-use redemption still applies.
   Unmapped venues sort last with "Distance unavailable". Clear location restores
   catalogue order. Category and location filters apply to both List and Map views,
   not joined rewards. No device geolocation or automatic searches are used.

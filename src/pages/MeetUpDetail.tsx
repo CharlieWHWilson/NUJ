@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, CalendarDays, CheckCheck, Gift, MapPin, UserRound, UsersRound, LogOut, Clock, Info, type LucideIcon } from "lucide-react";
 import { VenueCategoryIcon } from "@/components/VenueCategoryIcon";
+import { MeetupRewardCode } from "@/components/MeetupRewardCode";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { canOptIntoMeetupAttempt, hasMeetupOfferEnded, describeOfferRule, joinMeetupAttempt, leaveMeetupAttempt, listMeetupAttempts, listOffers, redeemMeetupReward, selectMeetupOffer, type Offer } from "@/lib/meetups";
 import { listSharedGroups } from "@/lib/sharedGroups";
@@ -227,6 +228,7 @@ const MeetUpDetailContent = ({ user }: { user: { id: string } | null }) => {
           <h4 className="font-semibold">Your reward: {attempt.offer.reward}</h4>
           <p className="text-sm">Expires: {attempt.expiresAt ? date(attempt.expiresAt) : "Not specified"}</p>
           {attempt.redeemedAt ? <p className="text-sm">Redeemed {date(attempt.redeemedAt)} · Member-confirmed, not independently venue verified. Single use.</p> : expired ? <p className="text-sm">Reward expired or unavailable for redemption.</p> : <>
+            {user && attempt.expiresAt && <MeetupRewardCode key={`${user.id}:${attempt.rewardId}`} rewardId={attempt.rewardId} userId={user.id} expiresAt={attempt.expiresAt} />}
             <p className="text-sm">Show this reward and its original terms to venue staff on your phone. After staff review, explicitly confirm redemption. Single use; member-confirmed, not independently venue verified.</p>
             <button className="nuj-btn-secondary w-full" disabled={busy} onClick={() => { update.reset(); setRewardId(attempt.rewardId); }}>Staff review / redeem</button>
           </>}

@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
   saveVenue: vi.fn(), saveOffer: vi.fn(), groups: vi.fn(), select: vi.fn(), join: vi.fn(), leave: vi.fn(), redeem: vi.fn(),
   auth: vi.fn(),
   location: vi.fn(),
+  rewardCode: vi.fn(),
 }));
 vi.mock("@/hooks/useCurrentUser", () => ({ useCurrentUser: () => ({ id: "me" }) }));
 vi.mock("@/lib/supabase", () => ({ supabase: { auth: { onAuthStateChange: mocks.auth } } }));
@@ -22,6 +23,7 @@ vi.mock("@/lib/meetups", async (original) => ({
   listMeetupAttempts: mocks.attempts, saveVenue: mocks.saveVenue, saveOffer: mocks.saveOffer,
   selectMeetupOffer: mocks.select, joinMeetupAttempt: mocks.join, redeemMeetupReward: mocks.redeem,
   leaveMeetupAttempt: mocks.leave,
+  getMeetupRewardCode: mocks.rewardCode,
 }));
 vi.mock("@/lib/sharedGroups", () => ({ listSharedGroups: mocks.groups }));
 vi.mock("@/components/OffersMap", () => ({ default: ({ offers }: { offers: Offer[] }) => <div role="region" aria-label="Map of offer venues">{offers.map((item) => <p key={item.id}>{item.venue.name}</p>)}</div> }));
@@ -61,6 +63,7 @@ describe("venue offers frontend", () => {
     mocks.leave.mockResolvedValue(null);
     mocks.redeem.mockResolvedValue("redeemed");
     mocks.location.mockResolvedValue([{ name: "Chosen place", latitude: 0, longitude: 0 }]);
+    mocks.rewardCode.mockResolvedValue("VENUE-REWARD");
   });
 
   it("clears category and location selections together while Filters is closed", async () => {
@@ -166,6 +169,44 @@ describe("venue offers frontend", () => {
     expect(screen.getByRole("link", { name: `Open map for ${venue.name}` })).toHaveAttribute("href", expect.stringContaining("96%20Mitcham"));
     fireEvent.click(screen.getByRole("button", { name: "T&Cs" }));
     expect(screen.getByRole("dialog")).toHaveTextContent("96 Mitcham Rd, London SW17 9NG");
+  });
+
+  it("loads and saves an admin-set redemption code", async () => {
+    mocks.offers.mockResolvedValue([{ ...offer, redemptionCode: "EXISTING" }]);
+    mount(<VenueEntry />);
+    await waitFor(() => expect(screen.getByLabelText("Offer to edit")).toHaveTextContent(offer.title));
+    fireEvent.change(screen.getByLabelText("Offer to edit"), { target: { value: offer.id } });
+    const code = screen.getByLabelText("Redemption code");
+    expect(code).toHaveValue("EXISTING");
+    expect(code).toBeRequired();
+    fireEvent.change(code, { target: { value: "NEW-CODE" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save offer changes" }));
+    await waitFor(() => expect(mocks.saveOffer).toHaveBeenCalledWith(expect.objectContaining({ redemptionCode: "NEW-CODE" }), offer.id));
+  });
+
+  it.each(["unlocked", "expired", "redeemed", "pending"])("only requests a redemption code for a valid unlocked reward: %s", async (state) => {
+    mocks.attempts.mockResolvedValue([{ ...attempt, participating: true,
+      rewardId: state === "pending" ? null : "reward",
+      expiresAt: state === "expired" ? "2000-01-01T00:00:00Z" : "2099-01-01T00:00:00Z",
+      redeemedAt: state === "redeemed" ? "2026-01-01T00:00:00Z" : null }]);
+    mount(<MeetUpDetail />, true);
+    await screen.findByRole("heading", { name: "Joined groups" });
+    if (state === "unlocked") {
+      expect(await screen.findByText("VENUE-REWARD")).toBeInTheDocument();
+      expect(mocks.rewardCode).toHaveBeenCalledWith("reward");
+    } else {
+      expect(mocks.rewardCode).not.toHaveBeenCalled();
+      expect(screen.queryByText("VENUE-REWARD")).not.toBeInTheDocument();
+    }
+  });
+
+  it("shows code lookup errors and supports retry without hiding the earned reward", async () => {
+    mocks.attempts.mockResolvedValue([{ ...attempt, participating: true, rewardId: "reward", expiresAt: "2099-01-01T00:00:00Z" }]);
+    mocks.rewardCode.mockRejectedValueOnce(new Error("Code unavailable"));
+    mount(<MeetUpDetail />, true);
+    expect(await screen.findByRole("alert")).toHaveTextContent("Code unavailable");
+    fireEvent.click(screen.getByRole("button", { name: "Retry code" }));
+    expect(await screen.findByText("VENUE-REWARD")).toBeInTheDocument();
   });
 
   it("saves a venue category selected by the admin", async () => {
@@ -635,6 +676,7 @@ describe("venue offers frontend", () => {
     fireEvent.change(screen.getByLabelText("Unlock rule"), { target: { value: "minimum" } });
     fireEvent.change(screen.getByLabelText("Minimum qualifying members (required)"), { target: { value: "2" } });
     fireEvent.change(screen.getByLabelText("Reward recipients"), { target: { value: "all" } });
+    fireEvent.change(screen.getByLabelText("Redemption code"), { target: { value: "TEST" } });
     fireEvent.change(screen.getByLabelText("Unlock rule"), { target: { value: "individual" } });
     expect(screen.getByLabelText("Reward recipients")).toBeDisabled();
     const ends = "2027-03-05T12:30";
@@ -644,7 +686,7 @@ describe("venue offers frontend", () => {
     await waitFor(() => expect(mocks.saveOffer).toHaveBeenCalledWith({
       venueId: venue.id, title: "New offer", reward: "Tea", terms: "One per person",
       period: "week", periods: 3, unlockRule: "individual", minimumMembers: 1, recipients: "qualifying", redemptionDays: 7,
-      endsAt: new Date(ends).toISOString(), active: false,
+      endsAt: new Date(ends).toISOString(), active: false, redemptionCode: "TEST",
     }, null));
     expect(await screen.findByText("Offer saved.")).toBeInTheDocument();
     expect(mocks.offers).toHaveBeenCalledWith(true);
@@ -654,12 +696,13 @@ describe("venue offers frontend", () => {
     mount(<VenueEntry />);
     await waitFor(() => expect(screen.getByLabelText("Offer to edit")).toHaveTextContent(offer.title));
     fireEvent.change(screen.getByLabelText("Offer to edit"), { target: { value: offer.id } });
+    fireEvent.change(screen.getByLabelText("Redemption code"), { target: { value: "TEST" } });
     fireEvent.change(screen.getByLabelText("Unlock rule"), { target: { value: "minimum" } });
     fireEvent.change(screen.getByLabelText("Minimum qualifying members (required)"), { target: { value: "2" } });
     fireEvent.change(screen.getByLabelText("Reward recipients"), { target: { value: "all" } });
     fireEvent.click(screen.getByRole("button", { name: "Save offer changes" }));
     const { id: _id, venue: _venue, ...input } = offer;
-    await waitFor(() => expect(mocks.saveOffer).toHaveBeenCalledWith({ ...input, unlockRule: "minimum", minimumMembers: 2, recipients: "all" }, offer.id));
+    await waitFor(() => expect(mocks.saveOffer).toHaveBeenCalledWith({ ...input, redemptionCode: "TEST", unlockRule: "minimum", minimumMembers: 2, recipients: "all" }, offer.id));
   });
 
   it("rejects invalid numeric payloads and shows save failures without claiming success", async () => {
@@ -672,6 +715,7 @@ describe("venue offers frontend", () => {
     expect(mocks.saveOffer).not.toHaveBeenCalled();
     fireEvent.change(screen.getByLabelText("Consecutive periods (1–52)"), { target: { value: "2" } });
     mocks.saveOffer.mockRejectedValueOnce(new Error("Offer save denied"));
+    fireEvent.change(screen.getByLabelText("Redemption code"), { target: { value: "TEST" } });
     fireEvent.click(screen.getByRole("button", { name: "Save offer changes" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Offer save denied");
     expect(screen.queryByText("Offer saved.")).not.toBeInTheDocument();

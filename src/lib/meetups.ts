@@ -34,7 +34,8 @@ export type Offer = {
   venue: Venue;
 };
 
-export type OfferInput = Omit<Offer, "id" | "venue">;
+export type AdminOffer = Offer & { redemptionCode?: string | null };
+export type OfferInput = Omit<Offer, "id" | "venue"> & { redemptionCode?: string | null };
 export type VenueInput = Omit<Venue, "id">;
 export type MeetupParticipant = {
   userId: string;
@@ -71,6 +72,9 @@ async function rpc<Result>(name: string, args?: Record<string, unknown>): Promis
   const { data, error } = await supabase.rpc(name, args);
   if (error) {
     if (error.code === "PGRST202") {
+      if (name === "get_meetup_reward_code") {
+        throw new Error("Redemption codes are not available yet. Apply Supabase migration 044_offer_redemption_codes.sql.");
+      }
       if (name === "leave_meetup_attempt") {
         throw new Error("Leaving offers is not available yet. Apply Supabase migration 040_leave_meetup_offers.sql.");
       }
@@ -83,7 +87,11 @@ async function rpc<Result>(name: string, args?: Record<string, unknown>): Promis
 
 export const isVenueAdmin = () => rpc<boolean>("is_venue_admin");
 export const listVenues = () => rpc<Venue[]>("list_meetup_venues");
-export const listOffers = (admin = false) => rpc<Offer[]>("list_meetup_offers", { p_admin: admin });
+export function listOffers(admin: true): Promise<AdminOffer[]>;
+export function listOffers(admin?: false): Promise<Offer[]>;
+export function listOffers(admin = false): Promise<AdminOffer[]> {
+  return rpc<AdminOffer[]>("list_meetup_offers", { p_admin: admin });
+}
 export const saveVenue = (venue: VenueInput, id: string | null = null) =>
   rpc<string>("save_meetup_venue", { p_id: id, p_venue: venue });
 export const saveOffer = (offer: OfferInput, id: string | null = null) =>
@@ -97,6 +105,8 @@ export const leaveMeetupAttempt = (attemptId: string) =>
   rpc<null>("leave_meetup_attempt", { p_attempt_id: attemptId });
 export const redeemMeetupReward = (rewardId: string) =>
   rpc<string>("redeem_meetup_reward", { p_reward_id: rewardId });
+export const getMeetupRewardCode = (rewardId: string) =>
+  rpc<string>("get_meetup_reward_code", { p_reward_id: rewardId });
 
 export const describeOfferRule = (offer: Pick<Offer, "period" | "periods" | "unlockRule" | "minimumMembers" | "recipients">) => {
   const checkins = offer.period === "day"

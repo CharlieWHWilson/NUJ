@@ -176,6 +176,11 @@ const VenueEntryContent = ({ user }: { user: { id: string } | null }) => {
         <label className="block text-sm">Offer title (required)<input className={inputClass} required value={offer.title} disabled={busy} onChange={(event) => setOffer({ ...offer, title: event.target.value })} /></label>
         <label className="block text-sm">Reward description (required)<input className={inputClass} required value={offer.reward} disabled={busy} onChange={(event) => setOffer({ ...offer, reward: event.target.value })} /></label>
         <label className="block text-sm">Offer terms (required)<textarea className={inputClass} required value={offer.terms} disabled={busy} onChange={(event) => setOffer({ ...offer, terms: event.target.value })} /></label>
+        <label className="block text-sm">Redemption code
+          <input className={inputClass} maxLength={100} required={offer.active} value={offer.redemptionCode ?? ""} disabled={busy}
+            onChange={(event) => setOffer({ ...offer, redemptionCode: event.target.value })} />
+        </label>
+        <p className="text-xs text-muted-foreground">Required for active offers. Only members with an unlocked, valid reward can view it. Changes apply to existing joined groups too.</p>
         <label className="block text-sm">Check-in period<select className={inputClass} value={offer.period} disabled={busy} onChange={(event) => setOffer({ ...offer, period: event.target.value as OfferInput["period"] })}><option value="day">Day</option><option value="week">Week</option></select></label>
         <label className="block text-sm">Consecutive periods (1–52)<input className={inputClass} type="number" min={1} max={52} step={1} required value={offer.periods} disabled={busy} onChange={(event) => setOffer({ ...offer, periods: Number(event.target.value) })} /></label>
         <label className="block text-sm">Unlock rule<select className={inputClass} value={offer.unlockRule} disabled={busy} onChange={(event) => {

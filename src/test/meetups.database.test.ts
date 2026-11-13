@@ -19,7 +19,7 @@ const venueInput = { name: "Pilot cafe", address: "1 High Street", description: 
 const offerInput = {
   title: "Group coffee", reward: "20% off coffee", terms: "One use per person",
   period: "day", periods: 2, unlockRule: "individual", minimumMembers: 2,
-  recipients: "qualifying", redemptionDays: 7, endsAt: null, active: true,
+  recipients: "qualifying", redemptionDays: 7, endsAt: null, active: true, redemptionCode: "PILOT-COFFEE",
 };
 async function setupOffer(overrides: Partial<typeof offerInput> = {}) {
   await asUser(owner);
@@ -57,6 +57,43 @@ type Attempt = { id: string; progress: number; qualified: boolean; participating
 const attempts = () => scalar<Attempt[]>("select list_meetup_attempts() as value");
 
 describe("venue meet-ups database", () => {
+  it("requires codes for active offers and exposes codes only to admins, never snapshots or the catalogue", async () => {
+    const { offerId, venueId } = await setupOffer();
+    const input = { ...offerInput, venueId };
+    await expect(scalar("select save_meetup_offer($1,$2) as value", [offerId, { ...input, redemptionCode: "" }])).rejects.toThrow("before activating");
+    expect(await scalar("select list_meetup_offers(true)->0->>'redemptionCode' as value")).toBe("PILOT-COFFEE");
+    expect(await scalar("select list_meetup_offers()->0 ? 'redemptionCode' as value")).toBe(false);
+    expect(await scalar("select list_meetup_attempts()->0->'offer' ? 'redemptionCode' as value")).toBe(false);
+    const { redemptionCode: _code, ...legacyInput } = input;
+    await scalar("select save_meetup_offer($1,$2) as value", [offerId, legacyInput]);
+    expect(await scalar("select list_meetup_offers(true)->0->>'redemptionCode' as value")).toBe("PILOT-COFFEE");
+    await asUser(member);
+    await expect(db.query("select * from meetup_offer_codes")).rejects.toThrow("permission denied");
+    await expect(scalar("select list_meetup_offers(true) as value")).rejects.toThrow();
+  });
+
+  it("reveals the current code only for owned eligible rewards and blocks expired, redeemed and forfeited rewards", async () => {
+    const { offerId, attemptId, venueId } = await setupOffer({ periods: 1 });
+    await checkin(owner);
+    await asUser(owner);
+    const rewardId = (await attempts())[0].rewardId!;
+    expect(await scalar("select get_meetup_reward_code($1) as value", [rewardId])).toBe("PILOT-COFFEE");
+    await scalar("select save_meetup_offer($1,$2) as value", [offerId, { ...offerInput, venueId, periods: 1, redemptionCode: "UPDATED" }]);
+    expect(await scalar("select get_meetup_reward_code($1) as value", [rewardId])).toBe("UPDATED");
+    await asUser(member);
+    await expect(scalar("select get_meetup_reward_code($1) as value", [rewardId])).rejects.toThrow("not available");
+    await db.exec("reset role");
+    await db.query("update meetup_rewards set expires_at = now() - interval '1 minute' where id = $1", [rewardId]);
+    await asUser(owner);
+    await expect(scalar("select get_meetup_reward_code($1) as value", [rewardId])).rejects.toThrow("expired");
+    await db.exec("reset role");
+    await db.query("update meetup_rewards set expires_at = now() + interval '1 day' where id = $1", [rewardId]);
+    await asUser(owner);
+    await scalar("select redeem_meetup_reward($1) as value", [rewardId]);
+    await expect(scalar("select get_meetup_reward_code($1) as value", [rewardId])).rejects.toThrow("redeemed");
+    await scalar("select leave_meetup_attempt($1) as value", [attemptId]);
+    await expect(scalar("select get_meetup_reward_code($1) as value", [rewardId])).rejects.toThrow();
+  });
   it("persists venue categories, preserves them for older clients and freezes attempt snapshots", async () => {
     const { venueId, offerId } = await setupOffer();
     expect(await scalar("select list_meetup_offers()->0->'venue'->>'category' as value")).toBe("other");
@@ -92,6 +129,7 @@ describe("venue meet-ups database", () => {
     await db.exec(readFileSync("supabase/migrations/040_leave_meetup_offers.sql", "utf8"));
     await db.exec(readFileSync("supabase/migrations/041_offer_venue_coordinates.sql", "utf8"));
     await db.exec(readFileSync("supabase/migrations/043_venue_categories.sql", "utf8"));
+    await db.exec(readFileSync("supabase/migrations/044_offer_redemption_codes.sql", "utf8"));
   }, 30000);
   beforeEach(async () => {
     await db.exec(`reset role; truncate auth.users, meetup_venues cascade;

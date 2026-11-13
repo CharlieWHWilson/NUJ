@@ -6,6 +6,12 @@ NUJ is a Vite + React app that helps people stay connected with mates.
 
 Shared-group database migration and release steps: [Shared Groups Setup](SHARED_GROUPS_SETUP.md).
 
+Personal-group membership integrity: apply migration
+`042_personal_group_mate_integrity.sql` to remove stale links and clean up group
+membership when an owner's mate connection is deleted. This supports both
+ID-only and owner/mate composite database keys. Personal groups refresh on
+mate changes and app resume.
+
 Venue offers, reward qualification and the private `/admin/venues` entry form:
 [Meet-ups Setup](MEETUPS_SETUP.md). Apply migrations 039-041 and add your verified
 account to the database admin allowlist before using the form.

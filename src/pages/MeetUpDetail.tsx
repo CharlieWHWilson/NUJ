@@ -3,7 +3,7 @@ import { NUJ_SYMBOLS } from "@/lib/nujSymbols";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, CalendarDays, Gift, MapPin, UserRound, UsersRound } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { canOptIntoMeetupAttempt, describeOfferRule, joinMeetupAttempt, leaveMeetupAttempt, listMeetupAttempts, listOffers, redeemMeetupReward, selectMeetupOffer, type Offer } from "@/lib/meetups";
+import { canOptIntoMeetupAttempt, hasMeetupOfferEnded, describeOfferRule, joinMeetupAttempt, leaveMeetupAttempt, listMeetupAttempts, listOffers, redeemMeetupReward, selectMeetupOffer, type Offer } from "@/lib/meetups";
 import { listSharedGroups } from "@/lib/sharedGroups";
 import { useAppRefresh } from "@/hooks/useAppRefresh";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
@@ -169,6 +169,7 @@ const MeetUpDetailContent = ({ user }: { user: { id: string } | null }) => {
           {attempt.participants.map((member) => <li key={member.userId}>{member.name}{!member.current ? " (no longer in group)" : ""} · {member.accepted ? member.qualified ? "Accepted · Qualified" : "Accepted · In progress" : "Not accepted · Not counting"}</li>)}
         </ul>
         {user && canOptIntoMeetupAttempt(attempt, user.id) && <button className="nuj-btn-primary w-full" disabled={busy} onClick={() => update.mutate({ type: "join", value: attempt.id })}>Opt in to this attempt</button>}
+        {!attempt.participating && hasMeetupOfferEnded(attempt.offer) && <p className="text-sm text-muted-foreground">Offer ended. You can no longer opt in.</p>}
         {!attempt.participating && attempt.offer.unlockRule === "all" && !attempt.participants.some((member) => member.userId === user?.id) && <p className="text-sm">You are not in this attempt’s starting roster and cannot opt in.</p>}
         {attempt.participating && <button className="nuj-btn-secondary w-full" disabled={busy} onClick={() => { update.reset(); setLeavingAttemptId(attempt.id); }}>Leave offer</button>}
         {attempt.rewardId && <div className="rounded-xl bg-muted p-4 space-y-2">

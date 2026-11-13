@@ -404,6 +404,21 @@ describe("venue offers frontend", () => {
     }
   });
 
+  it.each(["dashboard", "offers", "detail"])("prevents expired offer opt-ins on %s without hiding earned rewards", async (surface) => {
+    mocks.attempts.mockResolvedValue([{ ...attempt, offer: { ...offer, endsAt: "2000-01-01T00:00:00Z" } }]);
+    mount(surface === "dashboard" ? <DashboardMeetups userId="me" open onOpenChange={vi.fn()} /> : surface === "offers" ? <MeetUpsHub /> : <MeetUpDetail />, surface === "detail");
+    expect(await screen.findByText("Offer ended. You can no longer opt in.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^Opt in/ })).not.toBeInTheDocument();
+    expect(mocks.join).not.toHaveBeenCalled();
+  });
+
+  it("keeps earned rewards redeemable after qualification ends", async () => {
+    mocks.attempts.mockResolvedValue([{ ...attempt, participating: true, rewardId: "reward", expiresAt: "2099-01-01T00:00:00Z", offer: { ...offer, endsAt: "2000-01-01T00:00:00Z" } }]);
+    mount(<MeetUpDetail />, true);
+    expect(await screen.findByRole("button", { name: "Staff review / redeem" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Leave offer" })).toBeInTheDocument();
+  });
+
   it.each(["all", "minimum", "individual"] as const)("shows the correct detail opt-in eligibility for later group members on %s offers", async (unlockRule) => {
     mocks.attempts.mockResolvedValue([{ ...attempt, participants: [], offer: { ...offer, unlockRule } }]);
     mount(<MeetUpDetail />, true);

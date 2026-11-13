@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { canOptIntoMeetupAttempt, joinMeetupAttempt, leaveMeetupAttempt, type MeetupAttempt } from "@/lib/meetups";
+import { canOptIntoMeetupAttempt, hasMeetupOfferEnded, joinMeetupAttempt, leaveMeetupAttempt, type MeetupAttempt } from "@/lib/meetups";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export const MeetupParticipation = ({ attempt, userId }: { attempt: MeetupAttempt; userId: string }) => {
@@ -16,7 +16,7 @@ export const MeetupParticipation = ({ attempt, userId }: { attempt: MeetupAttemp
   const canJoin = canOptIntoMeetupAttempt(attempt, userId);
   return <div className="relative z-10 space-y-2">
     {!attempt.participating && <p className="text-xs text-muted-foreground">
-      {canJoin ? "Not opted in yet. Opt in to start counting your check-ins." : "This offer is limited to the group's starting members. You can't opt in to this attempt."}
+      {hasMeetupOfferEnded(attempt.offer) ? "Offer ended. You can no longer opt in." : canJoin ? "Not opted in yet. Opt in to start counting your check-ins." : "This offer is limited to the group's starting members. You can't opt in to this attempt."}
     </p>}
     {(attempt.participating || canJoin) && <button type="button"
       className={`${attempt.participating ? "nuj-btn-secondary" : "nuj-btn-primary"} w-full text-xs`}

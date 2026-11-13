@@ -1,6 +1,7 @@
-import { act, renderHook, waitFor } from "@testing-library/react";
+import { act, fireEvent, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useGroupsSupabase } from "./useGroupsSupabase";
+import { MATES_UPDATED_EVENT } from "@/lib/mateRequests";
 
 const mocks = vi.hoisted(() => ({ rpc: vi.fn(), from: vi.fn() }));
 vi.mock("@/lib/supabase", () => ({ supabase: {
@@ -30,6 +31,27 @@ describe("personal group persistence", () => {
     await act(async () => { await result.current.updateGroup("group", { name: "New school", mateIds: ["mate-2"] }); });
     expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith("save_personal_group", { p_group_id: "group", p_name: "New school", p_mate_ids: ["mate-2"] });
     expect(result.current.groups[0]).toMatchObject({ name: "New school", mates: ["mate-2"], checkinCadenceDays: 7 });
+  });
+
+  it.each([MATES_UPDATED_EVENT, "nuj:refresh", "focus"])("refreshes membership after %s and removes its listener on unmount", async (eventName) => {
+    const { result, unmount } = renderHook(() => useGroupsSupabase());
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    mocks.from.mockImplementation((table: string) => {
+      const query = {
+        select: () => query, eq: () => query, order: () => query,
+        then: (resolve: (result: unknown) => unknown) => Promise.resolve({
+          data: table === "groups" ? [{ id: "group", name: "School", checkin_cadence_days: 7 }] : [], error: null,
+        }).then(resolve),
+      };
+      return query;
+    });
+    fireEvent(window, new Event(eventName));
+    await waitFor(() => expect(result.current.groups[0].mates).toEqual([]));
+    unmount();
+    mocks.from.mockClear();
+    fireEvent(window, new Event(eventName));
+    await act(async () => {});
+    expect(mocks.from).not.toHaveBeenCalled();
   });
 
   it("leaves the original local group intact on a failed save", async () => {

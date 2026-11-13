@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { Group, Mate } from "@/data/mockData";
+import { MATES_UPDATED_EVENT } from "@/lib/mateRequests";
+import { useAppRefresh } from "./useAppRefresh";
 
 export const DEFAULT_CHECKIN_CADENCE_DAYS = 1;
 // Must match the groups_checkin_cadence_days_range constraint; 30 represents "every month".
@@ -120,6 +122,13 @@ export const useGroupsSupabase = () => {
 
   useEffect(() => {
     void refresh();
+  }, [refresh]);
+
+  useAppRefresh(refresh);
+  useEffect(() => {
+    const onMatesUpdated = () => { void refresh(); };
+    window.addEventListener(MATES_UPDATED_EVENT, onMatesUpdated);
+    return () => window.removeEventListener(MATES_UPDATED_EVENT, onMatesUpdated);
   }, [refresh]);
 
   const addGroup = async (groupName: string, mateIds: string[]) => {

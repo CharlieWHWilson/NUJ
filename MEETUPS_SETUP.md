@@ -128,6 +128,8 @@ Deactivation is not revocation of previously selected offers/rewards.
   owner in and leaves other members free to participate.
 - Each member opts in before check-ins count. Their start time is their own
   acceptance time, not a retroactive group selection date.
+  Once a saved offer's qualification deadline has passed, opt-in/rejoin controls
+  are hidden and show "Offer ended". Earned rewards keep their separate redemption window.
 - Dashboard and Offers cards let members opt in directly or opt out after confirmation.
   Whole-group offers remain limited to starting members; other offer rules allow
   current shared-group members to opt in even without an existing participant row.

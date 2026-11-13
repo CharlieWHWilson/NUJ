@@ -57,8 +57,11 @@ export type MeetupAttempt = {
   redeemedAt: string | null;
 };
 
+export const hasMeetupOfferEnded = (offer: Offer) =>
+  offer.endsAt !== null && new Date(offer.endsAt).getTime() <= Date.now();
+
 export const canOptIntoMeetupAttempt = (attempt: MeetupAttempt, userId: string) =>
-  !attempt.participating && (attempt.offer.unlockRule !== "all" ||
+  !attempt.participating && !hasMeetupOfferEnded(attempt.offer) && (attempt.offer.unlockRule !== "all" ||
     attempt.participants.some((member) => member.userId === userId && member.current));
 
 async function rpc<Result>(name: string, args?: Record<string, unknown>): Promise<Result> {

@@ -92,6 +92,38 @@ describe("mate request consent and privacy", () => {
     await expect(database.query(`select public.save_personal_group('${id}', 'Stolen', '{}'::uuid[])`)).rejects.toThrow("unavailable");
   });
 
+  it("repairs orphaned personal-group links and cleans up removed mates with production composite keys", async () => {
+    const { mateId } = await requestAndAccept();
+    const id = await scalar<string>(`select public.save_personal_group(null, 'School', array['${mateId}'::uuid]) as value`);
+    await database.exec(`reset role;
+      alter table public.group_mates drop constraint group_mates_mate_id_fkey;
+      alter table public.nujs_received drop constraint nujs_received_from_mate_id_fkey;
+      alter table public.nujs_sent drop constraint nujs_sent_to_mate_id_fkey;
+      alter table public.mates drop constraint mates_pkey;
+      alter table public.mates add primary key (user_id, id);
+      insert into public.group_mates(group_id, mate_id) values ('${id}', '${third}');`);
+    await asUser(second);
+    await expect(database.query(`select public.save_personal_group('${id}', 'Changed', array['${mateId}'::uuid, '${third}'::uuid])`)).rejects.toThrow("own mates");
+    await database.exec("reset role;");
+    await database.exec(readFileSync("supabase/migrations/042_personal_group_mate_integrity.sql", "utf8"));
+    await asUser(second);
+    expect(await scalar(`select count(*)::int as value from public.group_mates where group_id = '${id}'`)).toBe(1);
+    await database.query(`select public.save_personal_group('${id}', 'Changed', array['${mateId}'::uuid])`);
+    expect(await scalar(`select name as value from public.groups where id = '${id}'`)).toBe("Changed");
+    await expect(database.query(`select public.save_personal_group('${id}', 'Invalid', array['${third}'::uuid])`)).rejects.toThrow("own mates");
+    await database.query(`select public.remove_mate_connection('${mateId}')`);
+    expect(await scalar(`select count(*)::int as value from public.group_mates where group_id = '${id}'`)).toBe(0);
+    expect(await scalar(`select name as value from public.groups where id = '${id}'`)).toBe("Changed");
+    await database.exec(`reset role;
+      drop trigger remove_deleted_mate_group_links on public.mates;
+      drop function public.remove_deleted_mate_group_links();
+      alter table public.mates drop constraint mates_pkey;
+      alter table public.mates add primary key (id);
+      alter table public.group_mates add constraint group_mates_mate_id_fkey foreign key (mate_id) references public.mates(id) on delete cascade;
+      alter table public.nujs_received add constraint nujs_received_from_mate_id_fkey foreign key (from_mate_id) references public.mates(id) on delete cascade;
+      alter table public.nujs_sent add constraint nujs_sent_to_mate_id_fkey foreign key (to_mate_id) references public.mates(id) on delete cascade;`);
+  });
+
   it("rolls back a personal-group rename and deleted links when an insert fails", async () => {
     const { mateId } = await requestAndAccept();
     const id = await scalar<string>(`select public.save_personal_group(null, 'School', array['${mateId}'::uuid]) as value`);

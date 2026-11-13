@@ -22,7 +22,7 @@ describe("Mission", () => {
     for (const link of signups) {
       expect(link).toHaveAttribute("href", "/auth?mode=register");
     }
-    expect(screen.getByText(/There's no need to keep it open or spend time browsing/)).toBeInTheDocument();
+    expect(screen.getByText("There's no need to keep NUJ open or spend time browsing, it is designed to keep you connected between the times you can see each other in person.")).toBeInTheDocument();
     const emailLinks = screen.getAllByRole("link", { name: "Email - charlie@nuj.social" });
     expect(emailLinks).toHaveLength(1);
     for (const link of emailLinks) {

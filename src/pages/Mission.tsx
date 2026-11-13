@@ -28,7 +28,7 @@ const Mission = () => {
             <h1 id="mission-title">Stay connected</h1>
             <p className="mission-intro">NUJ lets you check in with mates without needing to think of something to say.</p>
             <p>It's a simple way to keep in touch, so catching up in person feels a little easier.</p>
-            <p>NUJ is designed to be used as an app: turn on notifications for nudges and reminders, check in, then get on with your day. There's no need to keep it open or spend time browsing.</p>
+            <p>There's no need to keep NUJ open or spend time browsing, it is designed to keep you connected between the times you can see each other in person.</p>
             <a className="mission-button" href={APP_STORE_URL}>Download on the App Store <ArrowRight size={18} aria-hidden="true" /></a>
             <p className="mt-3 text-xs text-muted-foreground">Available for iPhone. You can also <Link to="/auth?mode=register" className="underline underline-offset-4">create an account online</Link>, then sign in to the app with the same account.</p>
           </div>

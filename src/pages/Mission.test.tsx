@@ -69,7 +69,7 @@ describe("Mission", () => {
     expect(within(businesses).getByText("Give people a reason to meet at your venue.").tagName).toBe("P");
     expect(businesses).toHaveAttribute("id", "businesses");
     expect(within(businesses).getByText(/Join NUJ as a venue partner/)).toBeInTheDocument();
-    expect(within(businesses).getByText(/Venue offers are not live yet/)).toBeInTheDocument();
+    expect(within(businesses).queryByText(/Venues can take part in a trial|Venue offers are not live yet/)).not.toBeInTheDocument();
     expect(within(businesses).getByRole("link", { name: "Email - charlie@nuj.social" })).toHaveAttribute("href", "mailto:charlie@nuj.social");
     expect(screen.queryByText(/^0[123]( \/|$)/)).not.toBeInTheDocument();
   });

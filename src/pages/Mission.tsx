@@ -96,7 +96,6 @@ const Mission = () => {
               <p>Give people a reason to meet at your venue.</p>
               <p>Join NUJ as a venue partner to help people meet at your venue. Offer an incentive, such as discounted coffee for a group, to make choosing your venue easier.</p>
               <p className="mission-audience-value">Give mates a reason to meet. Bring more people through your door.</p>
-              <p>Venues can take part in a trial. Venue offers are not live yet.</p>
               <a href="mailto:charlie@nuj.social" className="mission-text-link">Email - charlie@nuj.social</a>
             </div>
           </section>

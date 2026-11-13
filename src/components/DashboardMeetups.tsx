@@ -5,10 +5,11 @@ import { useQuery } from "@tanstack/react-query";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useAppRefresh } from "@/hooks/useAppRefresh";
-import { listMeetupAttempts } from "@/lib/meetups";
+import { listMeetupAttempts, listOffers } from "@/lib/meetups";
 import { supabase } from "@/lib/supabase";
 import { isVerifiedAuthUser } from "@/lib/auth";
 import { MeetupParticipation } from "@/components/MeetupParticipation";
+import { VenueCategoryIcon } from "@/components/VenueCategoryIcon";
 
 type Props = {
   userId: string | undefined;
@@ -31,7 +32,13 @@ export const DashboardMeetups = ({ userId, open, onOpenChange }: Props) => {
     enabled: Boolean(activeUserId) && open,
     retry: false,
   });
-  useAppRefresh(() => { if (activeUserId && open) return attempts.refetch(); });
+  const offers = useQuery({
+    queryKey: ["meetup-offers", activeUserId],
+    queryFn: () => listOffers(),
+    enabled: Boolean(activeUserId) && open,
+    retry: false,
+  });
+  useAppRefresh(() => { if (activeUserId && open) return Promise.all([attempts.refetch(), offers.refetch()]); });
   const refetchAttempts = attempts.refetch;
   useEffect(() => {
     const onCheckin = () => { if (activeUserId && open) void refetchAttempts(); };
@@ -80,6 +87,10 @@ export const DashboardMeetups = ({ userId, open, onOpenChange }: Props) => {
           <button onClick={() => void attempts.refetch()} className="ml-2 underline">Retry meet-ups</button>
         </div>}
         {joinedAttempts?.length === 0 && <p className="text-xs text-muted-foreground">No meet-ups joined yet</p>}
+        {activeUserId && offers.error && <div role="alert" className="text-xs text-destructive">
+          Venue categories could not refresh: {offers.error.message}
+          <button onClick={() => void offers.refetch()} className="ml-2 underline">Retry categories</button>
+        </div>}
         <div className="flex gap-2 overflow-x-auto pb-1">
           {joinedAttempts?.map((attempt) => {
                 const progress = attempt.qualified ? attempt.offer.periods : Math.min(attempt.offer.periods, Math.max(0, attempt.progress));
@@ -88,7 +99,10 @@ export const DashboardMeetups = ({ userId, open, onOpenChange }: Props) => {
                 const target = attempt.offer.unlockRule === "all" ? attempt.participants.length : attempt.offer.minimumMembers;
                 return <article key={attempt.id}
                   className="relative shrink-0 w-32 p-2 bg-muted/40 hover:bg-muted rounded-xl transition-colors text-left">
-                  <h3 className="text-xs font-medium leading-tight line-clamp-2"><Link to={`/meetup/${encodeURIComponent(attempt.offerId)}`} className="after:absolute after:inset-0 focus-visible:after:ring-2 focus-visible:after:ring-ring">{attempt.offer.venue.name} · {attempt.offer.title}</Link></h3>
+                  <div className="flex items-start justify-between gap-1">
+                    <h3 className="text-xs font-medium leading-tight line-clamp-2"><Link to={`/meetup/${encodeURIComponent(attempt.offerId)}`} className="after:absolute after:inset-0 focus-visible:after:ring-2 focus-visible:after:ring-ring">{attempt.offer.venue.name} · {attempt.offer.title}</Link></h3>
+                    <VenueCategoryIcon size={14} category={offers.data?.find((offer) => offer.venueId === attempt.offer.venueId)?.venue.category ?? attempt.offer.venue.category} />
+                  </div>
                   <div className="mt-2 space-y-1">
                   <p className="flex items-center gap-1 text-[11px] font-medium"><UsersRound size={12} className="shrink-0" aria-hidden="true" /><span className="line-clamp-2">{attempt.groupName}</span><span className="shrink-0 text-muted-foreground" aria-label={`${participants.length} joined`}>({participants.length})</span></p>
                   {attempt.participating && <><progress max={attempt.offer.periods} value={progress}

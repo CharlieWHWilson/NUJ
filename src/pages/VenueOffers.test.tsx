@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   admin: vi.fn(), venues: vi.fn(), offers: vi.fn(), attempts: vi.fn(),
   saveVenue: vi.fn(), saveOffer: vi.fn(), groups: vi.fn(), select: vi.fn(), join: vi.fn(), leave: vi.fn(), redeem: vi.fn(),
   auth: vi.fn(),
+  location: vi.fn(),
 }));
 vi.mock("@/hooks/useCurrentUser", () => ({ useCurrentUser: () => ({ id: "me" }) }));
 vi.mock("@/lib/supabase", () => ({ supabase: { auth: { onAuthStateChange: mocks.auth } } }));
@@ -24,6 +25,9 @@ vi.mock("@/lib/meetups", async (original) => ({
 }));
 vi.mock("@/lib/sharedGroups", () => ({ listSharedGroups: mocks.groups }));
 vi.mock("@/components/OffersMap", () => ({ default: ({ offers }: { offers: Offer[] }) => <div role="region" aria-label="Map of offer venues">{offers.map((item) => <p key={item.id}>{item.venue.name}</p>)}</div> }));
+vi.mock("@/lib/venueLocations", async (original) => ({
+  ...await original<typeof import("@/lib/venueLocations")>(), findVenueAddress: mocks.location,
+}));
 
 const venue = { id: "venue", name: "Local café", address: "1 High Street", description: "Your local café", timezone: "Europe/London", active: true };
 const offer: Offer = { id: "offer", venueId: venue.id, venue, title: "Coffee together", reward: "Free coffee", terms: "One coffee per person", period: "week", periods: 2, unlockRule: "all", minimumMembers: 1, recipients: "qualifying", redemptionDays: 7, endsAt: null, active: true };
@@ -56,8 +60,125 @@ describe("venue offers frontend", () => {
     mocks.join.mockResolvedValue(null);
     mocks.leave.mockResolvedValue(null);
     mocks.redeem.mockResolvedValue("redeemed");
+    mocks.location.mockResolvedValue([{ name: "Chosen place", latitude: 0, longitude: 0 }]);
   });
 
+  it("clears category and location selections together while Filters is closed", async () => {
+    mount(<MeetUpsHub />);
+    await screen.findByRole("link", { name: /Local café · Coffee together Category/ });
+    fireEvent.click(screen.getByRole("button", { name: "Filters" }));
+    fireEvent.click(screen.getByRole("button", { name: "Other" }));
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "CR4 2BA" } });
+    fireEvent.click(screen.getByRole("button", { name: "Search" }));
+    fireEvent.click(await screen.findByRole("button", { name: /Chosen place/ }));
+    expect(screen.getByRole("button", { name: "Change postcode / place" })).toHaveTextContent("CR4 2BA");
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Done" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.getByText("CR4 2BA")).toBeVisible();
+    expect(screen.getByRole("img", { name: "Selected category: other" })).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Clear" }));
+    expect(screen.queryByText("CR4 2BA")).not.toBeInTheDocument();
+    expect(screen.queryByRole("img", { name: "Selected category: other" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Distance unavailable")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Clear" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Filters" }));
+    expect(screen.getByRole("button", { name: "Other" })).toHaveAttribute("aria-pressed", "false");
+    expect(within(screen.getByRole("dialog", { name: "Filters" })).getByRole("textbox")).toHaveValue("");
+  });
+
+  it("combines category filtering with distance sorting in list and map without filtering joined rewards", async () => {
+    const makeOffer = (id: string, category: "cafe" | "pub", longitude?: number): Offer => ({
+      ...offer, id, venueId: id, venue: { ...venue, id, name: id, category, latitude: longitude === undefined ? undefined : 0, longitude },
+    });
+    mocks.offers.mockResolvedValue([makeOffer("Far", "cafe", 2), makeOffer("Unknown", "cafe"), makeOffer("Near", "cafe", 0), makeOffer("Pub", "pub", 1)]);
+    mount(<MeetUpsHub />);
+    const available = screen.getByRole("region", { name: "Available offers" });
+    await within(available).findByRole("link", { name: /Far/ });
+    expect(screen.queryByRole("textbox", { name: "Postcode or place name" })).not.toBeInTheDocument();
+    expect(within(available).getAllByRole("img", { name: "Category: cafe" })).toHaveLength(3);
+    fireEvent.click(screen.getByRole("button", { name: "Filters" }));
+    expect(screen.queryByText("1. Choose a category")).not.toBeInTheDocument();
+    expect(within(screen.getByRole("dialog", { name: "Filters" })).getByRole("textbox", { name: "Postcode or place name" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Cafe" }));
+    expect(screen.getByRole("button", { name: "Cafe" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Cafe" })).toHaveClass("font-bold");
+    expect(screen.getByRole("button", { name: "Cafe" }).querySelector("svg.lucide-coffee")).not.toBeNull();
+    fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Close" }));
+    expect(screen.getByRole("img", { name: "Selected category: cafe" })).toBeInTheDocument();
+    expect(within(available).queryByRole("link", { name: /Pub/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Joined Rewards" })).toHaveTextContent(attempt.groupName);
+    fireEvent.click(screen.getByRole("button", { name: "Filters · Active" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "Postcode or place name" }), { target: { value: "SW17" } });
+    expect(mocks.location).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Search" }));
+    fireEvent.click(await screen.findByRole("button", { name: /Chosen place/ }));
+    fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Close" }));
+    expect(within(available).getAllByRole("link").filter((link) => link.getAttribute("href")?.startsWith("/meetup/")).map((link) => link.querySelector("h3")?.textContent)).toEqual(["Near · Coffee together", "Far · Coffee together", "Unknown · Coffee together"]);
+    expect(within(available).getByText("Distance unavailable")).toBeInTheDocument();
+    expect(within(available).getByText("SW17")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Sort by distance" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+    expect(within(available).getByText("0.0 miles")).toBeInTheDocument();
+    expect(within(available).getByText("138.2 miles")).toBeInTheDocument();
+    expect(within(available).getByText("0.0 miles").closest("a")?.firstElementChild).toContainElement(within(available).getByText("0.0 miles"));
+    fireEvent.click(screen.getByRole("button", { name: "Map" }));
+    const map = await screen.findByRole("region", { name: "Map of offer venues" });
+    expect(map.textContent).toBe("NearFarUnknown");
+    expect(within(available).getByText("SW17")).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Change postcode / place" })).not.toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Selected category: cafe" })).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Filters · Active" }));
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Change postcode / place" }));
+    expect(screen.getByRole("textbox")).toHaveValue("SW17");
+    fireEvent.click(screen.getByRole("button", { name: "Clear location" }));
+    fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Close" }));
+    expect(map.textContent).toBe("FarUnknownNear");
+    expect(within(available).queryByText("SW17")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Filters · Active" }));
+    fireEvent.click(screen.getByRole("button", { name: "Pub" }));
+    expect(screen.getByRole("button", { name: "Cafe" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Pub" })).toHaveAttribute("aria-pressed", "true");
+    expect(map).toHaveTextContent("Pub");
+    fireEvent.click(screen.getByRole("button", { name: "Cafe" }));
+    expect(map.textContent).toBe("Pub");
+    fireEvent.click(screen.getByRole("button", { name: "All categories" }));
+    expect(map.textContent).toBe("FarUnknownNearPub");
+    fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Close" }));
+    expect(screen.queryByRole("textbox", { name: "Postcode or place name" })).not.toBeInTheDocument();
+  });
+
+  it.each(["dashboard", "offers"] as const)("shows current venue category on %s joined cards without changing saved offer terms", async (surface) => {
+    mocks.offers.mockResolvedValue([{ ...offer, venue: { ...venue, category: "cafe" } }]);
+    mount(surface === "dashboard" ? <DashboardMeetups userId="me" open onOpenChange={vi.fn()} /> : <MeetUpsHub />);
+    const card = (await screen.findByRole("link", { name: "Local café · Coffee together" })).closest("article")!;
+    await waitFor(() => expect(within(card).getByRole("img", { name: "Category: cafe" })).toBeInTheDocument());
+    expect(within(card).getByRole("img", { name: "Category: cafe" }).parentElement).toContainElement(within(card).getByRole("heading"));
+  });
+
+  it("shows only the venue postcode beside the map icon and keeps the full address in terms", async () => {
+    mocks.offers.mockResolvedValue([{ ...offer, venue: { ...venue, address: "96 Mitcham Rd, London SW17 9NG" } }]);
+    mocks.attempts.mockResolvedValue([]);
+    mount(<MeetUpDetail />, true);
+    expect(await screen.findByText("SW17 9NG")).toBeInTheDocument();
+    expect(screen.queryByText("96 Mitcham Rd, London SW17 9NG")).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: `Open map for ${venue.name}` })).toHaveAttribute("href", expect.stringContaining("96%20Mitcham"));
+    fireEvent.click(screen.getByRole("button", { name: "T&Cs" }));
+    expect(screen.getByRole("dialog")).toHaveTextContent("96 Mitcham Rd, London SW17 9NG");
+  });
+
+  it("saves a venue category selected by the admin", async () => {
+    mocks.venues.mockResolvedValue([{ ...venue, category: "pub" }]);
+    mount(<VenueEntry />);
+    const select = await screen.findByLabelText("Venue to edit");
+    await waitFor(() => expect(select).toHaveTextContent(venue.name));
+    fireEvent.change(select, { target: { value: venue.id } });
+    expect(screen.getByLabelText("Venue category")).toHaveValue("pub");
+    fireEvent.change(screen.getByLabelText("Venue category"), { target: { value: "cafe" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save venue changes" }));
+    await waitFor(() => expect(mocks.saveVenue).toHaveBeenCalledWith(expect.objectContaining({ category: "cafe" }), venue.id));
+  });
   it("shows venue and reward headline together on joined rewards, with the group below", async () => {
     mount(<MeetUpsHub />);
     const headings = await screen.findAllByRole("heading", { level: 3, name: `${venue.name} · ${offer.title}` });
@@ -66,8 +187,8 @@ describe("venue offers frontend", () => {
     expect(screen.getAllByRole("heading", { level: 2 }).map((heading) => heading.textContent)).toEqual(["Joined Rewards", "Available offers"]);
     const availableCard = headings[1].closest("a");
     const joinedHeading = headings[0];
-    expect(headings[1].nextElementSibling).toHaveTextContent(offer.reward);
-    expect(headings[1].nextElementSibling?.nextElementSibling).toHaveClass("text-muted-foreground");
+    expect(headings[1].parentElement?.nextElementSibling).toHaveTextContent(offer.reward);
+    expect(headings[1].parentElement?.nextElementSibling?.nextElementSibling).toHaveClass("text-muted-foreground");
     const attemptCard = joinedHeading.closest("article");
     expect(availableCard).toHaveAttribute("href", "/meetup/offer");
     expect(within(joinedHeading).getByRole("link")).toHaveAttribute("href", "/meetup/offer");
@@ -75,8 +196,8 @@ describe("venue offers frontend", () => {
     expect(screen.getByRole("link", { name: attempt.groupName }).querySelector("svg")).toHaveAttribute("aria-hidden", "true");
     expect(screen.getByRole("link", { name: attempt.groupName }).closest("a")?.parentElement?.closest("a")).toBeNull();
     expect(availableCard).toHaveTextContent(offer.title);
-    expect(joinedHeading.nextElementSibling).toHaveTextContent(attempt.groupName);
-    expect(joinedHeading.nextElementSibling?.textContent).toBe(attempt.groupName);
+    expect(joinedHeading.parentElement?.nextElementSibling).toHaveTextContent(attempt.groupName);
+    expect(joinedHeading.parentElement?.nextElementSibling?.textContent).toBe(attempt.groupName);
     expect(availableCard).toHaveTextContent(offer.reward);
     expect(attemptCard).toHaveTextContent(offer.reward);
   });
@@ -129,7 +250,6 @@ describe("venue offers frontend", () => {
     expect(within(pendingCard).getByRole("button", { name: "Opt in" })).toBeInTheDocument();
     expect(pendingCard).toHaveTextContent("Not opted in yet.");
     expect(within(pendingCard).queryByRole("progressbar")).not.toBeInTheDocument();
-    expect(mocks.offers).not.toHaveBeenCalled();
     expect(screen.getByRole("link", { name: "See all offers" })).toHaveAttribute("href", "/meetups");
     expect(screen.queryByText(/Turn the rhythm/)).not.toBeInTheDocument();
   });
@@ -461,7 +581,7 @@ describe("venue offers frontend", () => {
     fireEvent.change(screen.getByLabelText("Venue description (required)"), { target: { value: " Friendly café " } });
     fireEvent.click(screen.getByLabelText("Venue active"));
     fireEvent.click(screen.getByRole("button", { name: "Create venue" }));
-    await waitFor(() => expect(mocks.saveVenue).toHaveBeenCalledWith({ name: "New café", address: "2 High Street", description: "Friendly café", timezone: "Europe/London", active: false, latitude: null, longitude: null }, null));
+    await waitFor(() => expect(mocks.saveVenue).toHaveBeenCalledWith({ name: "New café", address: "2 High Street", description: "Friendly café", timezone: "Europe/London", active: false, latitude: null, longitude: null, category: "other" }, null));
     expect(await screen.findByText("Venue saved.")).toBeInTheDocument();
     expect(mocks.saveOffer).not.toHaveBeenCalled();
     expect(invalidation).toHaveBeenCalledWith({ queryKey: ["meetup-offers"] });
@@ -587,7 +707,7 @@ describe("venue offers frontend", () => {
     mocks.attempts.mockResolvedValue([{ ...attempt, offer: { ...offer, active: false }, participants: [attempt.participants[1]] }]);
     mount(<MeetUpDetail />, true);
     expect(await screen.findByText(/not in this attempt’s starting roster/)).toBeInTheDocument();
-    expect(screen.getAllByText("Address: 1 High Street")).toHaveLength(2);
+    expect(screen.getAllByText("1 High Street")).toHaveLength(2);
     expect(screen.queryByRole("button", { name: "Opt in to this attempt" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Select offer for group" })).not.toBeInTheDocument();
   });
@@ -595,11 +715,12 @@ describe("venue offers frontend", () => {
   it("uses the immutable snapshot for original rules even when the listing changes", async () => {
     mocks.offers.mockResolvedValue([{ ...offer, title: "Edited listing", reward: "Different reward" }]);
     mount(<MeetUpDetail />, true);
-    expect(await screen.findByRole("heading", { name: "Edited listing", level: 1 })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Edited listing", level: 2 })).toBeInTheDocument();
     fireEvent.click(screen.getByText("Original offer for this attempt"));
     expect(screen.getByRole("heading", { name: offer.title, level: 2 })).toBeInTheDocument();
     expect(screen.getAllByText(venue.name).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(offer.reward).length).toBeGreaterThan(0);
+    fireEvent.click(screen.getAllByRole("button", { name: "T&Cs" })[1]);
+    expect(screen.getByRole("dialog")).toHaveTextContent(offer.reward);
   });
 
   it("hides offer details in T&Cs and provides an encoded Google Maps address link", async () => {
@@ -629,18 +750,25 @@ describe("venue offers frontend", () => {
     { period: "day" as const, periods: 3, unlockRule: "minimum" as const, minimumMembers: 4, recipients: "all" as const, cadence: "Daily", duration: "3 consecutive days", qualification: "4+ members", rewardFor: "All opted-in members" },
     { period: "week" as const, periods: 2, unlockRule: "individual" as const, minimumMembers: 1, recipients: "qualifying" as const, cadence: "Once a week", duration: "2 consecutive weeks", qualification: "Each person", rewardFor: "Qualifying members only" },
     { period: "day" as const, periods: 1, unlockRule: "all" as const, minimumMembers: 1, recipients: "qualifying" as const, cadence: "Daily", duration: "1 consecutive day", qualification: "All starting members", rewardFor: "Qualifying members only" },
-  ])("shows clear visual cadence and eligibility for $unlockRule offers", async (rule) => {
+  ])("shows compact cadence with icon-led qualification details in T&Cs for $unlockRule offers", async (rule) => {
     mocks.offers.mockResolvedValue([{ ...offer, ...rule }]);
     mocks.attempts.mockResolvedValue([]);
     mount(<MeetUpDetail />, true);
     await screen.findByRole("button", { name: "T&Cs" });
     expect(screen.getByText(rule.cadence)).toBeInTheDocument();
-    expect(screen.getByText(rule.duration)).toBeInTheDocument();
-    expect(screen.getByText(rule.qualification)).toBeInTheDocument();
-    expect(screen.getByText(rule.rewardFor)).toBeInTheDocument();
+    expect(screen.getByText(`${rule.periods} ${rule.period === "day" ? rule.periods === 1 ? "day" : "days" : rule.periods === 1 ? "week" : "weeks"} in a row`)).toBeInTheDocument();
+    expect(screen.queryByText(rule.duration)).not.toBeInTheDocument();
+    expect(screen.queryByText(offer.reward)).not.toBeInTheDocument();
+    expect(screen.getAllByText(offer.title)).toHaveLength(1);
     expect(screen.queryByText(/Only accepted opt-ins count/)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "T&Cs" }));
     expect(screen.getByRole("dialog")).toHaveTextContent(rule.unlockRule === "minimum" ? "At least 4 members must qualify." : rule.unlockRule === "individual" ? "Each member qualifies independently." : "All members in the starting group must qualify.");
+    expect(screen.getByRole("dialog")).toHaveTextContent(offer.reward);
+    for (const title of ["Your reward", "Who qualifies", "Check-in rules", "Using your reward", "Leaving or rejoining", "About the venue"]) {
+      const heading = within(screen.getByRole("dialog")).getByRole("heading", { name: title });
+      expect(heading.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
+    }
+    expect(screen.getByRole("dialog")).toHaveTextContent(rule.rewardFor);
   });
   it("shows original terms in the snapshot T&Cs after a listing is edited", async () => {
     mocks.offers.mockResolvedValue([{ ...offer, terms: "New terms", redemptionDays: 14 }]);

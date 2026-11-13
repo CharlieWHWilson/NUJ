@@ -2,6 +2,8 @@ import { supabase } from "./supabase";
 
 export type UnlockRule = "individual" | "minimum" | "all";
 export type RewardRecipients = "qualifying" | "all";
+export const VENUE_CATEGORIES = ["cafe", "pub", "entertainment", "activity", "other"] as const;
+export type VenueCategory = typeof VENUE_CATEGORIES[number];
 
 export type Venue = {
   id: string;
@@ -10,6 +12,7 @@ export type Venue = {
   description: string;
   timezone: string;
   active: boolean;
+  category?: VenueCategory;
   latitude?: number | null;
   longitude?: number | null;
 };

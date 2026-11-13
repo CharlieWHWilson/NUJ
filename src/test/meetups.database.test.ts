@@ -57,6 +57,19 @@ type Attempt = { id: string; progress: number; qualified: boolean; participating
 const attempts = () => scalar<Attempt[]>("select list_meetup_attempts() as value");
 
 describe("venue meet-ups database", () => {
+  it("persists venue categories, preserves them for older clients and freezes attempt snapshots", async () => {
+    const { venueId, offerId } = await setupOffer();
+    expect(await scalar("select list_meetup_offers()->0->'venue'->>'category' as value")).toBe("other");
+    await scalar("select save_meetup_venue($1,$2) as value", [venueId, { ...venueInput, category: "cafe" }]);
+    expect(await scalar("select list_meetup_offers()->0->'venue'->>'category' as value")).toBe("cafe");
+    await scalar("select save_meetup_venue($1,$2) as value", [venueId, venueInput]);
+    expect(await scalar("select list_meetup_offers()->0->'venue'->>'category' as value")).toBe("cafe");
+    expect((await attempts())[0].offer).toMatchObject({ venue: { category: "other" } });
+    await expect(scalar("select save_meetup_venue($1,$2) as value", [venueId, { ...venueInput, category: "invalid" }])).rejects.toThrow("valid venue category");
+    await expect(scalar("select save_meetup_venue($1,$2) as value", [venueId, { ...venueInput, category: null }])).rejects.toThrow("valid venue category");
+    await asUser(member);
+    await expect(scalar("select save_meetup_venue($1,$2) as value", [venueId, { ...venueInput, category: "pub" }])).rejects.toThrow();
+  });
   beforeAll(async () => {
     db = new PGlite({ fsBundle: new NodeBlob([readFileSync("node_modules/@electric-sql/pglite/dist/pglite.data")]) as unknown as Blob });
     await db.exec(`
@@ -78,6 +91,7 @@ describe("venue meet-ups database", () => {
     await db.exec(readFileSync("supabase/migrations/039_venue_meetups.sql", "utf8"));
     await db.exec(readFileSync("supabase/migrations/040_leave_meetup_offers.sql", "utf8"));
     await db.exec(readFileSync("supabase/migrations/041_offer_venue_coordinates.sql", "utf8"));
+    await db.exec(readFileSync("supabase/migrations/043_venue_categories.sql", "utf8"));
   }, 30000);
   beforeEach(async () => {
     await db.exec(`reset role; truncate auth.users, meetup_venues cascade;

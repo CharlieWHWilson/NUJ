@@ -104,6 +104,35 @@ Deactivation is not revocation of previously selected offers/rewards.
 
 ## Member flow
 
+- Apply migration 043 to enable venue categories: cafe, pub, entertainment,
+  activity or other. Existing venues default to other; admins can set their category.
+  Older clients omitting category preserve it on updates. Saved attempt snapshots
+  remain unchanged when a venue category changes.
+- Available offers have category icon filters and an explicit postcode/place search.
+  Search uses the same rate-limited Nominatim lookup as venue entry. The member must
+  choose a match before sorting. Distances are straight-line miles, not travel routes.
+  Category icon buttons in the Filters pop-out support multiple selections (matching
+  any selected category). No categories selected shows all offers. The independent
+  Filters opens one pop-out containing category buttons and optional postcode/place
+  search; both are available together.
+  The selected search text stays visible above the offers even with Filters closed.
+  Reopen Filters to edit or clear the postcode/place.
+  Selected category buttons are bold. A chosen location becomes a compact clickable
+  box; tap it to search again. Done closes the pop-out, keeping the current selections.
+  Selection controls stay in the Filters pop-out. Selected category icons and postcode/place
+  appear below the heading; the small Clear button resets all category/location selections.
+  Offer cards show just the distance in miles at the top, and map pins include the distance.
+  Category icons appear at the top-right of available and joined offer cards, including
+  dashboard cards. Joined cards use the current catalogue category when available,
+  without changing the saved offer snapshot or qualification terms.
+  Offer details show one offer headline, venue and postcode beside a map icon (the
+  full address is shown if no UK postcode is present). The full address, reward specifics, venue
+  description and qualification rules are in icon-led T&Cs sections. The main card
+  includes a compact cadence/duration strip; participation and progress remain visible.
+  Unmapped venues sort last with "Distance unavailable". Clear location restores
+  catalogue order. Category and location filters apply to both List and Map views,
+  not joined rewards. No device geolocation or automatic searches are used.
+
 - Expanding Meet-ups on the dashboard shows compact cards with venue names and
   snapshotted offer titles for the viewer's shared-group offers, including pending opt-ins. Use the
   offer title for a short headline (for example, "GBP 2 off") and the reward

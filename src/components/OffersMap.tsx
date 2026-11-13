@@ -2,10 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import * as L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { hasVenueCoordinates } from "@/lib/venueLocations";
+import { distanceToVenue, hasVenueCoordinates, type AddressMatch } from "@/lib/venueLocations";
 import type { Offer } from "@/lib/meetups";
 
-const OffersMap = ({ offers }: { offers: Offer[] }) => {
+const OffersMap = ({ offers, origin = null }: { offers: Offer[]; origin?: AddressMatch | null }) => {
   const container = useRef<HTMLDivElement>(null);
   const tiles = useRef<L.TileLayer | null>(null);
   const [tileError, setTileError] = useState(false);
@@ -44,6 +44,12 @@ const OffersMap = ({ offers }: { offers: Offer[] }) => {
       const address = document.createElement("p");
       address.textContent = venue.address;
       popup.append(address);
+      if (origin) {
+        const distance = distanceToVenue(origin, venue);
+        const distanceLabel = document.createElement("p");
+        distanceLabel.textContent = distance === null ? "Distance unavailable" : `${distance.toFixed(1)} miles away`;
+        popup.append(distanceLabel);
+      }
       for (const offer of venueOffers) {
         const button = document.createElement("button");
         button.type = "button";
@@ -68,7 +74,7 @@ const OffersMap = ({ offers }: { offers: Offer[] }) => {
     const observer = new ResizeObserver(() => map.invalidateSize());
     observer.observe(container.current);
     return () => { observer.disconnect(); tiles.current = null; map.remove(); };
-  }, [offers, navigate]);
+  }, [offers, origin, navigate]);
 
   return <div className="space-y-2">
     {missingVenues > 0 && <p className="text-xs text-muted-foreground">{missingVenues} {missingVenues === 1 ? "venue has" : "venues have"} no map location yet. Their offers are still available in List view.</p>}

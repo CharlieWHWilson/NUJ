@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { isVenueAdmin, listOffers, listVenues, saveOffer, saveVenue, type OfferInput, type VenueInput } from "@/lib/meetups";
+import { isVenueAdmin, listOffers, listVenues, saveOffer, saveVenue, VENUE_CATEGORIES, type OfferInput, type VenueInput } from "@/lib/meetups";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useAppRefresh } from "@/hooks/useAppRefresh";
 import { supabase } from "@/lib/supabase";
@@ -10,7 +10,7 @@ import { isVerifiedAuthUser } from "@/lib/auth";
 import { VenueAddressLookup } from "@/components/VenueAddressLookup";
 import { hasVenueCoordinates } from "@/lib/venueLocations";
 
-const emptyVenue: VenueInput = { name: "", address: "", description: "", timezone: "Europe/London", active: true };
+const emptyVenue: VenueInput = { name: "", address: "", description: "", timezone: "Europe/London", active: true, category: "other" };
 const emptyOffer: OfferInput = { venueId: "", title: "", reward: "", terms: "", period: "day", periods: 1, unlockRule: "individual", minimumMembers: 1, recipients: "qualifying", redemptionDays: 7, endsAt: null, active: true };
 const inputClass = "mt-1 w-full rounded-xl border bg-background p-3";
 const localDatetime = (value: string | null) => {
@@ -117,7 +117,7 @@ const VenueEntryContent = ({ user }: { user: { id: string } | null }) => {
             resetMessages();
             const selected = venues.data?.find((item) => item.id === event.target.value);
             setVenueId(selected?.id ?? "");
-            setVenue(selected ? { name: selected.name, address: selected.address, description: selected.description, timezone: selected.timezone, active: selected.active } : { ...emptyVenue });
+            setVenue(selected ? { name: selected.name, address: selected.address, description: selected.description, timezone: selected.timezone, active: selected.active, category: selected.category ?? "other" } : { ...emptyVenue });
             setLatitude(selected?.latitude?.toString() ?? "");
             setLongitude(selected?.longitude?.toString() ?? "");
           }}>
@@ -127,6 +127,15 @@ const VenueEntryContent = ({ user }: { user: { id: string } | null }) => {
         </label>
         {venues.data?.length === 0 && <p className="text-sm text-muted-foreground">No venues yet. Create a venue before its offers.</p>}
         <label className="block text-sm">Venue name (required)<input className={inputClass} required value={venue.name} disabled={busy} onChange={(event) => setVenue({ ...venue, name: event.target.value })} /></label>
+        <label className="block text-sm">Venue category
+          <select className={inputClass} value={venue.category} disabled={busy} onChange={(event) => {
+            const category = VENUE_CATEGORIES.find((item) => item === event.target.value);
+            if (category) setVenue({ ...venue, category });
+          }}>
+            {VENUE_CATEGORIES.map((category) => <option key={category} value={category}>{category[0].toUpperCase() + category.slice(1)}</option>)}
+          </select>
+        </label>
+        <p className="text-xs text-muted-foreground">All offers at this venue use this category.</p>
         <label className="block text-sm">Venue address (required)<input className={inputClass} required value={venue.address} disabled={busy} onChange={(event) => { setVenue({ ...venue, address: event.target.value }); setLatitude(""); setLongitude(""); }} /></label>
         <VenueAddressLookup key={`${venueId}:${venue.address}`} address={venue.address} disabled={busy}
           onSelect={(match) => { setLatitude(String(match.latitude)); setLongitude(String(match.longitude)); }} />

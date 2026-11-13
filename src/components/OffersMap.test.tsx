@@ -46,6 +46,15 @@ describe("offers map", () => {
     expect(mocks.remove).toHaveBeenCalled();
   });
 
+  it("updates popup distances when the search origin changes and removes them when cleared", () => {
+    const { rerender } = render(<MemoryRouter><OffersMap offers={[offer]} origin={{ name: "Nearby", latitude: 0, longitude: 0 }} /></MemoryRouter>);
+    expect(mocks.popups.at(-1)).toHaveTextContent("0.0 miles away");
+    rerender(<MemoryRouter><OffersMap offers={[offer]} origin={{ name: "Further", latitude: 0, longitude: 1 }} /></MemoryRouter>);
+    expect(mocks.popups.at(-1)).toHaveTextContent("69.1 miles away");
+    rerender(<MemoryRouter><OffersMap offers={[offer]} /></MemoryRouter>);
+    expect(mocks.popups.at(-1)).not.toHaveTextContent("miles away");
+  });
+
   it("reports missing locations without creating a map or requesting tiles", () => {
     render(<MemoryRouter><OffersMap offers={[{ ...offer, venue: { ...venue, latitude: null, longitude: null } }]} /></MemoryRouter>);
     expect(screen.getByText(/1 venue has no map location/)).toBeInTheDocument();

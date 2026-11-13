@@ -1,10 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { findVenueAddress, hasVenueCoordinates } from "./venueLocations";
+import { distanceToVenue, findVenueAddress, hasVenueCoordinates } from "./venueLocations";
 
 const venue = { id: "v", name: "Cafe", address: "High Street", description: "", timezone: "Europe/London", active: true };
 let clock = Date.now();
 
 describe("venue locations", () => {
+  it("calculates straight-line miles and places missing coordinates outside distance sorting", () => {
+    const origin = { name: "Origin", latitude: 0, longitude: 0 };
+    expect(distanceToVenue(origin, { ...venue, latitude: 0, longitude: 0 })).toBe(0);
+    expect(distanceToVenue(origin, { ...venue, latitude: 0, longitude: 1 })).toBeCloseTo(69.093, 2);
+    expect(distanceToVenue(origin, venue)).toBeNull();
+    expect(distanceToVenue(origin, { ...venue, latitude: 0, longitude: 180 })).toBeCloseTo(12436.8, 0);
+  });
   beforeEach(() => { clock += 10_000; vi.spyOn(Date, "now").mockReturnValue(clock); });
   afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 

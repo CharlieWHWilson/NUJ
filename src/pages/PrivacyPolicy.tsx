@@ -51,7 +51,9 @@ const PrivacyPolicy = () => {
           <p>
             Opening the offers map loads map tiles from OpenStreetMap. The provider receives
             technical request data such as your IP address and the map area requested.
-            NUJ does not request your device location for this map. Venue administrators can
+            NUJ does not request your device location for this map. You can submit a postcode
+            or place name to OpenStreetMap Nominatim, choose a match and sort offers by
+            approximate straight-line distance from that point. Venue administrators can
             choose to send a venue address to OpenStreetMap Nominatim to find its coordinates;
             confirmed coordinates are saved with the venue.
           </p>

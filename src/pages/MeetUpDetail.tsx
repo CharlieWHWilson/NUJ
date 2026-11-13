@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
-import { NUJ_SYMBOLS } from "@/lib/nujSymbols";
+import { useEffect, useState, type ReactNode } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, CalendarDays, Gift, MapPin, UserRound, UsersRound } from "lucide-react";
+import { ArrowLeft, CalendarDays, CheckCheck, Gift, MapPin, UsersRound, LogOut, Clock, Info, type LucideIcon } from "lucide-react";
+import { VenueCategoryIcon } from "@/components/VenueCategoryIcon";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { canOptIntoMeetupAttempt, hasMeetupOfferEnded, describeOfferRule, joinMeetupAttempt, leaveMeetupAttempt, listMeetupAttempts, listOffers, redeemMeetupReward, selectMeetupOffer, type Offer } from "@/lib/meetups";
 import { listSharedGroups } from "@/lib/sharedGroups";
@@ -13,39 +13,34 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 
 const date = (value: string, timezone?: string) => new Date(value).toLocaleString(undefined, timezone ? { timeZone: timezone, timeZoneName: "short" } : undefined);
 
+const TermsSection = ({ icon: Icon, title, children }: { icon: LucideIcon; title: string; children: ReactNode }) =>
+  <section className="rounded-xl bg-muted/40 p-4 space-y-2">
+    <h3 className="flex items-center gap-2 text-sm font-semibold"><Icon size={18} className="shrink-0 text-muted-foreground" aria-hidden="true" />{title}</h3>
+    <div className="space-y-2 text-sm text-muted-foreground">{children}</div>
+  </section>;
+
 const OfferSummary = ({ offer }: { offer: Offer }) => <div className="nuj-card p-5 space-y-3">
-  <h2 className="font-semibold">{offer.title}</h2>
-  <p className="text-sm text-muted-foreground">{offer.venue.name}</p>
-  <div className="flex items-center gap-3 rounded-xl bg-secondary p-3">
-    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-background" aria-hidden="true"><Gift size={22} strokeWidth={1.5} /></span>
-    <p className="font-semibold">{offer.reward}</p>
+  <div className="flex items-start justify-between gap-3">
+    <h2 className="text-xl font-semibold">{offer.title}</h2>
+    <VenueCategoryIcon category={offer.venue.category} />
   </div>
-  <p className="text-sm text-muted-foreground">{offer.venue.description}</p>
-  <dl className="grid grid-cols-2 gap-3">
-    <div className="rounded-xl bg-muted/40 p-3 text-center">
-      <span className="mx-auto mb-2 flex h-9 w-9 items-center justify-center rounded-full bg-background" aria-hidden="true"><CalendarDays size={20} strokeWidth={1.5} /></span>
-      <dt className="text-xs text-muted-foreground">Check-in rhythm</dt>
-      <dd className="mt-1 text-sm font-medium">{offer.period === "day" ? "Daily" : "Once a week"}</dd>
-      <dd className="text-xs text-muted-foreground">{offer.periods} consecutive {offer.period === "day" ? offer.periods === 1 ? "day" : "days" : offer.periods === 1 ? "week" : "weeks"}</dd>
+  <p className="text-sm text-muted-foreground">{offer.venue.name}</p>
+  <dl className="flex items-start gap-3 rounded-xl bg-muted/40 p-3">
+    <div className="flex min-w-0 flex-1 items-start gap-2">
+      <CalendarDays size={18} className="mt-0.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+      <div><dt className="text-xs text-muted-foreground">Check in</dt>
+        <dd className="text-sm font-semibold">{offer.period === "day" ? "Daily" : "Once a week"}</dd>
+      </div>
     </div>
-    <div className="rounded-xl bg-muted/40 p-3 text-center">
-      <span className="mx-auto mb-2 flex h-9 w-9 items-center justify-center rounded-full bg-background" aria-hidden="true">
-        {offer.unlockRule === "individual" ? <UserRound size={20} strokeWidth={1.5} /> : <UsersRound size={20} strokeWidth={1.5} />}
-      </span>
-      <dt className="text-xs text-muted-foreground">Who needs to qualify?</dt>
-      <dd className="mt-1 text-sm font-medium">{offer.unlockRule === "individual" ? "Each person" : offer.unlockRule === "minimum" ? `${offer.minimumMembers}+ members` : "All starting members"}</dd>
-      <dd className="text-xs text-muted-foreground">{offer.unlockRule === "individual" ? "Earn independently" : offer.unlockRule === "minimum" ? "In your shared group" : "Fixed starting group"}</dd>
-    </div>
-    <div className="col-span-2 flex items-center gap-3 rounded-xl bg-muted/40 p-3">
-      <Gift size={20} strokeWidth={1.5} className="shrink-0 text-muted-foreground" aria-hidden="true" />
-      <div><dt className="text-xs text-muted-foreground">Who gets the reward?</dt>
-        <dd className="text-sm font-medium">{offer.recipients === "all" ? "All opted-in members" : "Qualifying members only"}</dd>
+    <div className="flex min-w-0 flex-1 items-start gap-2">
+      <CheckCheck size={18} className="mt-0.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+      <div><dt className="text-xs text-muted-foreground">Keep it going</dt>
+        <dd className="text-sm font-semibold">{offer.periods} {offer.period === "day" ? offer.periods === 1 ? "day" : "days" : offer.periods === 1 ? "week" : "weeks"} in a row</dd>
       </div>
     </div>
   </dl>
-  <p className="flex items-center gap-2 text-xs text-muted-foreground"><span className="text-lg" aria-hidden="true">{NUJ_SYMBOLS.presence}</span>Opt in, then use your usual NUJ check-in.</p>
   <div className="flex items-center gap-2">
-    <p className="flex-1 text-sm">Address: {offer.venue.address}</p>
+    <p className="flex-1 text-sm">{offer.venue.address.match(/\b(?:GIR\s?0AA|[A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2})\b/i)?.[0].toUpperCase() ?? offer.venue.address}</p>
     <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${offer.venue.name}, ${offer.venue.address}`)}`}
       target="_blank" rel="noopener noreferrer" aria-label={`Open map for ${offer.venue.name}`}
       className="w-9 h-9 shrink-0 flex items-center justify-center rounded-full bg-muted text-muted-foreground hover:text-foreground transition-colors">
@@ -56,21 +51,46 @@ const OfferSummary = ({ offer }: { offer: Offer }) => <div className="nuj-card p
     <DialogTrigger asChild>
       <button type="button" className="text-sm text-muted-foreground underline underline-offset-4">T&Cs</button>
     </DialogTrigger>
-    <DialogContent className="max-w-sm max-h-[85dvh] overflow-y-auto">
+    <DialogContent className="w-[calc(100%-2rem)] max-w-sm max-h-[85dvh] overflow-y-auto rounded-xl">
       <DialogHeader>
         <DialogTitle>Offer terms and conditions</DialogTitle>
         <DialogDescription>{offer.venue.name} · {offer.title}</DialogDescription>
       </DialogHeader>
-      <p className="text-sm">{offer.terms}</p>
-      <p className="text-sm">{describeOfferRule(offer)}</p>
+      <TermsSection icon={Gift} title="Your reward">
+        <p className="font-semibold text-foreground">{offer.reward}</p>
+        <p className="whitespace-pre-line">{offer.terms}</p>
+      </TermsSection>
+      <TermsSection icon={UsersRound} title="Who qualifies">
+        <dl className="space-y-2">
+          <div><dt className="text-xs">Who needs to qualify?</dt>
+            <dd className="font-medium text-foreground">{offer.unlockRule === "individual" ? "Each person independently" : offer.unlockRule === "minimum" ? `${offer.minimumMembers}+ members` : "All starting members"}</dd>
+          </div>
+          <div><dt className="text-xs">Who gets the reward?</dt>
+            <dd className="font-medium text-foreground">{offer.recipients === "all" ? "All opted-in members" : "Qualifying members only"}</dd>
+          </div>
+        </dl>
+        <p>{describeOfferRule(offer)}</p>
+        {offer.unlockRule === "all" && <p>The starting group roster is fixed. Every starting member must opt in and qualify; members joining the group later are not eligible for that attempt. A starting member leaving before unlock can prevent the group from qualifying.</p>}
+      </TermsSection>
+      <TermsSection icon={CalendarDays} title="Check-in rules">
       <p className="text-sm">Opt in explicitly. Only accepted opt-ins count, and each member starts their own check-in period when they accept. Only normal NUJ check-ins after acceptance count; earlier check-ins do not. No extra check-in is needed.</p>
       <p className="text-sm">Daily periods use the venue timezone. Weekly periods are consecutive seven-day windows starting on each member’s acceptance date in that timezone, not calendar weeks. Multiple check-ins in one period count once. A missed completed period resets an unfinished streak.</p>
-      {offer.unlockRule === "all" && <p className="text-sm">The starting group roster is fixed. Every starting member must opt in and qualify; members joining the group later are not eligible for that attempt. A starting member leaving before unlock can prevent the group from qualifying.</p>}
+        <p>Check-in timezone: {offer.venue.timezone}</p>
+      </TermsSection>
+      <TermsSection icon={Clock} title="Using your reward">
+        <p className="font-medium text-foreground">Redeem within {offer.redemptionDays} days of unlocking.</p>
+        <p>Offer ends: {offer.endsAt ? date(offer.endsAt, offer.venue.timezone) : "No end date"}</p>
+        <p>Each offer can be earned once per person, including across groups.</p>
+        <p>Selecting an offer is not a reservation or proof of attendance. Venue staff review rewards on the member’s phone; redemption is member-confirmed, not independently venue verified.</p>
+      </TermsSection>
+      <TermsSection icon={LogOut} title="Leaving or rejoining">
       <p className="text-sm">Leaving this offer resets your progress and forfeits unused rewards for this group offer. Rejoining requires a fresh qualifying streak. Redeemed rewards remain single-use, including across groups.</p>
-      <p className="text-sm">Selecting an offer is not a reservation or proof of attendance. Venue staff review rewards on the member’s phone; redemption is member-confirmed, not independently venue verified.</p>
-      <p className="text-sm">Check-in timezone: {offer.venue.timezone}</p>
-      <p className="text-sm">Offer ends: {offer.endsAt ? date(offer.endsAt, offer.venue.timezone) : "No end date"}</p>
-      <p className="text-sm">Redeem within {offer.redemptionDays} days of unlocking.</p>
+      </TermsSection>
+      <TermsSection icon={Info} title="About the venue">
+        <p className="font-medium text-foreground">{offer.venue.name}</p>
+        <p>{offer.venue.description}</p>
+        <p className="flex items-start gap-2"><MapPin size={16} className="mt-0.5 shrink-0" aria-hidden="true" />{offer.venue.address}</p>
+      </TermsSection>
     </DialogContent>
   </Dialog>
 </div>;
@@ -130,7 +150,7 @@ const MeetUpDetailContent = ({ user }: { user: { id: string } | null }) => {
 
   return <main className="min-h-screen bg-background max-w-md mx-auto px-5 nuj-safe-top-section nuj-safe-bottom-page space-y-5">
     <Link to="/meetups" className="flex items-center gap-2 text-sm text-muted-foreground"><ArrowLeft size={18} />Back to offers</Link>
-    <h1 className="text-2xl font-bold">{offer?.title ?? "Offer"}</h1>
+    <h1 className="text-2xl font-bold">Offer details</h1>
     {(offers.isPending || attempts.isPending) && <p role="status">Loading offer and group attempts…</p>}
     {offers.error && <div role="alert"><p>{offers.error.message}</p><button className="nuj-btn-secondary" onClick={() => void offers.refetch()}>Retry offer</button></div>}
     {attempts.error && <div role="alert"><p>{attempts.error.message}</p><button className="nuj-btn-secondary" onClick={() => void attempts.refetch()}>Retry attempts</button></div>}

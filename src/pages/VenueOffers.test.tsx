@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
   auth: vi.fn(),
   location: vi.fn(),
   rewardCode: vi.fn(),
+  redeemGroup: vi.fn(),
 }));
 vi.mock("@/hooks/useCurrentUser", () => ({ useCurrentUser: () => ({ id: "me" }) }));
 vi.mock("@/lib/supabase", () => ({ supabase: { auth: { onAuthStateChange: mocks.auth } } }));
@@ -24,6 +25,7 @@ vi.mock("@/lib/meetups", async (original) => ({
   selectMeetupOffer: mocks.select, joinMeetupAttempt: mocks.join, redeemMeetupReward: mocks.redeem,
   leaveMeetupAttempt: mocks.leave,
   getMeetupRewardCode: mocks.rewardCode,
+  redeemMeetupGroup: mocks.redeemGroup,
 }));
 vi.mock("@/lib/sharedGroups", () => ({ listSharedGroups: mocks.groups }));
 vi.mock("@/components/OffersMap", () => ({ default: ({ offers }: { offers: Offer[] }) => <div role="region" aria-label="Map of offer venues">{offers.map((item) => <p key={item.id}>{item.venue.name}</p>)}</div> }));
@@ -64,6 +66,7 @@ describe("venue offers frontend", () => {
     mocks.redeem.mockResolvedValue("redeemed");
     mocks.location.mockResolvedValue([{ name: "Chosen place", latitude: 0, longitude: 0 }]);
     mocks.rewardCode.mockResolvedValue("VENUE-REWARD");
+    mocks.redeemGroup.mockResolvedValue("redeemed");
   });
 
   it("clears category and location selections together while Filters is closed", async () => {
@@ -190,7 +193,7 @@ describe("venue offers frontend", () => {
       expiresAt: state === "expired" ? "2000-01-01T00:00:00Z" : "2099-01-01T00:00:00Z",
       redeemedAt: state === "redeemed" ? "2026-01-01T00:00:00Z" : null }]);
     mount(<MeetUpDetail />, true);
-    await screen.findByRole("heading", { name: "Joined groups" });
+    await screen.findByRole("heading", { name: attempt.groupName });
     if (state === "unlocked") {
       expect(await screen.findByText("VENUE-REWARD")).toBeInTheDocument();
       expect(mocks.rewardCode).toHaveBeenCalledWith("reward");
@@ -465,9 +468,9 @@ describe("venue offers frontend", () => {
   });
 
   it("clears an open reward confirmation on account switch", async () => {
-    mocks.attempts.mockResolvedValue([{ ...attempt, participating: true, rewardId: "own-reward", expiresAt: "2099-01-01T00:00:00Z" }]);
+    mocks.attempts.mockResolvedValue([{ ...attempt, offer: { ...offer, unlockRule: "individual" }, participating: true, rewardId: "own-reward", expiresAt: "2099-01-01T00:00:00Z" }]);
     mount(<MeetUpDetail />, true);
-    fireEvent.click(await screen.findByRole("button", { name: "Staff review / redeem" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Mark as redeemed" }));
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     mocks.offers.mockResolvedValue([]);
     mocks.attempts.mockResolvedValue([]);
@@ -566,9 +569,9 @@ describe("venue offers frontend", () => {
   });
 
   it("keeps earned rewards redeemable after qualification ends", async () => {
-    mocks.attempts.mockResolvedValue([{ ...attempt, participating: true, rewardId: "reward", expiresAt: "2099-01-01T00:00:00Z", offer: { ...offer, endsAt: "2000-01-01T00:00:00Z" } }]);
+    mocks.attempts.mockResolvedValue([{ ...attempt, participating: true, rewardId: "reward", expiresAt: "2099-01-01T00:00:00Z", offer: { ...offer, unlockRule: "individual", endsAt: "2000-01-01T00:00:00Z" } }]);
     mount(<MeetUpDetail />, true);
-    expect(await screen.findByRole("button", { name: "Staff review / redeem" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Mark as redeemed" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Leave offer" })).toBeInTheDocument();
   });
 
@@ -824,22 +827,64 @@ describe("venue offers frontend", () => {
     expect(dialog).toHaveTextContent("Redeem within 7 days of unlocking.");
     expect(dialog).not.toHaveTextContent("New terms");
   });
+  it.each(["minimum", "all"] as const)("confirms %s group redemption for everyone, including a member without their own reward", async (unlockRule) => {
+    const joined = { ...attempt, offer: { ...offer, unlockRule }, canRedeemGroup: true };
+    mocks.attempts.mockResolvedValue([joined]);
+    mocks.redeemGroup.mockImplementation(async () => {
+      mocks.attempts.mockResolvedValue([{ ...joined, canRedeemGroup: false, groupRedeemedAt: "2026-01-01T00:00:00Z" }]);
+      return "redeemed";
+    });
+    mount(<MeetUpDetail />, true);
+    fireEvent.click(await screen.findByRole("button", { name: "Mark group offer as redeemed" }));
+    expect(screen.getByRole("dialog")).toHaveTextContent("everyone in this joined group, including unused rewards");
+    fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Cancel" }));
+    expect(mocks.redeemGroup).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Mark group offer as redeemed" }));
+    fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Confirm redemption" }));
+    await waitFor(() => expect(mocks.redeemGroup).toHaveBeenCalledWith(attempt.id));
+    expect(await screen.findByText(/Retired for everyone in this group/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Opt in to this offer" })).not.toBeInTheDocument();
+    expect(mocks.redeem).not.toHaveBeenCalled();
+  });
+
+  it.each(["dashboard", "offers"] as const)("hides individually and group-retired %s cards while keeping active ones", async (surface) => {
+    mocks.attempts.mockResolvedValue([
+      { ...attempt, id: "individual-retired", groupName: "Individual retired", redeemedAt: "2026-01-01" },
+      { ...attempt, id: "group-retired", groupName: "Group retired", groupRedeemedAt: "2026-01-01" },
+      attempt,
+    ]);
+    mount(surface === "dashboard" ? <DashboardMeetups userId="me" open onOpenChange={vi.fn()} /> : <MeetUpsHub />);
+    expect(await screen.findByText("Old friends")).toBeInTheDocument();
+    expect(screen.queryByText("Individual retired")).not.toBeInTheDocument();
+    expect(screen.queryByText("Group retired")).not.toBeInTheDocument();
+  });
+
+  it("keeps group redemption errors visible without retiring the offer", async () => {
+    mocks.attempts.mockResolvedValue([{ ...attempt, canRedeemGroup: true }]);
+    mocks.redeemGroup.mockRejectedValueOnce(new Error("Unable to redeem group"));
+    mount(<MeetUpDetail />, true);
+    fireEvent.click(await screen.findByRole("button", { name: "Mark group offer as redeemed" }));
+    fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Confirm redemption" }));
+    expect(await within(screen.getByRole("dialog")).findByRole("alert")).toHaveTextContent("Unable to redeem group");
+    expect(screen.queryByText(/Retired for everyone/)).not.toBeInTheDocument();
+  });
+
   it("redeems only the member's own reward after a confirmation dialog", async () => {
-    const earned = { ...attempt, participating: true, qualified: true, rewardId: "own-reward", expiresAt: "2099-01-01T00:00:00Z" };
+    const earned = { ...attempt, offer: { ...offer, unlockRule: "individual" as const }, participating: true, qualified: true, rewardId: "own-reward", expiresAt: "2099-01-01T00:00:00Z" };
     mocks.attempts.mockResolvedValue([earned]);
     mocks.redeem.mockImplementation(async () => {
       mocks.attempts.mockResolvedValue([{ ...earned, redeemedAt: "2026-11-13T10:00:00Z" }]);
       return "redeemed";
     });
     mount(<MeetUpDetail />, true);
-    fireEvent.click(await screen.findByRole("button", { name: "Staff review / redeem" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Mark as redeemed" }));
     expect(mocks.redeem).not.toHaveBeenCalled();
     const dialog = screen.getByRole("dialog");
     expect(dialog).toHaveTextContent("member-confirmed, not independently venue verified");
     fireEvent.click(within(dialog).getByRole("button", { name: "Confirm redemption" }));
     await waitFor(() => expect(mocks.redeem).toHaveBeenCalledWith("own-reward"));
-    expect(await screen.findByText(/Redeemed .*Member-confirmed/)).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Staff review / redeem" })).not.toBeInTheDocument();
+    expect(await screen.findByText(/Your offer is retired/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Mark as redeemed" })).not.toBeInTheDocument();
   });
 
   it("shows already-earned-elsewhere and disables expired rewards", async () => {
@@ -847,7 +892,7 @@ describe("venue offers frontend", () => {
     mount(<MeetUpDetail />, true);
     expect(await screen.findByText(/You already earned this offer with another group/)).toBeInTheDocument();
     expect(screen.getByText(/Reward expired/)).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Staff review / redeem" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Mark as redeemed" })).not.toBeInTheDocument();
   });
 
   it("lists offers and snapshot attempts, refetching on check-in events", async () => {
@@ -875,7 +920,7 @@ describe("venue offers frontend", () => {
     mocks.attempts.mockResolvedValue([]);
     mount(<MeetUpsHub />);
     expect(await screen.findByRole("alert")).toHaveTextContent("Offers unavailable");
-    expect(await screen.findByText(/Your groups haven’t selected an offer yet/)).toBeInTheDocument();
+    expect(await screen.findByText("No active joined offers.")).toBeInTheDocument();
     mocks.offers.mockResolvedValue([]);
     fireEvent.click(screen.getByRole("button", { name: "Retry offers" }));
     expect(await screen.findByText("No offers are available right now.")).toBeInTheDocument();

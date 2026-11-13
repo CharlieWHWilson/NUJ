@@ -146,6 +146,14 @@ Deactivation is not revocation of previously selected offers/rewards.
   still opted in and in the group, can retrieve the current code for an unexpired,
   unredeemed reward. Code changes also apply to existing rewards. The code is shared
   per offer, not a unique voucher; member-confirmed single-use redemption still applies.
+  Migration 045 adds redemption retirement. Individual offers retire only for the
+  member redeeming their own reward. Minimum-member and whole-group offers can be
+  marked redeemed by any current group member once a valid group reward is unlocked.
+  Confirmation retires that joined offer and its code for everyone in that group,
+  including unused rewards. Retired offers leave active dashboard/Joined Rewards
+  cards; detail pages retain the record and original terms. Group retirement prevents
+  later qualification from issuing fresh rewards for that joined offer. Venue staff
+  may use the confirmation button on a member's phone; this is not separate staff authentication.
   Unmapped venues sort last with "Distance unavailable". Clear location restores
   catalogue order. Category and location filters apply to both List and Map views,
   not joined rewards. No device geolocation or automatic searches are used.

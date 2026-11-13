@@ -57,6 +57,53 @@ type Attempt = { id: string; progress: number; qualified: boolean; participating
 const attempts = () => scalar<Attempt[]>("select list_meetup_attempts() as value");
 
 describe("venue meet-ups database", () => {
+  it.each(["minimum", "all"])("allows any current member to retire an unlocked %s offer for everyone", async (unlockRule) => {
+    const { attemptId } = await setupOffer({ unlockRule, periods: 1, minimumMembers: 1 });
+    await asUser(member);
+    await db.query("select join_meetup_attempt($1)", [attemptId]);
+    await checkin(owner);
+    if (unlockRule === "all") await checkin(member);
+    await asUser(stranger);
+    await expect(scalar("select redeem_meetup_group($1) as value", [attemptId])).rejects.toThrow("Join this shared group");
+    await asUser(member);
+    await scalar("select redeem_meetup_group($1) as value", [attemptId]);
+    expect(await scalar("select list_meetup_attempts()->0->>'groupRedeemedAt' as value")).toBeTruthy();
+    expect(await scalar("select list_meetup_attempts()->0->>'canRedeemGroup' as value")).toBe("false");
+    await expect(scalar("select redeem_meetup_group($1) as value", [attemptId])).rejects.toThrow("already been redeemed");
+    await asUser(owner);
+    const rewardId = (await attempts())[0].rewardId;
+    await expect(scalar("select get_meetup_reward_code($1) as value", [rewardId])).rejects.toThrow("redeemed");
+    await db.exec("reset role");
+    const before = await scalar<number>("select count(*)::integer as value from meetup_rewards where attempt_id = $1", [attemptId]);
+    await asUser(member);
+    await checkin(member);
+    await db.exec("reset role");
+    await db.query("select refresh_meetup_attempt($1)", [attemptId]);
+    expect(await scalar("select count(*)::integer as value from meetup_rewards where attempt_id = $1", [attemptId])).toBe(before);
+  });
+
+  it("blocks group redemption before unlock and for individual offers", async () => {
+    const individual = await setupOffer();
+    await expect(scalar("select redeem_meetup_group($1) as value", [individual.attemptId])).rejects.toThrow("Individual rewards");
+    const group = await setupOffer({ unlockRule: "minimum", minimumMembers: 2 });
+    await expect(scalar("select redeem_meetup_group($1) as value", [group.attemptId])).rejects.toThrow("No unlocked");
+  });
+
+  it("retires individual rewards without redeeming other group members' rewards", async () => {
+    const { attemptId } = await setupOffer({ periods: 1 });
+    await asUser(member);
+    await db.query("select join_meetup_attempt($1)", [attemptId]);
+    await checkin(owner);
+    await asUser(owner);
+    const ownerReward = (await attempts())[0].rewardId;
+    await scalar("select redeem_meetup_reward($1) as value", [ownerReward]);
+    await checkin(member);
+    await asUser(member);
+    const memberReward = (await attempts())[0].rewardId;
+    expect(memberReward).toBeTruthy();
+    expect(await scalar("select get_meetup_reward_code($1) as value", [memberReward])).toBe("PILOT-COFFEE");
+    expect(await scalar("select list_meetup_attempts()->0->>'groupRedeemedAt' as value")).toBeNull();
+  });
   it("requires codes for active offers and exposes codes only to admins, never snapshots or the catalogue", async () => {
     const { offerId, venueId } = await setupOffer();
     const input = { ...offerInput, venueId };
@@ -130,6 +177,7 @@ describe("venue meet-ups database", () => {
     await db.exec(readFileSync("supabase/migrations/041_offer_venue_coordinates.sql", "utf8"));
     await db.exec(readFileSync("supabase/migrations/043_venue_categories.sql", "utf8"));
     await db.exec(readFileSync("supabase/migrations/044_offer_redemption_codes.sql", "utf8"));
+    await db.exec(readFileSync("supabase/migrations/045_retire_redeemed_meetups.sql", "utf8"));
   }, 30000);
   beforeEach(async () => {
     await db.exec(`reset role; truncate auth.users, meetup_venues cascade;
@@ -237,14 +285,12 @@ describe("venue meet-ups database", () => {
     const rewardId = (await attempts())[0].rewardId;
     await db.query("select redeem_meetup_reward($1)", [rewardId]);
     await db.query("select leave_meetup_attempt($1)", [attemptId]);
-    await db.query("select join_meetup_attempt($1)", [attemptId]);
+    await expect(db.query("select join_meetup_attempt($1)", [attemptId])).rejects.toThrow("already been redeemed");
     await checkin(owner);
     expect((await attempts())[0].rewardId).toBe(rewardId);
     await expect(db.query("select redeem_meetup_reward($1)", [rewardId])).rejects.toThrow(/already been redeemed/);
     const groupId = await scalar<string>("select create_shared_group('Other',1) as value");
-    const secondAttempt = await scalar<string>("select select_meetup_offer($1,$2) as value", [groupId, offerId]);
-    await checkin(owner);
-    expect((await attempts()).find((a) => a.id === secondAttempt)).toMatchObject({ rewardId: null, rewardEarnedElsewhere: true });
+    await expect(scalar("select select_meetup_offer($1,$2) as value", [groupId, offerId])).rejects.toThrow("already been redeemed");
   });
 
   it("requires a new streak after leaving an unlocked all-recipient offer without resetting other members", async () => {

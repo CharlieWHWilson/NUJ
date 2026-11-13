@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useAppRefresh } from "@/hooks/useAppRefresh";
-import { listMeetupAttempts, listOffers } from "@/lib/meetups";
+import { isMeetupRetired, listMeetupAttempts, listOffers } from "@/lib/meetups";
 import { supabase } from "@/lib/supabase";
 import { isVerifiedAuthUser } from "@/lib/auth";
 import { MeetupParticipation } from "@/components/MeetupParticipation";
@@ -45,7 +45,7 @@ export const DashboardMeetups = ({ userId, open, onOpenChange }: Props) => {
     window.addEventListener("nuj:checkin-updated", onCheckin);
     return () => window.removeEventListener("nuj:checkin-updated", onCheckin);
   }, [activeUserId, open, refetchAttempts]);
-  const joinedAttempts = activeUserId ? attempts.data : undefined;
+  const joinedAttempts = activeUserId ? attempts.data?.filter((attempt) => !isMeetupRetired(attempt)) : undefined;
 
   return <div className="nuj-card p-4">
     <Collapsible open={open} onOpenChange={onOpenChange}>

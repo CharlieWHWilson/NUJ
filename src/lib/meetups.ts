@@ -59,13 +59,17 @@ export type MeetupAttempt = {
   unlockedAt: string | null;
   expiresAt: string | null;
   redeemedAt: string | null;
+  groupRedeemedAt?: string | null;
+  canRedeemGroup?: boolean;
 };
+
+export const isMeetupRetired = (attempt: MeetupAttempt) => Boolean(attempt.redeemedAt || attempt.groupRedeemedAt);
 
 export const hasMeetupOfferEnded = (offer: Offer) =>
   offer.endsAt !== null && new Date(offer.endsAt).getTime() <= Date.now();
 
 export const canOptIntoMeetupAttempt = (attempt: MeetupAttempt, userId: string) =>
-  !attempt.participating && !hasMeetupOfferEnded(attempt.offer) && (attempt.offer.unlockRule !== "all" ||
+  !isMeetupRetired(attempt) && !attempt.participating && !hasMeetupOfferEnded(attempt.offer) && (attempt.offer.unlockRule !== "all" ||
     attempt.participants.some((member) => member.userId === userId && member.current));
 
 async function rpc<Result>(name: string, args?: Record<string, unknown>): Promise<Result> {
@@ -74,6 +78,9 @@ async function rpc<Result>(name: string, args?: Record<string, unknown>): Promis
     if (error.code === "PGRST202") {
       if (name === "get_meetup_reward_code") {
         throw new Error("Redemption codes are not available yet. Apply Supabase migration 044_offer_redemption_codes.sql.");
+      }
+      if (name === "redeem_meetup_group") {
+        throw new Error("Group redemption is not available yet. Apply Supabase migration 045_retire_redeemed_meetups.sql.");
       }
       if (name === "leave_meetup_attempt") {
         throw new Error("Leaving offers is not available yet. Apply Supabase migration 040_leave_meetup_offers.sql.");
@@ -105,6 +112,8 @@ export const leaveMeetupAttempt = (attemptId: string) =>
   rpc<null>("leave_meetup_attempt", { p_attempt_id: attemptId });
 export const redeemMeetupReward = (rewardId: string) =>
   rpc<string>("redeem_meetup_reward", { p_reward_id: rewardId });
+export const redeemMeetupGroup = (attemptId: string) =>
+  rpc<string>("redeem_meetup_group", { p_attempt_id: attemptId });
 export const getMeetupRewardCode = (rewardId: string) =>
   rpc<string>("get_meetup_reward_code", { p_reward_id: rewardId });
 

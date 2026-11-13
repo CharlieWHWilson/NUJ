@@ -4,7 +4,7 @@ import { ArrowLeft, CalendarDays, CheckCheck, Gift, MapPin, UserRound, UsersRoun
 import { VenueCategoryIcon } from "@/components/VenueCategoryIcon";
 import { MeetupRewardCode } from "@/components/MeetupRewardCode";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { canOptIntoMeetupAttempt, hasMeetupOfferEnded, describeOfferRule, joinMeetupAttempt, leaveMeetupAttempt, listMeetupAttempts, listOffers, redeemMeetupReward, selectMeetupOffer, type Offer } from "@/lib/meetups";
+import { canOptIntoMeetupAttempt, hasMeetupOfferEnded, isMeetupRetired, describeOfferRule, joinMeetupAttempt, leaveMeetupAttempt, listMeetupAttempts, listOffers, redeemMeetupGroup, redeemMeetupReward, selectMeetupOffer, type Offer } from "@/lib/meetups";
 import { listSharedGroups } from "@/lib/sharedGroups";
 import { useAppRefresh } from "@/hooks/useAppRefresh";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
@@ -114,6 +114,9 @@ const OfferTerms = ({ offer, label = "T&Cs" }: { offer: Offer; label?: string })
         <p className="font-medium text-foreground">Redeem within {offer.redemptionDays} days of unlocking.</p>
         <p>Offer ends: {offer.endsAt ? date(offer.endsAt, offer.venue.timezone) : "No end date"}</p>
         <p>Each offer can be earned once per person, including across groups.</p>
+        <p>{offer.unlockRule === "individual"
+          ? "After using your reward, mark it as redeemed. This retires only your offer and code."
+          : "After the group uses this offer, any current group member can mark it as redeemed. This retires the offer and code for everyone in this joined group, including unused rewards."}</p>
         <p>Selecting an offer is not a reservation or proof of attendance. Venue staff review rewards on the member’s phone; redemption is member-confirmed, not independently venue verified.</p>
       </TermsSection>
       <TermsSection icon={LogOut} title="Leaving or rejoining">
@@ -158,14 +161,15 @@ const MeetUpDetailContent = ({ user }: { user: { id: string } | null }) => {
     return () => window.removeEventListener("nuj:checkin-updated", onCheckin);
   }, [user?.id, refetchAttempts]);
   const update = useMutation({
-    mutationFn: async (action: { type: "select" | "join" | "leave" | "redeem"; value: string }) => {
+    mutationFn: async (action: { type: "select" | "join" | "leave" | "redeem" | "redeem-group"; value: string }) => {
       if (action.type === "select") return selectMeetupOffer(action.value, id!);
       if (action.type === "join") return joinMeetupAttempt(action.value);
       if (action.type === "leave") return leaveMeetupAttempt(action.value);
+      if (action.type === "redeem-group") return redeemMeetupGroup(action.value);
       return redeemMeetupReward(action.value);
     },
     onSuccess: async (_, action) => {
-      if (action.type === "redeem") setRewardId(null);
+      if (action.type === "redeem" || action.type === "redeem-group") setRewardId(null);
       if (action.type === "leave") setLeavingAttemptId(null);
       await queryClient.invalidateQueries({ queryKey: ["meetup-attempts", user?.id] });
     },
@@ -173,11 +177,14 @@ const MeetUpDetailContent = ({ user }: { user: { id: string } | null }) => {
   const matching = attempts.data?.filter((attempt) => attempt.offerId === id) ?? [];
   const listed = offers.data?.find((offer) => offer.id === id);
   const offer = listed ?? matching[0]?.offer;
-  const owners = groups.data?.filter((group) => group.isOwner) ?? [];
+  const owners = groups.data?.filter((group) => group.isOwner &&
+    !matching.some((attempt) => attempt.groupId === group.id && isMeetupRetired(attempt))) ?? [];
   const available = Boolean(listed?.active && listed.venue.active && (!listed.endsAt || new Date(listed.endsAt).getTime() > Date.now()));
-  const ownReward = matching.find((attempt) => attempt.rewardId === rewardId);
+  const ownReward = matching.find((attempt) => attempt.rewardId === rewardId || attempt.id === rewardId);
   const leavingAttempt = matching.find((attempt) => attempt.id === leavingAttemptId);
-  const redeemable = ownReward && !ownReward.redeemedAt && Boolean(ownReward.expiresAt && new Date(ownReward.expiresAt).getTime() > Date.now());
+  const redeemable = ownReward && !isMeetupRetired(ownReward) && (ownReward.offer.unlockRule === "individual"
+    ? Boolean(ownReward.rewardId && ownReward.expiresAt && new Date(ownReward.expiresAt).getTime() > Date.now())
+    : ownReward.canRedeemGroup === true);
   const busy = update.isPending;
 
   return <main className="min-h-screen bg-background max-w-md mx-auto px-5 nuj-safe-top-section nuj-safe-bottom-page space-y-5">
@@ -209,11 +216,15 @@ const MeetUpDetailContent = ({ user }: { user: { id: string } | null }) => {
     {update.error && <p role="alert">{update.error.message}</p>}
     {update.isSuccess && <p role="status">Saved. Group progress and rewards have been refreshed.</p>}
     {offer && attempts.isSuccess && matching.length === 0 && <p className="text-sm text-muted-foreground">No groups have joined this offer yet.</p>}
-    {matching.length > 0 && <h2 className="font-semibold">Joined groups</h2>}
+    {matching.length > 0 && <h2 className="font-semibold">{matching.every(isMeetupRetired) ? "Redeemed offers" : "Joined groups"}</h2>}
     {matching.map((attempt) => {
       const expired = !attempt.expiresAt || new Date(attempt.expiresAt).getTime() <= Date.now();
       return <section key={attempt.id} className="nuj-card p-5 space-y-3">
         <h3 className="font-semibold">{attempt.groupName}</h3>
+        {isMeetupRetired(attempt) ? <>
+          <p className="text-sm font-medium">Redeemed · {attempt.groupRedeemedAt ? "Retired for everyone in this group" : "Your offer is retired"}</p>
+          <OfferTerms offer={attempt.offer} label="Offer terms" />
+        </> : <>
         <p className="text-sm">{attempt.participating ? `Your progress: ${attempt.progress}/${attempt.offer.periods} ${attempt.offer.period}s${attempt.qualified ? " · Qualified" : ""}` : "You have not opted in."}</p>
         {attempt.rewardEarnedElsewhere && <p className="text-sm">You already earned this offer with another group. Each offer can be earned once per person.</p>}
         <ul className="space-y-2 text-sm">
@@ -230,9 +241,12 @@ const MeetUpDetailContent = ({ user }: { user: { id: string } | null }) => {
           {attempt.redeemedAt ? <p className="text-sm">Redeemed {date(attempt.redeemedAt)} · Member-confirmed, not independently venue verified. Single use.</p> : expired ? <p className="text-sm">Reward expired or unavailable for redemption.</p> : <>
             {user && attempt.expiresAt && <MeetupRewardCode key={`${user.id}:${attempt.rewardId}`} rewardId={attempt.rewardId} userId={user.id} expiresAt={attempt.expiresAt} />}
             <p className="text-sm">Show this reward and its original terms to venue staff on your phone. After staff review, explicitly confirm redemption. Single use; member-confirmed, not independently venue verified.</p>
-            <button className="nuj-btn-secondary w-full" disabled={busy} onClick={() => { update.reset(); setRewardId(attempt.rewardId); }}>Staff review / redeem</button>
+            {attempt.offer.unlockRule === "individual" && <button className="nuj-btn-secondary w-full" disabled={busy} onClick={() => { update.reset(); setRewardId(attempt.rewardId); }}>Mark as redeemed</button>}
           </>}
         </div>}
+        {attempt.canRedeemGroup && <button className="nuj-btn-secondary w-full" disabled={busy}
+          onClick={() => { update.reset(); setRewardId(attempt.id); }}>Mark group offer as redeemed</button>}
+        </>}
       </section>;
     })}
     <Dialog open={leavingAttemptId !== null} onOpenChange={(open) => { if (!open && !busy) setLeavingAttemptId(null); }}>
@@ -249,11 +263,17 @@ const MeetUpDetailContent = ({ user }: { user: { id: string } | null }) => {
     </Dialog>
     <Dialog open={rewardId !== null} onOpenChange={(open) => { if (!open && !busy) setRewardId(null); }}>
       <DialogContent className="max-w-sm">
-        <DialogHeader><DialogTitle>Confirm single-use redemption</DialogTitle><DialogDescription>Confirm only after venue staff have reviewed this reward on your phone. This is member-confirmed, not independently venue verified. It can only be redeemed once.</DialogDescription></DialogHeader>
+        <DialogHeader><DialogTitle>Confirm single-use redemption</DialogTitle><DialogDescription>
+          {ownReward?.offer.unlockRule !== "individual"
+            ? "Confirm only after the group has used the offer. This retires the offer and code for everyone in this joined group, including unused rewards. Any current group member can confirm on their phone. This cannot be undone."
+            : "Confirm only after you have used the reward. This retires your offer and code, without affecting other members. This cannot be undone."}
+          {" "}This is member-confirmed, not independently venue verified.
+        </DialogDescription></DialogHeader>
         {ownReward && <><p className="font-semibold">{ownReward.offer.venue.name} · {ownReward.offer.reward}</p><p className="text-sm">{ownReward.offer.terms}</p><p className="text-sm">Expires: {ownReward.expiresAt ? date(ownReward.expiresAt) : "Not specified"}</p></>}
         {update.error && <p role="alert">{update.error.message}</p>}
         <button className="nuj-btn-secondary" disabled={busy} onClick={() => setRewardId(null)}>Cancel</button>
-        <button className="nuj-btn-primary" disabled={busy || !redeemable} onClick={() => { if (rewardId && redeemable) update.mutate({ type: "redeem", value: rewardId }); }}>Confirm redemption</button>
+        <button className="nuj-btn-primary" disabled={busy || !redeemable} onClick={() => { if (ownReward && redeemable) update.mutate(ownReward.offer.unlockRule === "individual"
+          ? { type: "redeem", value: ownReward.rewardId! } : { type: "redeem-group", value: ownReward.id }); }}>Confirm redemption</button>
       </DialogContent>
     </Dialog>
   </main>;

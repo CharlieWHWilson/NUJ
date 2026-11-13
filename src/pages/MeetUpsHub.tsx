@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { ArrowLeft, CalendarDays, CheckCheck, MapPin, SlidersHorizontal, UserRound, UsersRound } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { listMeetupAttempts, listOffers, VENUE_CATEGORIES, type VenueCategory } from "@/lib/meetups";
+import { isMeetupRetired, listMeetupAttempts, listOffers, VENUE_CATEGORIES, type VenueCategory } from "@/lib/meetups";
 import { useAppRefresh } from "@/hooks/useAppRefresh";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { supabase } from "@/lib/supabase";
@@ -56,13 +56,12 @@ const MeetUpsHubContent = ({ user }: { user: { id: string } | null }) => {
   return <main className="min-h-screen bg-background max-w-md mx-auto px-5 nuj-safe-top-section nuj-safe-bottom-page space-y-5">
     <Link to="/dashboard" className="flex items-center gap-2 text-sm text-muted-foreground"><ArrowLeft size={18} />Back</Link>
     <h1 className="text-2xl font-bold">Offers</h1>
-    <p className="text-sm text-muted-foreground">Offers for your shared group.</p>
     <section className="space-y-3" aria-labelledby="joined-rewards">
       <h2 id="joined-rewards" className="font-semibold">Joined Rewards</h2>
       {attempts.isPending && <p role="status">Loading joined offers…</p>}
       {attempts.error && <div role="alert"><p>{attempts.error.message}</p><button className="nuj-btn-secondary mt-2" onClick={() => void attempts.refetch()}>Retry joined offers</button></div>}
-      {attempts.data?.length === 0 && <p className="text-muted-foreground">Your groups haven’t selected an offer yet.</p>}
-      {attempts.data?.map((attempt) => <article key={attempt.id} className="nuj-card p-5 relative space-y-2">
+      {attempts.data?.filter((attempt) => !isMeetupRetired(attempt)).length === 0 && <p className="text-muted-foreground">No active joined offers.</p>}
+      {attempts.data?.filter((attempt) => !isMeetupRetired(attempt)).map((attempt) => <article key={attempt.id} className="nuj-card p-5 relative space-y-2">
         <div className="flex items-start justify-between gap-3">
           <h3 className="font-semibold"><Link to={`/meetup/${attempt.offerId}`} className="after:absolute after:inset-0 focus-visible:after:ring-2 focus-visible:after:ring-ring">{attempt.offer.venue.name} · {attempt.offer.title}</Link></h3>
           <VenueCategoryIcon category={offers.data?.find((offer) => offer.venueId === attempt.offer.venueId)?.venue.category ?? attempt.offer.venue.category} />

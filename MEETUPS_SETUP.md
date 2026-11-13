@@ -125,10 +125,16 @@ Deactivation is not revocation of previously selected offers/rewards.
   Category icons appear at the top-right of available and joined offer cards, including
   dashboard cards. Joined cards use the current catalogue category when available,
   without changing the saved offer snapshot or qualification terms.
-  Offer details show one offer headline, venue and postcode beside a map icon (the
+  Offer details show the venue as the card heading, the offer immediately below,
+  and the postcode beside a map icon (the
   full address is shown if no UK postcode is present). The full address, reward specifics, venue
   description and qualification rules are in icon-led T&Cs sections. The main card
   includes a compact cadence/duration strip; participation and progress remain visible.
+  Available offer cards use icon chips for cadence, consecutive periods and who needs
+  to qualify instead of long reward/rule paragraphs. Full details remain in the offer T&Cs.
+  Summary cards allow pending members to opt in, but opting out is only available
+  after opening the joined offer's detail page. Member-facing copy uses "joined",
+  not the internal "attempt" terminology.
   Unmapped venues sort last with "Distance unavailable". Clear location restores
   catalogue order. Category and location filters apply to both List and Map views,
   not joined rewards. No device geolocation or automatic searches are used.

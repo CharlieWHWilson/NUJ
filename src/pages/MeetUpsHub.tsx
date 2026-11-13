@@ -1,8 +1,8 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { ArrowLeft, MapPin, SlidersHorizontal, UsersRound } from "lucide-react";
+import { ArrowLeft, CalendarDays, CheckCheck, MapPin, SlidersHorizontal, UserRound, UsersRound } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { describeOfferRule, listMeetupAttempts, listOffers, VENUE_CATEGORIES, type VenueCategory } from "@/lib/meetups";
+import { listMeetupAttempts, listOffers, VENUE_CATEGORIES, type VenueCategory } from "@/lib/meetups";
 import { useAppRefresh } from "@/hooks/useAppRefresh";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { supabase } from "@/lib/supabase";
@@ -59,8 +59,8 @@ const MeetUpsHubContent = ({ user }: { user: { id: string } | null }) => {
     <p className="text-sm text-muted-foreground">Offers for your shared group.</p>
     <section className="space-y-3" aria-labelledby="joined-rewards">
       <h2 id="joined-rewards" className="font-semibold">Joined Rewards</h2>
-      {attempts.isPending && <p role="status">Loading group attempts…</p>}
-      {attempts.error && <div role="alert"><p>{attempts.error.message}</p><button className="nuj-btn-secondary mt-2" onClick={() => void attempts.refetch()}>Retry attempts</button></div>}
+      {attempts.isPending && <p role="status">Loading joined offers…</p>}
+      {attempts.error && <div role="alert"><p>{attempts.error.message}</p><button className="nuj-btn-secondary mt-2" onClick={() => void attempts.refetch()}>Retry joined offers</button></div>}
       {attempts.data?.length === 0 && <p className="text-muted-foreground">Your groups haven’t selected an offer yet.</p>}
       {attempts.data?.map((attempt) => <article key={attempt.id} className="nuj-card p-5 relative space-y-2">
         <div className="flex items-start justify-between gap-3">
@@ -139,8 +139,23 @@ const MeetUpsHubContent = ({ user }: { user: { id: string } | null }) => {
             {origin && <p className="text-xs">{distance === null ? "Distance unavailable" : `${distance.toFixed(1)} miles`}</p>}
           </div>
         </div>
-        <p>{offer.reward}</p>
-        <p className="text-sm text-muted-foreground">{describeOfferRule(offer)}</p>
+        <dl className="flex flex-wrap gap-2 text-xs">
+          <div className="flex items-center gap-1.5 rounded-lg bg-muted/40 px-2 py-2">
+            <CalendarDays size={15} className="text-muted-foreground" aria-hidden="true" />
+            <dt className="sr-only">Check-in cadence</dt>
+            <dd>{offer.period === "day" ? "Daily" : "Weekly"}</dd>
+          </div>
+          <div className="flex items-center gap-1.5 rounded-lg bg-muted/40 px-2 py-2">
+            <CheckCheck size={15} className="text-muted-foreground" aria-hidden="true" />
+            <dt className="sr-only">Consecutive check-in periods</dt>
+            <dd>{offer.periods} {offer.period === "day" ? offer.periods === 1 ? "day" : "days" : offer.periods === 1 ? "week" : "weeks"} in a row</dd>
+          </div>
+          <div className="flex items-center gap-1.5 rounded-lg bg-muted/40 px-2 py-2">
+            {offer.unlockRule === "individual" ? <UserRound size={15} className="text-muted-foreground" aria-hidden="true" /> : <UsersRound size={15} className="text-muted-foreground" aria-hidden="true" />}
+            <dt className="sr-only">Who needs to qualify</dt>
+            <dd>{offer.unlockRule === "individual" ? "Individually" : offer.unlockRule === "minimum" ? `${offer.minimumMembers}+ members` : "All starting members"}</dd>
+          </div>
+        </dl>
       </Link>;
       })}
     </section>

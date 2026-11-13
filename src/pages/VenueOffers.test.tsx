@@ -187,8 +187,8 @@ describe("venue offers frontend", () => {
     expect(screen.getAllByRole("heading", { level: 2 }).map((heading) => heading.textContent)).toEqual(["Joined Rewards", "Available offers"]);
     const availableCard = headings[1].closest("a");
     const joinedHeading = headings[0];
-    expect(headings[1].parentElement?.nextElementSibling).toHaveTextContent(offer.reward);
-    expect(headings[1].parentElement?.nextElementSibling?.nextElementSibling).toHaveClass("text-muted-foreground");
+    expect(headings[1].parentElement?.nextElementSibling).toHaveTextContent("Weekly");
+    expect(headings[1].parentElement?.nextElementSibling).toHaveTextContent("2 weeks in a row");
     const attemptCard = joinedHeading.closest("article");
     expect(availableCard).toHaveAttribute("href", "/meetup/offer");
     expect(within(joinedHeading).getByRole("link")).toHaveAttribute("href", "/meetup/offer");
@@ -198,7 +198,7 @@ describe("venue offers frontend", () => {
     expect(availableCard).toHaveTextContent(offer.title);
     expect(joinedHeading.parentElement?.nextElementSibling).toHaveTextContent(attempt.groupName);
     expect(joinedHeading.parentElement?.nextElementSibling?.textContent).toBe(attempt.groupName);
-    expect(availableCard).toHaveTextContent(offer.reward);
+    expect(availableCard).not.toHaveTextContent(offer.reward);
     expect(attemptCard).toHaveTextContent(offer.reward);
   });
 
@@ -351,7 +351,7 @@ describe("venue offers frontend", () => {
   it("filters available offers by the dashboard venue link without hiding group attempts", async () => {
     mocks.offers.mockResolvedValue([offer, { ...offer, id: "other-offer", venueId: "other-venue", venue: { ...venue, id: "other-venue", name: "Another café" } }]);
     mount(<MeetUpsHub />, false, "/?venue=venue");
-    expect(await screen.findByRole("link", { name: /Local café · Coffee together.*Check in/ })).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: /Local café · Coffee together.*Weekly/ })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /Another café/ })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Local café · Coffee together" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("link", { name: "Show all offers" }));
@@ -406,13 +406,13 @@ describe("venue offers frontend", () => {
 
   it.each([["hub", false], ["detail", true]] as const)("hides previous-user offer and attempt caches on %s account switch and sign-out", async (_, detail) => {
     const client = mount(detail ? <MeetUpDetail /> : <MeetUpsHub />, detail);
-    await screen.findByText(detail ? "Original offer for this attempt" : "Old friends");
+    await screen.findByText(detail ? "Offer terms when joined" : "Old friends");
     expect(client.getQueryData(["meetup-attempts", "me"])).toEqual([attempt]);
     mocks.offers.mockResolvedValue([]);
     mocks.attempts.mockResolvedValue([]);
     mocks.groups.mockResolvedValue([]);
     act(() => mocks.auth.mock.calls[0][0]("SIGNED_IN", { user: { id: "other-user", email_confirmed_at: "2026-01-01" } }));
-    expect(screen.queryByText("Original offer for this attempt")).not.toBeInTheDocument();
+    expect(screen.queryByText("Offer terms when joined")).not.toBeInTheDocument();
     expect(screen.queryByText("Old friends")).not.toBeInTheDocument();
     expect(screen.queryByText(offer.reward)).not.toBeInTheDocument();
     await waitFor(() => expect(client.getQueryData(["meetup-attempts", "other-user"])).toEqual([]));
@@ -450,7 +450,7 @@ describe("venue offers frontend", () => {
     fireEvent.click(screen.getByRole("button", { name: "Leave offer" }));
     fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Confirm leave offer" }));
     await waitFor(() => expect(mocks.leave).toHaveBeenCalledWith(attempt.id));
-    expect(await screen.findByRole("button", { name: "Opt in to this attempt" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Opt in to this offer" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Leave offer" })).not.toBeInTheDocument();
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
@@ -482,18 +482,13 @@ describe("venue offers frontend", () => {
     expect(mocks.join).not.toHaveBeenCalled();
     fireEvent.click(optIn);
     await waitFor(() => expect(mocks.join).toHaveBeenCalledWith(attempt.id));
-    fireEvent.click(await screen.findByRole("button", { name: "Opt out" }));
-    expect(screen.getByRole("dialog")).toHaveTextContent("You will stay in the shared group.");
-    fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Opt in" })).not.toBeInTheDocument());
+    expect(screen.queryByRole("button", { name: "Opt out" })).not.toBeInTheDocument();
     expect(mocks.leave).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", { name: "Opt out" }));
-    fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Confirm opt out" }));
-    await waitFor(() => expect(mocks.leave).toHaveBeenCalledWith(attempt.id));
-    expect(await screen.findByRole("button", { name: "Opt in" })).toBeInTheDocument();
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
-  it.each(["dashboard", "offers"])("surfaces opt-in and opt-out errors on %s cards", async (surface) => {
+  it.each(["dashboard", "offers"])("surfaces opt-in errors on %s cards", async (surface) => {
     mocks.join.mockRejectedValueOnce(new Error("Unable to opt in"));
     mount(surface === "dashboard" ? <DashboardMeetups userId="me" open onOpenChange={vi.fn()} /> : <MeetUpsHub />);
     fireEvent.click(await screen.findByRole("button", { name: "Opt in" }));
@@ -504,11 +499,8 @@ describe("venue offers frontend", () => {
       return null;
     });
     fireEvent.click(screen.getByRole("button", { name: "Opt in" }));
-    fireEvent.click(await screen.findByRole("button", { name: "Opt out" }));
-    mocks.leave.mockRejectedValueOnce(new Error("Unable to opt out"));
-    fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Confirm opt out" }));
-    expect(await within(screen.getByRole("dialog")).findByRole("alert")).toHaveTextContent("Unable to opt out");
-    expect(within(screen.getByRole("dialog")).getByRole("button", { name: "Confirm opt out" })).toBeEnabled();
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Opt in" })).not.toBeInTheDocument());
+    expect(screen.queryByRole("button", { name: "Opt out" })).not.toBeInTheDocument();
   });
 
   it.each(["all", "minimum", "individual"] as const)("respects starting roster eligibility for %s offers on cards", async (unlockRule) => {
@@ -544,18 +536,19 @@ describe("venue offers frontend", () => {
     mount(<MeetUpDetail />, true);
     await screen.findByText("You have not opted in.");
     if (unlockRule === "all") {
-      expect(screen.queryByRole("button", { name: "Opt in to this attempt" })).not.toBeInTheDocument();
-      expect(screen.getByText(/not in this attempt’s starting roster/)).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Opt in to this offer" })).not.toBeInTheDocument();
+      expect(screen.getByText(/not in the starting roster for this joined group/)).toBeInTheDocument();
     } else {
-      fireEvent.click(screen.getByRole("button", { name: "Opt in to this attempt" }));
+      fireEvent.click(screen.getByRole("button", { name: "Opt in to this offer" }));
       await waitFor(() => expect(mocks.join).toHaveBeenCalledWith(attempt.id));
     }
   });
 
-  it.each(["dashboard", "offers"])("clears the %s opt-out confirmation on account switch", async (surface) => {
+  it.each(["dashboard", "offers"])("only links joined %s cards to the detail page for opting out", async (surface) => {
     mocks.attempts.mockResolvedValue([{ ...attempt, participating: true }]);
     mount(surface === "dashboard" ? <DashboardMeetups userId="me" open onOpenChange={vi.fn()} /> : <MeetUpsHub />);
-    fireEvent.click(await screen.findByRole("button", { name: "Opt out" }));
+    expect(await screen.findByRole("link", { name: "Local café · Coffee together" })).toHaveAttribute("href", "/meetup/offer");
+    expect(screen.queryByRole("button", { name: "Opt out" })).not.toBeInTheDocument();
     mocks.attempts.mockResolvedValue([]);
     act(() => mocks.auth.mock.calls[0][0]("SIGNED_IN", { user: { id: "other-user", email_confirmed_at: "2026-01-01" } }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
@@ -618,15 +611,15 @@ describe("venue offers frontend", () => {
     mocks.attempts.mockResolvedValue([]);
     mocks.offers.mockResolvedValue([offer, { ...offer, id: "other-offer", venueId: "other-venue", venue: { ...venue, id: "other-venue", name: "Other café" } }]);
     mount(<MeetUpsHub />, false, "/?venue=venue");
-    await screen.findByRole("link", { name: /Local café · Coffee together.*Check in/ });
+    await screen.findByRole("link", { name: /Local café · Coffee together.*Weekly/ });
     expect(screen.queryByRole("region", { name: "Map of offer venues" })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Map" }));
     const map = await screen.findByRole("region", { name: "Map of offer venues" });
     expect(map).toHaveTextContent(venue.name);
     expect(map).not.toHaveTextContent("Other café");
-    expect(screen.queryByRole("link", { name: /Local café · Coffee together.*Check in/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Local café · Coffee together.*Weekly/ })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "List" }));
-    expect(await screen.findByRole("link", { name: /Local café · Coffee together.*Check in/ })).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: /Local café · Coffee together.*Weekly/ })).toBeInTheDocument();
   });
 
   it("normalizes new offer payloads and forces individual rewards to qualifying recipients", async () => {
@@ -693,8 +686,8 @@ describe("venue offers frontend", () => {
     fireEvent.click(screen.getByRole("button", { name: "Select offer for group" }));
     await waitFor(() => expect(mocks.select).toHaveBeenCalledWith("group", "offer"));
     expect(mocks.join).not.toHaveBeenCalled();
-    await waitFor(() => expect(screen.getByRole("button", { name: "Opt in to this attempt" })).toBeEnabled());
-    fireEvent.click(screen.getByRole("button", { name: "Opt in to this attempt" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Opt in to this offer" })).toBeEnabled());
+    fireEvent.click(screen.getByRole("button", { name: "Opt in to this offer" }));
     await waitFor(() => expect(mocks.join).toHaveBeenCalledWith("attempt"));
     expect(invalidation).toHaveBeenCalledWith({ queryKey: ["meetup-attempts", "me"] });
     fireEvent.click(screen.getAllByRole("button", { name: "T&Cs" })[0]);
@@ -706,18 +699,19 @@ describe("venue offers frontend", () => {
     mocks.offers.mockResolvedValue([]);
     mocks.attempts.mockResolvedValue([{ ...attempt, offer: { ...offer, active: false }, participants: [attempt.participants[1]] }]);
     mount(<MeetUpDetail />, true);
-    expect(await screen.findByText(/not in this attempt’s starting roster/)).toBeInTheDocument();
+    expect(await screen.findByText(/not in the starting roster for this joined group/)).toBeInTheDocument();
     expect(screen.getAllByText("1 High Street")).toHaveLength(2);
-    expect(screen.queryByRole("button", { name: "Opt in to this attempt" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Opt in to this offer" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Select offer for group" })).not.toBeInTheDocument();
   });
 
   it("uses the immutable snapshot for original rules even when the listing changes", async () => {
     mocks.offers.mockResolvedValue([{ ...offer, title: "Edited listing", reward: "Different reward" }]);
     mount(<MeetUpDetail />, true);
-    expect(await screen.findByRole("heading", { name: "Edited listing", level: 2 })).toBeInTheDocument();
-    fireEvent.click(screen.getByText("Original offer for this attempt"));
-    expect(screen.getByRole("heading", { name: offer.title, level: 2 })).toBeInTheDocument();
+    expect(await screen.findByText("Edited listing")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("Offer terms when joined"));
+    expect(screen.getByText(offer.title)).toBeInTheDocument();
+    expect(screen.getAllByRole("heading", { name: venue.name, level: 2 })).toHaveLength(2);
     expect(screen.getAllByText(venue.name).length).toBeGreaterThan(0);
     fireEvent.click(screen.getAllByRole("button", { name: "T&Cs" })[1]);
     expect(screen.getByRole("dialog")).toHaveTextContent(offer.reward);
@@ -773,7 +767,7 @@ describe("venue offers frontend", () => {
   it("shows original terms in the snapshot T&Cs after a listing is edited", async () => {
     mocks.offers.mockResolvedValue([{ ...offer, terms: "New terms", redemptionDays: 14 }]);
     mount(<MeetUpDetail />, true);
-    fireEvent.click(await screen.findByText("Original offer for this attempt"));
+    fireEvent.click(await screen.findByText("Offer terms when joined"));
     fireEvent.click(screen.getAllByRole("button", { name: "T&Cs" })[1]);
     const dialog = screen.getByRole("dialog");
     expect(dialog).toHaveTextContent(offer.terms);
@@ -810,7 +804,7 @@ describe("venue offers frontend", () => {
     mount(<MeetUpsHub />);
     const link = await screen.findByRole("link", { name: "Local café · Coffee together" });
     expect(link).toHaveAttribute("href", "/meetup/offer");
-    expect(screen.getByRole("link", { name: /Local café · Coffee together.*Check in/ })).toHaveAttribute("href", "/meetup/offer");
+    expect(screen.getByRole("link", { name: /Local café · Coffee together.*Weekly/ })).toHaveAttribute("href", "/meetup/offer");
     const calls = mocks.attempts.mock.calls.length;
     fireEvent(window, new Event("nuj:checkin-updated"));
     await waitFor(() => expect(mocks.attempts.mock.calls.length).toBeGreaterThan(calls));

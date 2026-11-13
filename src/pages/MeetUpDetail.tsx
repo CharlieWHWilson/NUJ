@@ -21,10 +21,10 @@ const TermsSection = ({ icon: Icon, title, children }: { icon: LucideIcon; title
 
 const OfferSummary = ({ offer }: { offer: Offer }) => <div className="nuj-card p-5 space-y-3">
   <div className="flex items-start justify-between gap-3">
-    <h2 className="text-xl font-semibold">{offer.title}</h2>
+    <h2 className="text-xl font-semibold">{offer.venue.name}</h2>
     <VenueCategoryIcon category={offer.venue.category} />
   </div>
-  <p className="text-sm text-muted-foreground">{offer.venue.name}</p>
+  <p className="text-lg font-medium">{offer.title}</p>
   <dl className="flex items-start gap-3 rounded-xl bg-muted/40 p-3">
     <div className="flex min-w-0 flex-1 items-start gap-2">
       <CalendarDays size={18} className="mt-0.5 shrink-0 text-muted-foreground" aria-hidden="true" />
@@ -70,7 +70,7 @@ const OfferSummary = ({ offer }: { offer: Offer }) => <div className="nuj-card p
           </div>
         </dl>
         <p>{describeOfferRule(offer)}</p>
-        {offer.unlockRule === "all" && <p>The starting group roster is fixed. Every starting member must opt in and qualify; members joining the group later are not eligible for that attempt. A starting member leaving before unlock can prevent the group from qualifying.</p>}
+        {offer.unlockRule === "all" && <p>The starting group roster is fixed. Every starting member must opt in and qualify; members joining the group later are not eligible to join this offer with that group. A starting member leaving before unlock can prevent the group from qualifying.</p>}
       </TermsSection>
       <TermsSection icon={CalendarDays} title="Check-in rules">
       <p className="text-sm">Opt in explicitly. Only accepted opt-ins count, and each member starts their own check-in period when they accept. Only normal NUJ check-ins after acceptance count; earlier check-ins do not. No extra check-in is needed.</p>
@@ -151,13 +151,13 @@ const MeetUpDetailContent = ({ user }: { user: { id: string } | null }) => {
   return <main className="min-h-screen bg-background max-w-md mx-auto px-5 nuj-safe-top-section nuj-safe-bottom-page space-y-5">
     <Link to="/meetups" className="flex items-center gap-2 text-sm text-muted-foreground"><ArrowLeft size={18} />Back to offers</Link>
     <h1 className="text-2xl font-bold">Offer details</h1>
-    {(offers.isPending || attempts.isPending) && <p role="status">Loading offer and group attempts…</p>}
+    {(offers.isPending || attempts.isPending) && <p role="status">Loading offer and joined groups…</p>}
     {offers.error && <div role="alert"><p>{offers.error.message}</p><button className="nuj-btn-secondary" onClick={() => void offers.refetch()}>Retry offer</button></div>}
-    {attempts.error && <div role="alert"><p>{attempts.error.message}</p><button className="nuj-btn-secondary" onClick={() => void attempts.refetch()}>Retry attempts</button></div>}
-    {!offer && offers.isSuccess && attempts.isSuccess && <p>This offer is no longer available, and you have no saved attempts for it.</p>}
+    {attempts.error && <div role="alert"><p>{attempts.error.message}</p><button className="nuj-btn-secondary" onClick={() => void attempts.refetch()}>Retry joined offers</button></div>}
+    {!offer && offers.isSuccess && attempts.isSuccess && <p>This offer is no longer available, and none of your groups have joined it.</p>}
     {offer && <>
       <OfferSummary offer={offer} />
-      {!available && <p className="text-sm text-muted-foreground">This offer is no longer available for new group selections. Saved attempts keep their original offer and rules.</p>}
+      {!available && <p className="text-sm text-muted-foreground">This offer is no longer available for new group selections. Joined groups keep their original offer and rules.</p>}
       {available && <section className="nuj-card p-5 space-y-3">
         <h2 className="font-semibold">Select for a group you own</h2>
         {groups.isPending && <p role="status">Loading shared groups…</p>}
@@ -176,21 +176,21 @@ const MeetUpDetailContent = ({ user }: { user: { id: string } | null }) => {
     </>}
     {update.error && <p role="alert">{update.error.message}</p>}
     {update.isSuccess && <p role="status">Saved. Group progress and rewards have been refreshed.</p>}
-    {offer && attempts.isSuccess && matching.length === 0 && <p className="text-sm text-muted-foreground">No group attempts yet for this offer.</p>}
-    {matching.length > 0 && <h2 className="font-semibold">Group attempts</h2>}
+    {offer && attempts.isSuccess && matching.length === 0 && <p className="text-sm text-muted-foreground">No groups have joined this offer yet.</p>}
+    {matching.length > 0 && <h2 className="font-semibold">Joined groups</h2>}
     {matching.map((attempt) => {
       const expired = !attempt.expiresAt || new Date(attempt.expiresAt).getTime() <= Date.now();
       return <section key={attempt.id} className="nuj-card p-5 space-y-3">
         <h3 className="font-semibold">{attempt.groupName}</h3>
-        <details><summary className="cursor-pointer text-sm">Original offer for this attempt</summary><OfferSummary offer={attempt.offer} /></details>
+        <details><summary className="cursor-pointer text-sm">Offer terms when joined</summary><OfferSummary offer={attempt.offer} /></details>
         <p className="text-sm">{attempt.participating ? `Your progress: ${attempt.progress}/${attempt.offer.periods} ${attempt.offer.period}s${attempt.qualified ? " · Qualified" : ""}` : "You have not opted in."}</p>
         {attempt.rewardEarnedElsewhere && <p className="text-sm">You already earned this offer with another group. Each offer can be earned once per person.</p>}
         <ul className="space-y-2 text-sm">
           {attempt.participants.map((member) => <li key={member.userId}>{member.name}{!member.current ? " (no longer in group)" : ""} · {member.accepted ? member.qualified ? "Accepted · Qualified" : "Accepted · In progress" : "Not accepted · Not counting"}</li>)}
         </ul>
-        {user && canOptIntoMeetupAttempt(attempt, user.id) && <button className="nuj-btn-primary w-full" disabled={busy} onClick={() => update.mutate({ type: "join", value: attempt.id })}>Opt in to this attempt</button>}
+        {user && canOptIntoMeetupAttempt(attempt, user.id) && <button className="nuj-btn-primary w-full" disabled={busy} onClick={() => update.mutate({ type: "join", value: attempt.id })}>Opt in to this offer</button>}
         {!attempt.participating && hasMeetupOfferEnded(attempt.offer) && <p className="text-sm text-muted-foreground">Offer ended. You can no longer opt in.</p>}
-        {!attempt.participating && attempt.offer.unlockRule === "all" && !attempt.participants.some((member) => member.userId === user?.id) && <p className="text-sm">You are not in this attempt’s starting roster and cannot opt in.</p>}
+        {!attempt.participating && attempt.offer.unlockRule === "all" && !attempt.participants.some((member) => member.userId === user?.id) && <p className="text-sm">You are not in the starting roster for this joined group and cannot opt in.</p>}
         {attempt.participating && <button className="nuj-btn-secondary w-full" disabled={busy} onClick={() => { update.reset(); setLeavingAttemptId(attempt.id); }}>Leave offer</button>}
         {attempt.rewardId && <div className="rounded-xl bg-muted p-4 space-y-2">
           <h4 className="font-semibold">Your reward: {attempt.offer.reward}</h4>

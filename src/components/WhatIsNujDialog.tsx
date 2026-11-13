@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactElement } from "react";
 import { Link } from "react-router-dom";
+import { Capacitor } from "@capacitor/core";
 import {
   Check, Crown, HelpCircle, MessageCircle, Share2, UserRound, UserRoundPlus, UsersRound, type LucideIcon,
 } from "lucide-react";
@@ -140,7 +141,8 @@ export const WhatIsNujDialog = ({ trigger }: { trigger?: ReactElement } = {}) =>
             </CarouselItem>;
           })}
         </CarouselContent>
-        <div className="sticky bottom-0 bg-background px-5 py-4 border-t border-border flex items-center justify-between gap-2">
+        <div className="sticky bottom-0 bg-background px-5 py-4 border-t border-border">
+          <div className="flex items-center justify-between gap-2">
           <CarouselPrevious className="static h-9 w-9 shrink-0 translate-x-0 translate-y-0" title="Previous slide" />
           <div className="flex items-center" aria-label="Choose a slide">
             {slides.map((slide, index) => <button key={slide.title} onClick={() => api?.scrollTo(index)}
@@ -151,6 +153,12 @@ export const WhatIsNujDialog = ({ trigger }: { trigger?: ReactElement } = {}) =>
           {selected === slides.length - 1
             ? <DialogClose asChild><button className="h-9 min-w-9 text-xs font-medium">Done</button></DialogClose>
             : <CarouselNext className="static h-9 w-9 shrink-0 translate-x-0 translate-y-0" title="Next slide" />}
+          </div>
+          {!Capacitor.isNativePlatform() && <div className="mt-2 flex justify-center">
+            <DialogClose asChild>
+              <Link to="/explainer" className="rounded-full border border-border px-5 py-2 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">More</Link>
+            </DialogClose>
+          </div>}
         </div>
         <p className="sr-only" role="status" aria-live="polite">Slide {selected + 1} of {slides.length}: {slides[selected].title}</p>
       </Carousel>

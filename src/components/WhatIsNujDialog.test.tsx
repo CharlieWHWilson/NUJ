@@ -2,6 +2,7 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { WhatIsNujDialog } from "./WhatIsNujDialog";
+import { Capacitor } from "@capacitor/core";
 
 const carousel = vi.hoisted(() => {
   const listeners = new Map<string, Set<(api: unknown) => void>>();
@@ -59,6 +60,23 @@ describe("What is NUJ carousel", () => {
     expect(screen.getAllByRole("button", { name: /Go to slide/ })).toHaveLength(6);
     fireEvent.click(screen.getByRole("button", { name: "Go to slide 5: Shared groups" }));
     expect(screen.getByRole("heading", { name: "Shared groups" })).toBeInTheDocument();
+  });
+
+  it("shows More below slide navigation on the website and closes the dialog when followed", () => {
+    open();
+    const more = screen.getByRole("link", { name: "More" });
+    expect(more).toHaveAttribute("href", "/explainer");
+    const lastDot = screen.getByRole("button", { name: "Go to slide 6: Gentle nudges" });
+    expect(lastDot.compareDocumentPosition(more) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    fireEvent.click(more);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("does not link to the website-only explainer in the native carousel", () => {
+    const native = vi.spyOn(Capacitor, "isNativePlatform").mockReturnValue(true);
+    open();
+    expect(screen.queryByRole("link", { name: "More" })).not.toBeInTheDocument();
+    native.mockRestore();
   });
 
   it("moves forward and backward using arrows and announces the active slide", () => {

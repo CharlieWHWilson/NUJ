@@ -87,7 +87,8 @@ describe("App integration routing", () => {
     expect(await screen.findByText("Sign in or create an account")).toBeInTheDocument();
     expect(window.location.pathname).toBe("/auth");
     expect(screen.queryByRole("button", { name: "Get in touch" })).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "About NUJ" })).toHaveAttribute("href", "/explainer");
+    expect(screen.queryByRole("link", { name: "About NUJ" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "What is NUJ?" })).toBeInTheDocument();
   });
 
   it("lands on check-in from / when authenticated", async () => {

@@ -12,6 +12,12 @@ describe("Mission", () => {
     expect(screen.queryByRole("img", { name: "NUJ" })).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Stay connected" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "How NUJ works" })).toBeInTheDocument();
+    const checkInRow = screen.getByText("Check in.").closest(".mission-rhythm-row");
+    const nujRow = screen.getByText("Send a NUJ.").closest(".mission-rhythm-row");
+    expect(checkInRow).toHaveTextContent("👍");
+    expect(screen.getByText("See your mates' check-ins.").closest(".mission-rhythm-row")).toHaveTextContent("👋");
+    expect(nujRow).toHaveTextContent("👉");
+    expect(nujRow?.querySelector("svg")).toBeNull();
     const downloads = screen.getAllByRole("link", { name: /Download on the App Store|Get NUJ for iPhone/ });
     expect(downloads).toHaveLength(5);
     for (const link of downloads) {

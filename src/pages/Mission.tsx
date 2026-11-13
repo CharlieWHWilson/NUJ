@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
-import { ArrowDown, ArrowRight, Coffee, Hand, Heart, UsersRound } from "lucide-react";
+import { ArrowDown, ArrowRight, Coffee, UsersRound } from "lucide-react";
+import { NUJ_SYMBOLS } from "@/lib/nujSymbols";
 import { APP_STORE_URL } from "@/lib/mateInvite";
 import "./Mission.css";
 
@@ -24,7 +25,7 @@ const Mission = () => {
       <main id="mission-content">
         <section className="mission-hero mission-container" aria-labelledby="mission-title">
           <div>
-            <span className="mission-symbol bg-secondary" aria-hidden="true"><Hand /></span>
+            <span className="mission-symbol bg-secondary text-5xl" aria-hidden="true">{NUJ_SYMBOLS.presence}</span>
             <h1 id="mission-title">Stay connected</h1>
             <p className="mission-intro">NUJ lets you check in with mates without needing to think of something to say.</p>
             <p>It's a simple way to keep in touch, so catching up in person feels a little easier.</p>
@@ -34,9 +35,9 @@ const Mission = () => {
           </div>
           <div id="how" className="mission-rhythm" aria-labelledby="how-title">
             <h2 id="how-title">How NUJ works</h2>
-            <div className="mission-rhythm-row"><span><Hand aria-hidden="true" /></span><div><strong>Check in.</strong><p>Tap once to show your mates you're around.</p></div></div>
-            <div className="mission-rhythm-row"><span><UsersRound aria-hidden="true" /></span><div><strong>See your mates' check-ins.</strong><p>Connect individually or in a shared group.</p></div></div>
-            <div className="mission-rhythm-row"><span><Heart aria-hidden="true" /></span><div><strong>Send a NUJ.</strong><p>Let someone know you're thinking of them. No message needed.</p></div></div>
+            <div className="mission-rhythm-row"><span className="text-2xl" aria-hidden="true">{NUJ_SYMBOLS.checkIn}</span><div><strong>Check in.</strong><p>Tap once to show your mates you're around.</p></div></div>
+            <div className="mission-rhythm-row"><span className="text-2xl" aria-hidden="true">{NUJ_SYMBOLS.presence}</span><div><strong>See your mates' check-ins.</strong><p>Connect individually or in a shared group.</p></div></div>
+            <div className="mission-rhythm-row"><span className="text-2xl" aria-hidden="true">{NUJ_SYMBOLS.sendNuj}</span><div><strong>Send a NUJ.</strong><p>Let someone know you're thinking of them. No message needed.</p></div></div>
           </div>
         </section>
 
@@ -73,7 +74,7 @@ const Mission = () => {
 
           <section id="community-groups" className="mission-audience" aria-labelledby="community-groups-title">
             <div>
-              <span className="mission-symbol bg-emerald-50" aria-hidden="true"><Heart /></span>
+              <span className="mission-symbol bg-emerald-50" aria-hidden="true"><UsersRound /></span>
               <p className="mission-eyebrow">Community and support groups</p>
               <h3 id="community-groups-title">Keep your group connected between meetings.</h3>
               <p>Organised meet-up groups with a leader, host or organiser.</p>

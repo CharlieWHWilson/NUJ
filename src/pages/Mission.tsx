@@ -61,11 +61,11 @@ const Mission = () => {
           <section id="mates" className="mission-audience" aria-labelledby="mates-title">
             <div>
               <span className="mission-symbol bg-secondary" aria-hidden="true"><UsersRound /></span>
-              <p className="mission-eyebrow">Groups of mates</p>
-              <h3 id="mates-title">Stay connected without messaging</h3>
+              <h3 id="mates-title">Groups of mates</h3>
               <p>Team mates, school mates, holiday mates etc.</p>
             </div>
             <div>
+              <p>Stay connected without messaging</p>
               <p>Create a group, check in with one tap and see when your mates last checked in. Send a NUJ to let someone know you're thinking of them. No group-chat conversation to keep up with.</p>
               <p className="mission-audience-value">Stay aware of each other’s presence between real life meet-ups, so it's easier to spend time together in person.</p>
               <a href={APP_STORE_URL} className="mission-text-link">Get NUJ for iPhone <ArrowRight size={18} aria-hidden="true" /></a>
@@ -75,11 +75,11 @@ const Mission = () => {
           <section id="community-groups" className="mission-audience" aria-labelledby="community-groups-title">
             <div>
               <span className="mission-symbol bg-emerald-50" aria-hidden="true"><UsersRound /></span>
-              <p className="mission-eyebrow">Community and support groups</p>
-              <h3 id="community-groups-title">Keep your group connected between meetings.</h3>
+              <h3 id="community-groups-title">Community and support groups</h3>
               <p>Organised meet-up groups with a leader, host or organiser.</p>
             </div>
             <div>
+              <p>Keep your group connected between meetings.</p>
               <p>If you run or host a group, invite members to a shared NUJ group. They can check in with each other and keep in touch between the meet-ups you organise, without needing to start a conversation.</p>
               <p className="mission-audience-value">A way for the people you bring together to stay connected beyond the meet-up. Joining NUJ is optional for members.</p>
               <a href={APP_STORE_URL} className="mission-text-link">Get NUJ for iPhone <ArrowRight size={18} aria-hidden="true" /></a>
@@ -89,11 +89,11 @@ const Mission = () => {
           <section id="businesses" className="mission-audience" aria-labelledby="businesses-title">
             <div>
               <span className="mission-symbol bg-amber-50" aria-hidden="true"><Coffee /></span>
-              <p className="mission-eyebrow">Businesses and venues</p>
-              <h3 id="businesses-title">Give people a reason to meet at your venue.</h3>
+              <h3 id="businesses-title">Businesses and venues</h3>
               <p>Cafés, pubs and other places to get together.</p>
             </div>
             <div>
+              <p>Give people a reason to meet at your venue.</p>
               <p>Join NUJ as a venue partner to help people meet at your venue. Offer an incentive, such as discounted coffee for a group, to make choosing your venue easier.</p>
               <p className="mission-audience-value">Give mates a reason to meet. Bring more people through your door.</p>
               <p>Venues can take part in a trial. Venue offers are not live yet.</p>

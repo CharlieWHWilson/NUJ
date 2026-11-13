@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, CalendarDays, CheckCheck, Gift, MapPin, UsersRound, LogOut, Clock, Info, type LucideIcon } from "lucide-react";
+import { ArrowLeft, CalendarDays, CheckCheck, Gift, MapPin, UserRound, UsersRound, LogOut, Clock, Info, type LucideIcon } from "lucide-react";
 import { VenueCategoryIcon } from "@/components/VenueCategoryIcon";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { canOptIntoMeetupAttempt, hasMeetupOfferEnded, describeOfferRule, joinMeetupAttempt, leaveMeetupAttempt, listMeetupAttempts, listOffers, redeemMeetupReward, selectMeetupOffer, type Offer } from "@/lib/meetups";
@@ -25,19 +25,48 @@ const OfferSummary = ({ offer }: { offer: Offer }) => <div className="nuj-card p
     <VenueCategoryIcon category={offer.venue.category} />
   </div>
   <p className="text-lg font-medium">{offer.title}</p>
-  <dl className="flex items-start gap-3 rounded-xl bg-muted/40 p-3">
-    <div className="flex min-w-0 flex-1 items-start gap-2">
+  <dl className="grid grid-cols-3 items-start gap-2 rounded-xl bg-muted/40 p-3">
+    <div className="flex min-w-0 flex-col items-start gap-1">
       <CalendarDays size={18} className="mt-0.5 shrink-0 text-muted-foreground" aria-hidden="true" />
       <div><dt className="text-xs text-muted-foreground">Check in</dt>
         <dd className="text-sm font-semibold">{offer.period === "day" ? "Daily" : "Once a week"}</dd>
       </div>
     </div>
-    <div className="flex min-w-0 flex-1 items-start gap-2">
+    <div className="flex min-w-0 flex-col items-start gap-1">
       <CheckCheck size={18} className="mt-0.5 shrink-0 text-muted-foreground" aria-hidden="true" />
       <div><dt className="text-xs text-muted-foreground">Keep it going</dt>
         <dd className="text-sm font-semibold">{offer.periods} {offer.period === "day" ? offer.periods === 1 ? "day" : "days" : offer.periods === 1 ? "week" : "weeks"} in a row</dd>
       </div>
     </div>
+  <div className="min-w-0">
+    <dt className="sr-only">Who qualifies</dt>
+    <dd>
+    <Dialog>
+      <DialogTrigger asChild>
+        <button type="button" aria-label="About qualification requirements" className="flex w-full flex-col items-start gap-1 rounded-lg text-left hover:bg-muted">
+          <span className="inline-flex items-center gap-1 text-muted-foreground">
+            {offer.unlockRule === "individual" ? <UserRound size={18} aria-hidden="true" /> : <UsersRound size={18} aria-hidden="true" />}
+            <Info size={12} aria-hidden="true" />
+          </span>
+          <span className="text-xs text-muted-foreground">Who qualifies</span>
+          <span className="text-sm font-semibold">{offer.unlockRule === "individual" ? "Individual" : offer.unlockRule === "minimum" ? `${offer.minimumMembers}+ members` : "All starting members"}</span>
+        </button>
+      </DialogTrigger>
+      <DialogContent className="w-[calc(100%-2rem)] max-w-sm rounded-xl">
+        <DialogHeader>
+          <DialogTitle>Who needs to qualify?</DialogTitle>
+          <DialogDescription>
+            {offer.unlockRule === "individual" ? "Each person qualifies independently through their own check-ins. No minimum number of group members is required."
+              : offer.unlockRule === "minimum" ? `At least ${offer.minimumMembers} members of your shared group must opt in and complete the required check-ins before the reward unlocks. This is a qualification requirement, not a minimum number attending the venue.`
+                : "Every member in the group's fixed starting roster must opt in and complete the required check-ins. Members joining the group later cannot qualify for this joined offer."}
+          </DialogDescription>
+        </DialogHeader>
+        <p className="text-sm">{offer.recipients === "all" ? "All opted-in members receive the reward once it unlocks." : "Only qualifying members receive the reward."}</p>
+        <p className="text-xs text-muted-foreground">See T&Cs for venue-specific redemption conditions.</p>
+      </DialogContent>
+    </Dialog>
+    </dd>
+  </div>
   </dl>
   <div className="flex items-center gap-2">
     <p className="flex-1 text-sm">{offer.venue.address.match(/\b(?:GIR\s?0AA|[A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2})\b/i)?.[0].toUpperCase() ?? offer.venue.address}</p>
@@ -47,9 +76,12 @@ const OfferSummary = ({ offer }: { offer: Offer }) => <div className="nuj-card p
       <MapPin size={18} aria-hidden="true" />
     </a>
   </div>
-  <Dialog>
+  <OfferTerms offer={offer} />
+</div>;
+
+const OfferTerms = ({ offer, label = "T&Cs" }: { offer: Offer; label?: string }) => <Dialog>
     <DialogTrigger asChild>
-      <button type="button" className="text-sm text-muted-foreground underline underline-offset-4">T&Cs</button>
+      <button type="button" className="rounded-xl bg-muted px-3 py-2 text-sm text-muted-foreground">{label}</button>
     </DialogTrigger>
     <DialogContent className="w-[calc(100%-2rem)] max-w-sm max-h-[85dvh] overflow-y-auto rounded-xl">
       <DialogHeader>
@@ -92,8 +124,7 @@ const OfferSummary = ({ offer }: { offer: Offer }) => <div className="nuj-card p
         <p className="flex items-start gap-2"><MapPin size={16} className="mt-0.5 shrink-0" aria-hidden="true" />{offer.venue.address}</p>
       </TermsSection>
     </DialogContent>
-  </Dialog>
-</div>;
+  </Dialog>;
 
 const MeetUpDetail = () => {
   const user = useCurrentUser();
@@ -182,12 +213,12 @@ const MeetUpDetailContent = ({ user }: { user: { id: string } | null }) => {
       const expired = !attempt.expiresAt || new Date(attempt.expiresAt).getTime() <= Date.now();
       return <section key={attempt.id} className="nuj-card p-5 space-y-3">
         <h3 className="font-semibold">{attempt.groupName}</h3>
-        <details><summary className="cursor-pointer text-sm">Offer terms when joined</summary><OfferSummary offer={attempt.offer} /></details>
         <p className="text-sm">{attempt.participating ? `Your progress: ${attempt.progress}/${attempt.offer.periods} ${attempt.offer.period}s${attempt.qualified ? " · Qualified" : ""}` : "You have not opted in."}</p>
         {attempt.rewardEarnedElsewhere && <p className="text-sm">You already earned this offer with another group. Each offer can be earned once per person.</p>}
         <ul className="space-y-2 text-sm">
           {attempt.participants.map((member) => <li key={member.userId}>{member.name}{!member.current ? " (no longer in group)" : ""} · {member.accepted ? member.qualified ? "Accepted · Qualified" : "Accepted · In progress" : "Not accepted · Not counting"}</li>)}
         </ul>
+        <OfferTerms offer={attempt.offer} label="Offer terms" />
         {user && canOptIntoMeetupAttempt(attempt, user.id) && <button className="nuj-btn-primary w-full" disabled={busy} onClick={() => update.mutate({ type: "join", value: attempt.id })}>Opt in to this offer</button>}
         {!attempt.participating && hasMeetupOfferEnded(attempt.offer) && <p className="text-sm text-muted-foreground">Offer ended. You can no longer opt in.</p>}
         {!attempt.participating && attempt.offer.unlockRule === "all" && !attempt.participants.some((member) => member.userId === user?.id) && <p className="text-sm">You are not in the starting roster for this joined group and cannot opt in.</p>}

@@ -406,13 +406,13 @@ describe("venue offers frontend", () => {
 
   it.each([["hub", false], ["detail", true]] as const)("hides previous-user offer and attempt caches on %s account switch and sign-out", async (_, detail) => {
     const client = mount(detail ? <MeetUpDetail /> : <MeetUpsHub />, detail);
-    await screen.findByText(detail ? "Offer terms when joined" : "Old friends");
+    await screen.findByText(detail ? "Offer terms" : "Old friends");
     expect(client.getQueryData(["meetup-attempts", "me"])).toEqual([attempt]);
     mocks.offers.mockResolvedValue([]);
     mocks.attempts.mockResolvedValue([]);
     mocks.groups.mockResolvedValue([]);
     act(() => mocks.auth.mock.calls[0][0]("SIGNED_IN", { user: { id: "other-user", email_confirmed_at: "2026-01-01" } }));
-    expect(screen.queryByText("Offer terms when joined")).not.toBeInTheDocument();
+    expect(screen.queryByText("Offer terms")).not.toBeInTheDocument();
     expect(screen.queryByText("Old friends")).not.toBeInTheDocument();
     expect(screen.queryByText(offer.reward)).not.toBeInTheDocument();
     await waitFor(() => expect(client.getQueryData(["meetup-attempts", "other-user"])).toEqual([]));
@@ -700,7 +700,7 @@ describe("venue offers frontend", () => {
     mocks.attempts.mockResolvedValue([{ ...attempt, offer: { ...offer, active: false }, participants: [attempt.participants[1]] }]);
     mount(<MeetUpDetail />, true);
     expect(await screen.findByText(/not in the starting roster for this joined group/)).toBeInTheDocument();
-    expect(screen.getAllByText("1 High Street")).toHaveLength(2);
+    expect(screen.getAllByText("1 High Street")).toHaveLength(1);
     expect(screen.queryByRole("button", { name: "Opt in to this offer" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Select offer for group" })).not.toBeInTheDocument();
   });
@@ -709,11 +709,11 @@ describe("venue offers frontend", () => {
     mocks.offers.mockResolvedValue([{ ...offer, title: "Edited listing", reward: "Different reward" }]);
     mount(<MeetUpDetail />, true);
     expect(await screen.findByText("Edited listing")).toBeInTheDocument();
-    fireEvent.click(screen.getByText("Offer terms when joined"));
-    expect(screen.getByText(offer.title)).toBeInTheDocument();
-    expect(screen.getAllByRole("heading", { name: venue.name, level: 2 })).toHaveLength(2);
-    expect(screen.getAllByText(venue.name).length).toBeGreaterThan(0);
-    fireEvent.click(screen.getAllByRole("button", { name: "T&Cs" })[1]);
+    const originalTerms = screen.getByRole("button", { name: "Offer terms" });
+    expect(originalTerms.previousElementSibling?.tagName).toBe("UL");
+    fireEvent.click(originalTerms);
+    expect(screen.getByRole("dialog")).toHaveTextContent(offer.title);
+    expect(screen.getByRole("dialog")).not.toHaveTextContent("Different reward");
     expect(screen.getByRole("dialog")).toHaveTextContent(offer.reward);
   });
 
@@ -755,6 +755,13 @@ describe("venue offers frontend", () => {
     expect(screen.queryByText(offer.reward)).not.toBeInTheDocument();
     expect(screen.getAllByText(offer.title)).toHaveLength(1);
     expect(screen.queryByText(/Only accepted opt-ins count/)).not.toBeInTheDocument();
+    expect(screen.getByText(rule.unlockRule === "individual" ? "Individual" : rule.unlockRule === "minimum" ? "4+ members" : "All starting members")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "About qualification requirements" }).closest("dl")).toContainElement(screen.getByText(rule.cadence));
+    fireEvent.click(screen.getByRole("button", { name: "About qualification requirements" }));
+    const qualificationInfo = screen.getByRole("dialog");
+    expect(qualificationInfo).toHaveTextContent(rule.unlockRule === "individual" ? "No minimum number of group members is required" : rule.unlockRule === "minimum" ? "At least 4 members" : "fixed starting roster");
+    expect(qualificationInfo).toHaveTextContent(rule.recipients === "all" ? "All opted-in members receive the reward" : "Only qualifying members receive the reward");
+    fireEvent.click(within(qualificationInfo).getByRole("button", { name: "Close" }));
     fireEvent.click(screen.getByRole("button", { name: "T&Cs" }));
     expect(screen.getByRole("dialog")).toHaveTextContent(rule.unlockRule === "minimum" ? "At least 4 members must qualify." : rule.unlockRule === "individual" ? "Each member qualifies independently." : "All members in the starting group must qualify.");
     expect(screen.getByRole("dialog")).toHaveTextContent(offer.reward);
@@ -767,8 +774,7 @@ describe("venue offers frontend", () => {
   it("shows original terms in the snapshot T&Cs after a listing is edited", async () => {
     mocks.offers.mockResolvedValue([{ ...offer, terms: "New terms", redemptionDays: 14 }]);
     mount(<MeetUpDetail />, true);
-    fireEvent.click(await screen.findByText("Offer terms when joined"));
-    fireEvent.click(screen.getAllByRole("button", { name: "T&Cs" })[1]);
+    fireEvent.click(await screen.findByRole("button", { name: "Offer terms" }));
     const dialog = screen.getByRole("dialog");
     expect(dialog).toHaveTextContent(offer.terms);
     expect(dialog).toHaveTextContent("Redeem within 7 days of unlocking.");

@@ -130,11 +130,15 @@ Deactivation is not revocation of previously selected offers/rewards.
   full address is shown if no UK postcode is present). The full address, reward specifics, venue
   description and qualification rules are in icon-led T&Cs sections. The main card
   includes a compact cadence/duration strip; participation and progress remain visible.
+  A people/individual icon label and info button explain qualification requirements
+  and reward recipients, distinguishing group qualification from venue attendance conditions.
   Available offer cards use icon chips for cadence, consecutive periods and who needs
   to qualify instead of long reward/rule paragraphs. Full details remain in the offer T&Cs.
   Summary cards allow pending members to opt in, but opting out is only available
   after opening the joined offer's detail page. Member-facing copy uses "joined",
   not the internal "attempt" terminology.
+  Joined groups have an Offer terms button below the member list. It opens the
+  original saved terms in a pop-out, separate from the current listing's T&Cs.
   Unmapped venues sort last with "Distance unavailable". Clear location restores
   catalogue order. Category and location filters apply to both List and Map views,
   not joined rewards. No device geolocation or automatic searches are used.

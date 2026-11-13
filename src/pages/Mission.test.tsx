@@ -10,10 +10,10 @@ describe("Mission", () => {
     expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
     expect(screen.getByRole("link", { name: "NUJ home" })).toHaveTextContent("NUJ");
     expect(screen.queryByRole("img", { name: "NUJ" })).not.toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Stay connected between meet-ups." })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Stay connected" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "How NUJ works" })).toBeInTheDocument();
     const downloads = screen.getAllByRole("link", { name: /Download on the App Store|Get NUJ for iPhone/ });
-    expect(downloads).toHaveLength(4);
+    expect(downloads).toHaveLength(5);
     for (const link of downloads) {
       expect(link).toHaveAttribute("href", "https://apps.apple.com/gb/app/nuj-social/id6789114237");
     }
@@ -24,7 +24,7 @@ describe("Mission", () => {
     }
     expect(screen.getByText(/There's no need to keep it open or spend time browsing/)).toBeInTheDocument();
     const emailLinks = screen.getAllByRole("link", { name: "Email - charlie@nuj.social" });
-    expect(emailLinks).toHaveLength(2);
+    expect(emailLinks).toHaveLength(1);
     for (const link of emailLinks) {
       expect(link).toHaveAttribute("href", "mailto:charlie@nuj.social");
     }
@@ -41,17 +41,18 @@ describe("Mission", () => {
     expect(within(navigation).getByRole("link", { name: "For community and support groups" })).toHaveAttribute("href", "#community-groups");
     expect(within(navigation).getByRole("link", { name: "For businesses and venues" })).toHaveAttribute("href", "#businesses");
 
-    const mates = screen.getByRole("region", { name: "Stay in touch between meet-ups." });
+    const mates = screen.getByRole("region", { name: "Stay connected without messaging" });
     expect(mates).toHaveAttribute("id", "mates");
-    expect(within(mates).getByText(/Sports teams. Pub quiz teams. School mates./)).toBeInTheDocument();
+    expect(within(mates).getByText("Team mates, school mates, holiday mates etc.")).toBeInTheDocument();
+    expect(within(mates).getByText(/Stay aware of each other’s presence between real life meet-ups/)).toBeInTheDocument();
     expect(within(mates).getByRole("link", { name: "Get NUJ for iPhone" })).toHaveAttribute("href", "https://apps.apple.com/gb/app/nuj-social/id6789114237");
 
-    const groups = screen.getByRole("region", { name: "Keep your group connected between meet-ups." });
+    const groups = screen.getByRole("region", { name: "Keep your group connected between meetings." });
     expect(groups).toHaveAttribute("id", "community-groups");
     expect(within(groups).getByText("Organised meet-up groups with a leader, host or organiser.")).toBeInTheDocument();
     expect(within(groups).getByText(/If you run or host a group, invite members to a shared NUJ group/)).toBeInTheDocument();
     expect(within(groups).queryByText(/safeguarding/)).not.toBeInTheDocument();
-    expect(within(groups).getByRole("link", { name: "Email - charlie@nuj.social" })).toHaveAttribute("href", "mailto:charlie@nuj.social");
+    expect(within(groups).getByRole("link", { name: "Get NUJ for iPhone" })).toHaveAttribute("href", "https://apps.apple.com/gb/app/nuj-social/id6789114237");
 
     const businesses = screen.getByRole("region", { name: "Give people a reason to meet at your venue." });
     expect(businesses).toHaveAttribute("id", "businesses");

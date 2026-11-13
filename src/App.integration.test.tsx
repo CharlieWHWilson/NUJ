@@ -61,7 +61,7 @@ describe("App integration routing", () => {
 
     render(<App />);
 
-    expect(await screen.findByRole("heading", { level: 1 })).toHaveTextContent("Stay connected between meet-ups.");
+    expect(await screen.findByRole("heading", { level: 1 })).toHaveTextContent("Stay connected");
     expect(window.location.pathname).toBe("/explainer");
     expect(screen.queryByText("Sign in or create an account")).not.toBeInTheDocument();
   });

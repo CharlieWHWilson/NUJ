@@ -25,7 +25,7 @@ const Mission = () => {
         <section className="mission-hero mission-container" aria-labelledby="mission-title">
           <div>
             <span className="mission-symbol bg-secondary" aria-hidden="true"><Hand /></span>
-            <h1 id="mission-title">Stay connected between meet-ups.</h1>
+            <h1 id="mission-title">Stay connected</h1>
             <p className="mission-intro">NUJ lets you check in with mates without needing to think of something to say.</p>
             <p>It's a simple way to keep in touch, so catching up in person feels a little easier.</p>
             <p>NUJ is designed to be used as an app: turn on notifications for nudges and reminders, check in, then get on with your day. There's no need to keep it open or spend time browsing.</p>
@@ -61,12 +61,12 @@ const Mission = () => {
             <div>
               <span className="mission-symbol bg-secondary" aria-hidden="true"><UsersRound /></span>
               <p className="mission-eyebrow">Groups of mates</p>
-              <h3 id="mates-title">Stay in touch between meet-ups.</h3>
-              <p>Sports teams. Pub quiz teams. School mates.</p>
+              <h3 id="mates-title">Stay connected without messaging</h3>
+              <p>Team mates, school mates, holiday mates etc.</p>
             </div>
             <div>
               <p>Create a group, check in with one tap and see when your mates last checked in. Send a NUJ to let someone know you're thinking of them. No group-chat conversation to keep up with.</p>
-              <p className="mission-audience-value">Keep in touch between meet-ups, so it's easier to spend time together in person.</p>
+              <p className="mission-audience-value">Stay aware of each other’s presence between real life meet-ups, so it's easier to spend time together in person.</p>
               <a href={APP_STORE_URL} className="mission-text-link">Get NUJ for iPhone <ArrowRight size={18} aria-hidden="true" /></a>
             </div>
           </section>
@@ -75,13 +75,13 @@ const Mission = () => {
             <div>
               <span className="mission-symbol bg-emerald-50" aria-hidden="true"><Heart /></span>
               <p className="mission-eyebrow">Community and support groups</p>
-              <h3 id="community-groups-title">Keep your group connected between meet-ups.</h3>
+              <h3 id="community-groups-title">Keep your group connected between meetings.</h3>
               <p>Organised meet-up groups with a leader, host or organiser.</p>
             </div>
             <div>
               <p>If you run or host a group, invite members to a shared NUJ group. They can check in with each other and keep in touch between the meet-ups you organise, without needing to start a conversation.</p>
               <p className="mission-audience-value">A way for the people you bring together to stay connected beyond the meet-up. Joining NUJ is optional for members.</p>
-              <a href="mailto:charlie@nuj.social" className="mission-text-link">Email - charlie@nuj.social</a>
+              <a href={APP_STORE_URL} className="mission-text-link">Get NUJ for iPhone <ArrowRight size={18} aria-hidden="true" /></a>
             </div>
           </section>
 
@@ -93,7 +93,7 @@ const Mission = () => {
               <p>Cafés, pubs and other places to get together.</p>
             </div>
             <div>
-              <p>Join NUJ as a venue partner to help people meet up at your venue. Offer an incentive, such as discounted coffee for a group, to make choosing your venue easier.</p>
+              <p>Join NUJ as a venue partner to help people meet at your venue. Offer an incentive, such as discounted coffee for a group, to make choosing your venue easier.</p>
               <p className="mission-audience-value">Give mates a reason to meet. Bring more people through your door.</p>
               <p>Venues can take part in a trial. Venue offers are not live yet.</p>
               <a href="mailto:charlie@nuj.social" className="mission-text-link">Email - charlie@nuj.social</a>

@@ -363,6 +363,13 @@
   margin: 0 auto 2rem;
 }
 
+.mission-start-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
 .mission-sources {
   padding-block: 2.5rem;
   max-width: 50rem;

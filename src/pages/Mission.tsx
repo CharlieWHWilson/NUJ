@@ -107,8 +107,10 @@ const Mission = () => {
           <div className="mission-container">
             <h2 id="belief-title">Get started with NUJ</h2>
             <p>Create an account online or get started in the iPhone app. Use the same account in both.</p>
-            <a href={APP_STORE_URL} className="mission-button">Download on the App Store <ArrowRight size={18} aria-hidden="true" /></a>
-            <p className="mt-4"><Link to="/auth?mode=register" className="mission-text-link">Create an account online <ArrowRight size={18} aria-hidden="true" /></Link></p>
+            <div className="mission-start-actions">
+              <a href={APP_STORE_URL} className="mission-button">Download on the App Store <ArrowRight size={18} aria-hidden="true" /></a>
+              <Link to="/auth?mode=register" className="mission-text-link">Create an account online <ArrowRight size={18} aria-hidden="true" /></Link>
+            </div>
           </div>
         </section>
 

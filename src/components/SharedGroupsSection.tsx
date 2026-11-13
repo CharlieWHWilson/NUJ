@@ -1,7 +1,7 @@
 import { FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronRight, Link, Plus, UsersRound } from "lucide-react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ChevronRight, Info, Link, Plus, UsersRound } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { CHECKIN_CADENCE_OPTIONS, DEFAULT_CHECKIN_CADENCE_DAYS, formatCheckinCadence } from "@/hooks/useGroupsSupabase";
@@ -54,6 +54,28 @@ export const SharedGroupsSection = ({ groups, loading, error, refresh }: Props) 
 
   return (
     <div className="mt-3 space-y-3">
+      <div className="flex items-center gap-2">
+        <h3 className="text-xs font-semibold">Shared groups</h3>
+        <Dialog>
+          <DialogTrigger asChild>
+            <button type="button" aria-label="About shared groups" className="text-muted-foreground hover:text-foreground rounded-full">
+              <Info size={14} aria-hidden="true" />
+            </button>
+          </DialogTrigger>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle>Shared groups</DialogTitle>
+              <DialogDescription className="space-y-2">
+                <span className="block">Connect a larger group without adding everyone as mates.</span>
+                <span className="block">See only whether members have checked in within the group's schedule, such as daily or weekly.</span>
+                <span className="block">Exact check-in times stay private.</span>
+                <span className="block">Join meet-up offers with your shared group and earn rewards through check-ins, giving you a reason to meet in person.</span>
+                <span className="block">A win-win for your group and the venue.</span>
+              </DialogDescription>
+            </DialogHeader>
+          </DialogContent>
+        </Dialog>
+      </div>
       {loading && <p role="status" className="text-xs text-muted-foreground">Loading shared groups...</p>}
       {error && <div className="text-xs text-destructive" role="alert">
         {error.message}

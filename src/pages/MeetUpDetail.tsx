@@ -1,195 +1,208 @@
-import { useParams, useNavigate } from "react-router-dom";
-import { useState } from "react";
-import { ArrowLeft, Users, Link2, MessageSquare, Phone } from "lucide-react";
-import { meetUps, mates } from "@/data/mockData";
-import { MateAvatar } from "@/components/MateComponents";
-import { useJoinedMeetups } from "@/hooks/useJoinedMeetups";
+import { useEffect, useState } from "react";
+import { NUJ_SYMBOLS } from "@/lib/nujSymbols";
+import { Link, useParams } from "react-router-dom";
+import { ArrowLeft, CalendarDays, Gift, MapPin, UserRound, UsersRound } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { canOptIntoMeetupAttempt, describeOfferRule, joinMeetupAttempt, leaveMeetupAttempt, listMeetupAttempts, listOffers, redeemMeetupReward, selectMeetupOffer, type Offer } from "@/lib/meetups";
+import { listSharedGroups } from "@/lib/sharedGroups";
+import { useAppRefresh } from "@/hooks/useAppRefresh";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { supabase } from "@/lib/supabase";
+import { isVerifiedAuthUser } from "@/lib/auth";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
-const MeetUpDetail = () => {
-  const { id } = useParams();
-  const navigate = useNavigate();
-  const [shareOpen, setShareOpen] = useState(false);
-  const { hasJoinedMeetup, joinMeetup, leaveMeetup } = useJoinedMeetups();
-  const meetup = meetUps.find((m) => m.id === id);
-  const currentUser = useCurrentUser();
+const date = (value: string, timezone?: string) => new Date(value).toLocaleString(undefined, timezone ? { timeZone: timezone, timeZoneName: "short" } : undefined);
 
-  if (!meetup || currentUser === undefined) return null;
-
-  const isJoined = hasJoinedMeetup(meetup.id);
-  const currentUserName = currentUser?.username?.trim() || "You";
-  const currentUserInitials = currentUserName
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? "")
-    .join("") || "YU";
-  const participatingMatesData = mates.filter((m) => meetup.participatingMates.includes(m.id));
-  const totalJoined = Math.min(meetup.participantsRequired, participatingMatesData.length + (isJoined ? 1 : 0));
-  const remaining = meetup.participantsRequired - totalJoined;
-  const progress = totalJoined / meetup.participantsRequired;
-  const shareLink = typeof window === "undefined"
-    ? `${import.meta.env.BASE_URL}meetup/${meetup.id}`
-    : window.location.href;
-  const shareText = `Join me for \"${meetup.title}\" on NUJ`;
-
-  const copyShareLink = async () => {
-    try {
-      await navigator.clipboard.writeText(shareLink);
-      alert("Link copied");
-      setShareOpen(false);
-    } catch {
-      alert("Unable to copy link on this device.");
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-background max-w-md mx-auto">
-      <div className="px-5 pb-6 nuj-safe-top-section">
-        <button
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-8"
-        >
-          <ArrowLeft size={18} />
-          <span className="text-sm">Back</span>
-        </button>
-
-        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider" style={{ letterSpacing: "0.08em" }}>
-          {meetup.activityType} · {meetup.location}
-        </span>
-        <h1 className="text-2xl font-bold tracking-tight mt-2">{meetup.title}</h1>
-      </div>
-
-      <div className="px-5 space-y-5 nuj-safe-bottom-page">
-        {/* Description */}
-        <div className="nuj-card p-5">
-          <p className="text-foreground leading-relaxed">{meetup.description}</p>
-        </div>
-
-        {/* Progress */}
-        <div className="nuj-card p-5">
-          <div className="flex items-center justify-between gap-2 mb-4">
-            <div className="flex items-center gap-2">
-              <Users size={15} className="text-muted-foreground" />
-              <h2 className="font-semibold text-sm">Who's in</h2>
-            </div>
-
-            <Dialog open={shareOpen} onOpenChange={setShareOpen}>
-              <DialogTrigger asChild>
-                <button className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors">
-                  + share
-                </button>
-              </DialogTrigger>
-              <DialogContent className="max-w-sm">
-                <DialogDescription>This dialog allows you to share this meet-up with others.</DialogDescription>
-                <DialogHeader>
-                  <DialogTitle>Share this meet-up</DialogTitle>
-                </DialogHeader>
-
-                <div className="space-y-2">
-                  <button
-                    onClick={copyShareLink}
-                    className="w-full flex items-center gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors text-left"
-                  >
-                    <Link2 size={17} className="text-muted-foreground" />
-                    <span className="text-sm font-medium">Copy link</span>
-                  </button>
-
-                  <button
-                    onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(`${shareText} ${shareLink}`)}`, "_self")}
-                    className="w-full flex items-center gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors text-left"
-                  >
-                    <MessageSquare size={17} className="text-muted-foreground" />
-                    <span className="text-sm font-medium">WhatsApp</span>
-                  </button>
-
-                  <button
-                    onClick={() => window.open(`sms:?body=${encodeURIComponent(`${shareText} ${shareLink}`)}`, "_self")}
-                    className="w-full flex items-center gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors text-left"
-                  >
-                    <Phone size={17} className="text-muted-foreground" />
-                    <span className="text-sm font-medium">SMS</span>
-                  </button>
-                </div>
-              </DialogContent>
-            </Dialog>
-          </div>
-
-          <div className="h-1.5 bg-muted rounded-full overflow-hidden mb-4">
-            <div
-              className="h-full rounded-full"
-              style={{
-                width: `${progress * 100}%`,
-                background: "hsl(var(--accent))",
-              }}
-            />
-          </div>
-
-          <div className="space-y-1">
-            {isJoined && (
-              <div className="flex items-center gap-3 py-2">
-                <MateAvatar initials={currentUserInitials} size="sm" status="today" daysSinceCheckin={0} />
-                <p className="text-sm font-medium">You</p>
-              </div>
-            )}
-            {participatingMatesData.map((m) => (
-              <div key={m.id} className="flex items-center gap-3 py-2">
-                <MateAvatar initials={m.initials} size="sm" status={m.lastCheckin} daysSinceCheckin={m.daysSinceCheckin} />
-                <p className="text-sm font-medium">{m.name}</p>
-              </div>
-            ))}
-            {Array.from({ length: remaining }).map((_, i) => (
-              <div key={i} className="flex items-center gap-3 py-2 opacity-40">
-                <div className="w-8 h-8 rounded-full bg-border border-2 border-dashed border-muted-foreground/30" />
-                <p className="text-sm text-muted-foreground">Waiting for a mate…</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Reward */}
-        <div
-          className="p-5 rounded-2xl"
-          style={{ background: "hsl(var(--nuj-amber-light))" }}
-        >
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2" style={{ letterSpacing: "0.08em" }}>
-            How the reward unlocks
-          </p>
-          <p className="text-sm font-medium text-foreground leading-relaxed">{meetup.rewardDescription}</p>
-          {meetup.sponsor && (
-            <p className="text-xs text-muted-foreground mt-3">
-              In partnership with {meetup.sponsor}
-            </p>
-          )}
-        </div>
-
-        {isJoined ? (
-          <button
-            onClick={() => leaveMeetup(meetup.id)}
-            className="w-full p-5 text-center rounded-2xl bg-muted text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Leave meet-up
-          </button>
-        ) : (
-          <button
-            onClick={() => joinMeetup(meetup.id)}
-            className="w-full nuj-btn-primary p-5 text-center"
-          >
-            I'm in
-          </button>
-        )}
-
+const OfferSummary = ({ offer }: { offer: Offer }) => <div className="nuj-card p-5 space-y-3">
+  <h2 className="font-semibold">{offer.title}</h2>
+  <p className="text-sm text-muted-foreground">{offer.venue.name}</p>
+  <div className="flex items-center gap-3 rounded-xl bg-secondary p-3">
+    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-background" aria-hidden="true"><Gift size={22} strokeWidth={1.5} /></span>
+    <p className="font-semibold">{offer.reward}</p>
+  </div>
+  <p className="text-sm text-muted-foreground">{offer.venue.description}</p>
+  <dl className="grid grid-cols-2 gap-3">
+    <div className="rounded-xl bg-muted/40 p-3 text-center">
+      <span className="mx-auto mb-2 flex h-9 w-9 items-center justify-center rounded-full bg-background" aria-hidden="true"><CalendarDays size={20} strokeWidth={1.5} /></span>
+      <dt className="text-xs text-muted-foreground">Check-in rhythm</dt>
+      <dd className="mt-1 text-sm font-medium">{offer.period === "day" ? "Daily" : "Once a week"}</dd>
+      <dd className="text-xs text-muted-foreground">{offer.periods} consecutive {offer.period === "day" ? offer.periods === 1 ? "day" : "days" : offer.periods === 1 ? "week" : "weeks"}</dd>
+    </div>
+    <div className="rounded-xl bg-muted/40 p-3 text-center">
+      <span className="mx-auto mb-2 flex h-9 w-9 items-center justify-center rounded-full bg-background" aria-hidden="true">
+        {offer.unlockRule === "individual" ? <UserRound size={20} strokeWidth={1.5} /> : <UsersRound size={20} strokeWidth={1.5} />}
+      </span>
+      <dt className="text-xs text-muted-foreground">Who needs to qualify?</dt>
+      <dd className="mt-1 text-sm font-medium">{offer.unlockRule === "individual" ? "Each person" : offer.unlockRule === "minimum" ? `${offer.minimumMembers}+ members` : "All starting members"}</dd>
+      <dd className="text-xs text-muted-foreground">{offer.unlockRule === "individual" ? "Earn independently" : offer.unlockRule === "minimum" ? "In your shared group" : "Fixed starting group"}</dd>
+    </div>
+    <div className="col-span-2 flex items-center gap-3 rounded-xl bg-muted/40 p-3">
+      <Gift size={20} strokeWidth={1.5} className="shrink-0 text-muted-foreground" aria-hidden="true" />
+      <div><dt className="text-xs text-muted-foreground">Who gets the reward?</dt>
+        <dd className="text-sm font-medium">{offer.recipients === "all" ? "All opted-in members" : "Qualifying members only"}</dd>
       </div>
     </div>
-  );
+  </dl>
+  <p className="flex items-center gap-2 text-xs text-muted-foreground"><span className="text-lg" aria-hidden="true">{NUJ_SYMBOLS.presence}</span>Opt in, then use your usual NUJ check-in.</p>
+  <div className="flex items-center gap-2">
+    <p className="flex-1 text-sm">Address: {offer.venue.address}</p>
+    <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${offer.venue.name}, ${offer.venue.address}`)}`}
+      target="_blank" rel="noopener noreferrer" aria-label={`Open map for ${offer.venue.name}`}
+      className="w-9 h-9 shrink-0 flex items-center justify-center rounded-full bg-muted text-muted-foreground hover:text-foreground transition-colors">
+      <MapPin size={18} aria-hidden="true" />
+    </a>
+  </div>
+  <Dialog>
+    <DialogTrigger asChild>
+      <button type="button" className="text-sm text-muted-foreground underline underline-offset-4">T&Cs</button>
+    </DialogTrigger>
+    <DialogContent className="max-w-sm max-h-[85dvh] overflow-y-auto">
+      <DialogHeader>
+        <DialogTitle>Offer terms and conditions</DialogTitle>
+        <DialogDescription>{offer.venue.name} · {offer.title}</DialogDescription>
+      </DialogHeader>
+      <p className="text-sm">{offer.terms}</p>
+      <p className="text-sm">{describeOfferRule(offer)}</p>
+      <p className="text-sm">Opt in explicitly. Only accepted opt-ins count, and each member starts their own check-in period when they accept. Only normal NUJ check-ins after acceptance count; earlier check-ins do not. No extra check-in is needed.</p>
+      <p className="text-sm">Daily periods use the venue timezone. Weekly periods are consecutive seven-day windows starting on each member’s acceptance date in that timezone, not calendar weeks. Multiple check-ins in one period count once. A missed completed period resets an unfinished streak.</p>
+      {offer.unlockRule === "all" && <p className="text-sm">The starting group roster is fixed. Every starting member must opt in and qualify; members joining the group later are not eligible for that attempt. A starting member leaving before unlock can prevent the group from qualifying.</p>}
+      <p className="text-sm">Leaving this offer resets your progress and forfeits unused rewards for this group offer. Rejoining requires a fresh qualifying streak. Redeemed rewards remain single-use, including across groups.</p>
+      <p className="text-sm">Selecting an offer is not a reservation or proof of attendance. Venue staff review rewards on the member’s phone; redemption is member-confirmed, not independently venue verified.</p>
+      <p className="text-sm">Check-in timezone: {offer.venue.timezone}</p>
+      <p className="text-sm">Offer ends: {offer.endsAt ? date(offer.endsAt, offer.venue.timezone) : "No end date"}</p>
+      <p className="text-sm">Redeem within {offer.redemptionDays} days of unlocking.</p>
+    </DialogContent>
+  </Dialog>
+</div>;
+
+const MeetUpDetail = () => {
+  const user = useCurrentUser();
+  const [sessionUserId, setSessionUserId] = useState<string | null | undefined>(undefined);
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      setSessionUserId(session && isVerifiedAuthUser(session.user) ? session.user.id : null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+  const userId = sessionUserId === undefined ? user?.id : sessionUserId;
+  return <MeetUpDetailContent key={userId ?? "signed-out"} user={userId ? { id: userId } : null} />;
+};
+
+const MeetUpDetailContent = ({ user }: { user: { id: string } | null }) => {
+  const { id } = useParams();
+  const queryClient = useQueryClient();
+  const [groupId, setGroupId] = useState("");
+  const [rewardId, setRewardId] = useState<string | null>(null);
+  const [leavingAttemptId, setLeavingAttemptId] = useState<string | null>(null);
+  const offers = useQuery({ queryKey: ["meetup-offers", user?.id], queryFn: () => listOffers(), enabled: Boolean(user?.id), retry: false });
+  const attempts = useQuery({ queryKey: ["meetup-attempts", user?.id], queryFn: listMeetupAttempts, enabled: Boolean(user?.id), retry: false });
+  const refetchAttempts = attempts.refetch;
+  const groups = useQuery({ queryKey: ["shared-groups", user?.id], queryFn: listSharedGroups, enabled: Boolean(user?.id), retry: false });
+  const refresh = () => { if (user?.id) return Promise.all([offers.refetch(), attempts.refetch(), groups.refetch()]); };
+  useAppRefresh(refresh);
+  useEffect(() => {
+    const onCheckin = () => { if (user?.id) void refetchAttempts(); };
+    window.addEventListener("nuj:checkin-updated", onCheckin);
+    return () => window.removeEventListener("nuj:checkin-updated", onCheckin);
+  }, [user?.id, refetchAttempts]);
+  const update = useMutation({
+    mutationFn: async (action: { type: "select" | "join" | "leave" | "redeem"; value: string }) => {
+      if (action.type === "select") return selectMeetupOffer(action.value, id!);
+      if (action.type === "join") return joinMeetupAttempt(action.value);
+      if (action.type === "leave") return leaveMeetupAttempt(action.value);
+      return redeemMeetupReward(action.value);
+    },
+    onSuccess: async (_, action) => {
+      if (action.type === "redeem") setRewardId(null);
+      if (action.type === "leave") setLeavingAttemptId(null);
+      await queryClient.invalidateQueries({ queryKey: ["meetup-attempts", user?.id] });
+    },
+  });
+  const matching = attempts.data?.filter((attempt) => attempt.offerId === id) ?? [];
+  const listed = offers.data?.find((offer) => offer.id === id);
+  const offer = listed ?? matching[0]?.offer;
+  const owners = groups.data?.filter((group) => group.isOwner) ?? [];
+  const available = Boolean(listed?.active && listed.venue.active && (!listed.endsAt || new Date(listed.endsAt).getTime() > Date.now()));
+  const ownReward = matching.find((attempt) => attempt.rewardId === rewardId);
+  const leavingAttempt = matching.find((attempt) => attempt.id === leavingAttemptId);
+  const redeemable = ownReward && !ownReward.redeemedAt && Boolean(ownReward.expiresAt && new Date(ownReward.expiresAt).getTime() > Date.now());
+  const busy = update.isPending;
+
+  return <main className="min-h-screen bg-background max-w-md mx-auto px-5 nuj-safe-top-section nuj-safe-bottom-page space-y-5">
+    <Link to="/meetups" className="flex items-center gap-2 text-sm text-muted-foreground"><ArrowLeft size={18} />Back to offers</Link>
+    <h1 className="text-2xl font-bold">{offer?.title ?? "Offer"}</h1>
+    {(offers.isPending || attempts.isPending) && <p role="status">Loading offer and group attempts…</p>}
+    {offers.error && <div role="alert"><p>{offers.error.message}</p><button className="nuj-btn-secondary" onClick={() => void offers.refetch()}>Retry offer</button></div>}
+    {attempts.error && <div role="alert"><p>{attempts.error.message}</p><button className="nuj-btn-secondary" onClick={() => void attempts.refetch()}>Retry attempts</button></div>}
+    {!offer && offers.isSuccess && attempts.isSuccess && <p>This offer is no longer available, and you have no saved attempts for it.</p>}
+    {offer && <>
+      <OfferSummary offer={offer} />
+      {!available && <p className="text-sm text-muted-foreground">This offer is no longer available for new group selections. Saved attempts keep their original offer and rules.</p>}
+      {available && <section className="nuj-card p-5 space-y-3">
+        <h2 className="font-semibold">Select for a group you own</h2>
+        {groups.isPending && <p role="status">Loading shared groups…</p>}
+        {groups.error && <div role="alert"><p>{groups.error.message}</p><button className="nuj-btn-secondary" onClick={() => void groups.refetch()}>Retry groups</button></div>}
+        {groups.isSuccess && owners.length === 0 && <p className="text-sm text-muted-foreground">Only a shared-group owner can select an offer. Ask your owner, or create a shared group.</p>}
+        {owners.length > 0 && <>
+          <label className="block text-sm" htmlFor="offer-group">Shared group</label>
+          <select id="offer-group" className="w-full rounded-xl border bg-background p-3" value={groupId} onChange={(event) => setGroupId(event.target.value)}>
+            <option value="">Choose a group</option>
+            {owners.map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}
+          </select>
+          <button className="nuj-btn-primary w-full" disabled={busy || !owners.some((group) => group.id === groupId)} onClick={() => update.mutate({ type: "select", value: groupId })}>Select offer for group</button>
+          <p className="text-xs text-muted-foreground">Selecting opts you in. Other members must opt in themselves.</p>
+        </>}
+      </section>}
+    </>}
+    {update.error && <p role="alert">{update.error.message}</p>}
+    {update.isSuccess && <p role="status">Saved. Group progress and rewards have been refreshed.</p>}
+    {offer && attempts.isSuccess && matching.length === 0 && <p className="text-sm text-muted-foreground">No group attempts yet for this offer.</p>}
+    {matching.length > 0 && <h2 className="font-semibold">Group attempts</h2>}
+    {matching.map((attempt) => {
+      const expired = !attempt.expiresAt || new Date(attempt.expiresAt).getTime() <= Date.now();
+      return <section key={attempt.id} className="nuj-card p-5 space-y-3">
+        <h3 className="font-semibold">{attempt.groupName}</h3>
+        <details><summary className="cursor-pointer text-sm">Original offer for this attempt</summary><OfferSummary offer={attempt.offer} /></details>
+        <p className="text-sm">{attempt.participating ? `Your progress: ${attempt.progress}/${attempt.offer.periods} ${attempt.offer.period}s${attempt.qualified ? " · Qualified" : ""}` : "You have not opted in."}</p>
+        {attempt.rewardEarnedElsewhere && <p className="text-sm">You already earned this offer with another group. Each offer can be earned once per person.</p>}
+        <ul className="space-y-2 text-sm">
+          {attempt.participants.map((member) => <li key={member.userId}>{member.name}{!member.current ? " (no longer in group)" : ""} · {member.accepted ? member.qualified ? "Accepted · Qualified" : "Accepted · In progress" : "Not accepted · Not counting"}</li>)}
+        </ul>
+        {user && canOptIntoMeetupAttempt(attempt, user.id) && <button className="nuj-btn-primary w-full" disabled={busy} onClick={() => update.mutate({ type: "join", value: attempt.id })}>Opt in to this attempt</button>}
+        {!attempt.participating && attempt.offer.unlockRule === "all" && !attempt.participants.some((member) => member.userId === user?.id) && <p className="text-sm">You are not in this attempt’s starting roster and cannot opt in.</p>}
+        {attempt.participating && <button className="nuj-btn-secondary w-full" disabled={busy} onClick={() => { update.reset(); setLeavingAttemptId(attempt.id); }}>Leave offer</button>}
+        {attempt.rewardId && <div className="rounded-xl bg-muted p-4 space-y-2">
+          <h4 className="font-semibold">Your reward: {attempt.offer.reward}</h4>
+          <p className="text-sm">Expires: {attempt.expiresAt ? date(attempt.expiresAt) : "Not specified"}</p>
+          {attempt.redeemedAt ? <p className="text-sm">Redeemed {date(attempt.redeemedAt)} · Member-confirmed, not independently venue verified. Single use.</p> : expired ? <p className="text-sm">Reward expired or unavailable for redemption.</p> : <>
+            <p className="text-sm">Show this reward and its original terms to venue staff on your phone. After staff review, explicitly confirm redemption. Single use; member-confirmed, not independently venue verified.</p>
+            <button className="nuj-btn-secondary w-full" disabled={busy} onClick={() => { update.reset(); setRewardId(attempt.rewardId); }}>Staff review / redeem</button>
+          </>}
+        </div>}
+      </section>;
+    })}
+    <Dialog open={leavingAttemptId !== null} onOpenChange={(open) => { if (!open && !busy) setLeavingAttemptId(null); }}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Leave this offer?</DialogTitle>
+          <DialogDescription>Your check-in progress will reset and any unused reward for this group offer will be forfeited. You will stay in the shared group. You can opt in again and start a fresh streak, but redeemed rewards remain single-use.</DialogDescription>
+        </DialogHeader>
+        {leavingAttempt && <p className="text-sm">{leavingAttempt.groupName} · {leavingAttempt.offer.venue.name} · {leavingAttempt.offer.reward}</p>}
+        {update.error && <p role="alert">{update.error.message}</p>}
+        <button className="nuj-btn-secondary" disabled={busy} onClick={() => setLeavingAttemptId(null)}>Cancel</button>
+        <button className="nuj-btn-primary" disabled={busy || !leavingAttempt?.participating} onClick={() => { if (leavingAttemptId && leavingAttempt?.participating) update.mutate({ type: "leave", value: leavingAttemptId }); }}>Confirm leave offer</button>
+      </DialogContent>
+    </Dialog>
+    <Dialog open={rewardId !== null} onOpenChange={(open) => { if (!open && !busy) setRewardId(null); }}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader><DialogTitle>Confirm single-use redemption</DialogTitle><DialogDescription>Confirm only after venue staff have reviewed this reward on your phone. This is member-confirmed, not independently venue verified. It can only be redeemed once.</DialogDescription></DialogHeader>
+        {ownReward && <><p className="font-semibold">{ownReward.offer.venue.name} · {ownReward.offer.reward}</p><p className="text-sm">{ownReward.offer.terms}</p><p className="text-sm">Expires: {ownReward.expiresAt ? date(ownReward.expiresAt) : "Not specified"}</p></>}
+        {update.error && <p role="alert">{update.error.message}</p>}
+        <button className="nuj-btn-secondary" disabled={busy} onClick={() => setRewardId(null)}>Cancel</button>
+        <button className="nuj-btn-primary" disabled={busy || !redeemable} onClick={() => { if (rewardId && redeemable) update.mutate({ type: "redeem", value: rewardId }); }}>Confirm redemption</button>
+      </DialogContent>
+    </Dialog>
+  </main>;
 };
 
 export default MeetUpDetail;

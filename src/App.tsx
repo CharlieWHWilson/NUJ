@@ -13,6 +13,7 @@ const MatesHub = lazy(() => import("./pages/MatesHub"));
 const MatePage = lazy(() => import("./pages/MatePage"));
 const MeetUpsHub = lazy(() => import("./pages/MeetUpsHub"));
 const MeetUpDetail = lazy(() => import("./pages/MeetUpDetail"));
+const VenueEntry = lazy(() => import("./pages/VenueEntry"));
 const GroupDetail = lazy(() => import("./pages/GroupDetail"));
 const Profile = lazy(() => import("./pages/Profile"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -249,6 +250,7 @@ const App = () => {
               <Route path="/mates" element={<ProtectedRoute authState={authState}><MatesHub /></ProtectedRoute>} />
               <Route path="/mate/:id" element={<ProtectedRoute authState={authState}><MatePage /></ProtectedRoute>} />
               <Route path="/meetups" element={<ProtectedRoute authState={authState}><MeetUpsHub /></ProtectedRoute>} />
+              <Route path="/admin/venues" element={<ProtectedRoute authState={authState}><VenueEntry /></ProtectedRoute>} />
               <Route path="/meetup/:id" element={<ProtectedRoute authState={authState}><MeetUpDetail /></ProtectedRoute>} />
               <Route path="/group/:id" element={<ProtectedRoute authState={authState}><GroupDetail /></ProtectedRoute>} />
               <Route path="/shared-group/:id" element={<ProtectedRoute authState={authState}><SharedGroupDetail /></ProtectedRoute>} />

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
+import { NUJ_SYMBOLS } from "@/lib/nujSymbols";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { ChevronDown, ChevronRight, Plus, MapPin, MessageCircle, UserRound, X } from "lucide-react";
+import { ChevronDown, ChevronRight, Info, Plus, MessageCircle, UserRound, UsersRound, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -31,6 +32,7 @@ import { Slider } from "@/components/ui/slider";
 import { SharedGroupsSection } from "@/components/SharedGroupsSection";
 import { useSharedGroupsSupabase } from "@/hooks/useSharedGroupsSupabase";
 import { WhatIsNujDialog } from "@/components/WhatIsNujDialog";
+import { DashboardMeetups } from "@/components/DashboardMeetups";
 
 type SectionKey = "nuj" | "mates" | "groups" | "meetups";
 
@@ -185,7 +187,7 @@ const Dashboard = () => {
         >
           <div className={`w-full flex items-center gap-2.5 ${checkedIn ? "justify-center" : ""}`}>
             <div className="w-8 h-8 shrink-0 rounded-full flex items-center justify-center" style={{ background: "hsl(var(--nuj-amber-light))" }}>
-              <span className="text-base">👋</span>
+              <span className="text-base" aria-hidden="true">{NUJ_SYMBOLS.presence}</span>
             </div>
             <div className={checkedIn ? "min-w-0 text-center" : "min-w-0 flex-1"}>
               {checkedIn ? (
@@ -263,7 +265,7 @@ const Dashboard = () => {
                   <CollapsibleTrigger asChild>
                     <button className="w-full flex items-center justify-between text-left px-4 py-3 hover:bg-muted/40 focus:outline-none">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm" aria-hidden="true">👉</span>
+                        <span className="text-sm" aria-hidden="true">{NUJ_SYMBOLS.receivedNuj}</span>
                         <h2 className="font-semibold text-sm tracking-tight whitespace-nowrap">
                           {nujsReceived.length === 0
                             ? "No NUJs 👏"
@@ -318,7 +320,7 @@ const Dashboard = () => {
                   <CollapsibleTrigger asChild>
                     <button className="w-full flex items-center justify-between text-left px-4 py-3 hover:bg-muted/40 focus:outline-none">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm" aria-hidden="true">👈</span>
+                        <span className="text-sm" aria-hidden="true">{NUJ_SYMBOLS.sentNuj}</span>
                         <h2 className="font-semibold text-sm tracking-tight whitespace-nowrap">
                           {nujsSent.length} {nujsSent.length === 1 ? "NUJ" : "NUJs"} sent
                         </h2>
@@ -380,7 +382,7 @@ const Dashboard = () => {
             <CollapsibleTrigger asChild>
               <button className="w-full flex items-center justify-between text-left">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm" aria-hidden="true">👥︎</span>
+                  <UsersRound size={15} aria-hidden="true" />
                   <h2 className="font-semibold text-sm tracking-tight">Groups</h2>
                 </div>
                 <div className="flex items-center gap-2">
@@ -395,6 +397,26 @@ const Dashboard = () => {
               </button>
             </CollapsibleTrigger>
             <CollapsibleContent className="pt-3">
+              <div className="flex items-center gap-2 mb-3">
+                <h3 className="text-xs font-semibold">Personal groups</h3>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <button type="button" aria-label="About personal groups" className="text-muted-foreground hover:text-foreground rounded-full">
+                      <Info size={14} aria-hidden="true" />
+                    </button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-sm">
+                    <DialogHeader>
+                      <DialogTitle>Personal groups</DialogTitle>
+                      <DialogDescription className="space-y-2">
+                        <span className="block">Organise your mates into groups and see when each mate last checked in.</span>
+                        <span className="block">Personal groups are just for you and aren't visible to others.</span>
+                        <span className="block">To take part in meet-up offers, create a shared group instead.</span>
+                      </DialogDescription>
+                    </DialogHeader>
+                  </DialogContent>
+                </Dialog>
+              </div>
               <div className="space-y-3">
                 {groupsList.map((group) => {
                   const groupMates = mates.filter((m) => group.mates.includes(m.id));
@@ -512,7 +534,7 @@ const Dashboard = () => {
             <CollapsibleTrigger asChild>
               <button className="w-full flex items-center justify-between text-left">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm" aria-hidden="true">👤︎</span>
+                  <UserRound size={15} aria-hidden="true" />
                   <h2 className="font-semibold text-sm tracking-tight">Mates</h2>
                 </div>
                 <div className="flex items-center gap-2">
@@ -575,38 +597,7 @@ const Dashboard = () => {
         </div>
 
         {/* Meet-Ups */}
-        <div className="nuj-card p-4 grayscale opacity-70">
-          <Collapsible
-            open={openSections.meetups}
-            onOpenChange={(open) => setSectionOpen("meetups", open)}
-          >
-            <CollapsibleTrigger asChild>
-              <button className="w-full flex items-center justify-between text-left">
-                <div className="flex items-center gap-2">
-                  <MapPin size={15} className="text-muted-foreground" />
-                  <h2 className="font-semibold text-sm tracking-tight">Meet-ups (coming soon..)</h2>
-                </div>
-                <ChevronDown
-                  size={16}
-                  className={`text-muted-foreground transition-transform ${openSections.meetups ? "rotate-180" : ""}`}
-                />
-              </button>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="pt-3">
-              <div className="rounded-xl bg-muted/40 p-3">
-                <p className="text-sm text-muted-foreground">
-                  Sign-up and check-in with mates to unlock deals for real-world activities.
-                </p>
-                <p className="text-sm text-muted-foreground mt-3">
-                  A chance to catch up and spend time together.
-                </p>
-                <p className="text-sm text-muted-foreground text-center mt-3">
-                  win-win
-                </p>
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
-        </div>
+        <DashboardMeetups userId={currentUser?.id} open={openSections.meetups} onOpenChange={(open) => setSectionOpen("meetups", open)} />
 
       </main>
 

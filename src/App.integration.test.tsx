@@ -140,6 +140,14 @@ describe("App integration routing", () => {
     });
   });
 
+  it("requires sign-in before opening the unlisted venue-entry page", async () => {
+    window.history.pushState({}, "", "/admin/venues");
+    isAuthenticatedMock.mockResolvedValue(false);
+    render(<App />);
+    expect(await screen.findByText("Sign in or create an account")).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/auth");
+  });
+
   it("keeps logged-in users on /dashboard", async () => {
     window.history.pushState({}, "", "/dashboard");
     isAuthenticatedMock.mockResolvedValue(true);
@@ -163,6 +171,20 @@ describe("App integration routing", () => {
     const groups = within(content).getByRole("button", { name: /Groups/ });
     fireEvent.click(groups);
     expect(groups).toHaveAttribute("aria-expanded", "true");
+    expect(within(content).getByRole("heading", { name: "Personal groups" })).toBeInTheDocument();
+    expect(within(content).getByRole("heading", { name: "Shared groups" })).toBeInTheDocument();
+    fireEvent.click(within(content).getByRole("button", { name: "About personal groups" }));
+    expect(screen.getByRole("dialog")).toHaveTextContent("Organise your mates into groups and see when each mate last checked in.");
+    expect(screen.getByRole("dialog")).toHaveTextContent("Personal groups are just for you and aren't visible to others.");
+    expect(screen.getByRole("dialog")).toHaveTextContent("To take part in meet-up offers, create a shared group instead.");
+    fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Close" }));
+    fireEvent.click(within(content).getByRole("button", { name: "About shared groups" }));
+    expect(screen.getByRole("dialog")).toHaveTextContent("Connect a larger group without adding everyone as mates.");
+    expect(screen.getByRole("dialog")).toHaveTextContent("such as daily or weekly.");
+    expect(screen.getByRole("dialog")).toHaveTextContent("Exact check-in times stay private.");
+    expect(screen.getByRole("dialog")).toHaveTextContent("Join meet-up offers with your shared group and earn rewards through check-ins, giving you a reason to meet in person.");
+    expect(screen.getByRole("dialog")).toHaveTextContent("A win-win for your group and the venue.");
+    fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Close" }));
     expect(within(content).getByRole("separator", { name: "Personal and shared groups" })).toBeInTheDocument();
     expect(screen.getByRole("banner", { name: "App header" })).toBe(header);
     expect(screen.getByRole("contentinfo", { name: "App footer" })).toBe(footer);

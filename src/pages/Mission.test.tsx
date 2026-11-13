@@ -28,7 +28,7 @@ describe("Mission", () => {
     for (const link of emailLinks) {
       expect(link).toHaveAttribute("href", "mailto:charlie@nuj.social");
     }
-    expect(screen.getByText(/these ideas aren't proven yet, and no partnerships have been agreed/)).toBeInTheDocument();
+    expect(screen.queryByText(/Groups and venues can try NUJ and share what helps/)).not.toBeInTheDocument();
     expect(screen.getByText(/NUJ is not a mental health service/)).toBeInTheDocument();
     expect(screen.queryByRole("banner", { name: "App header" })).not.toBeInTheDocument();
   });

@@ -100,7 +100,6 @@ const Mission = () => {
             </div>
           </section>
 
-          <p className="mission-section-intro">Groups and venues can try NUJ and share what helps. It's still early days: these ideas aren't proven yet, and no partnerships have been agreed.</p>
         </section>
 
         <section className="mission-belief" aria-labelledby="belief-title">

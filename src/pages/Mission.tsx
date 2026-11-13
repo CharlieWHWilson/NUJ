@@ -50,7 +50,7 @@ const Mission = () => {
           <div className="mission-container">
             <h2 id="why-title">What NUJ is for</h2>
             <p className="mission-section-intro">Life gets busy, and it's easy to lose touch with people you care about. You might meet through a group or activity, then not hear from each other until the next meet-up. NUJ gives you a simple way to stay in touch in between.</p>
-            <p className="mission-section-intro mt-4">Anyone can feel lonely, even with friends and family around. Sometimes you'd just like a little more company or to hear from someone. NUJ makes it easier to let a mate know you're there, without the pressure of a conversation.</p>
+            <p className="mission-section-intro mt-4">NUJ makes it easier to let a mate know you're there, without the pressure of a conversation.</p>
           </div>
         </section>
 
